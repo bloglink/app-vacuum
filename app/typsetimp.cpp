@@ -107,13 +107,13 @@ void TypSetImp::initButtonBar()
 
     blayout->addStretch();
 
-    blayout->addWidget(new QLabel(tr("缓升步长(V)"), this));
+    textBox = new QLabel(tr("缓升步长(V)"), this);
+    blayout->addWidget(textBox);
     stepBox = new QSpinBox(this);
     stepBox->setFixedSize(70, 40);
     stepBox->setMinimum(10);
     stepBox->setMaximum(3000);
     blayout->addWidget(stepBox);
-
 
     btnWorkL = new QRadioButton(this);
     btnWorkL->setChecked(true);
@@ -129,35 +129,40 @@ void TypSetImp::initButtonBar()
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(recvWarn()));
 
-    btnWaveS = new QPushButton(this);
-    btnWaveS->setText(tr("采集"));
-    btnWaveS->setMinimumSize(90, 40);
-    connect(btnWaveS, SIGNAL(clicked(bool)), this, SLOT(sample()));
-    blayout->addWidget(btnWaveS);
+    QPushButton *btnsample = new QPushButton(this);
+    btnsample->setText(tr("采集"));
+    btnsample->setMinimumSize(90, 40);
+    connect(btnsample, SIGNAL(clicked(bool)), this, SLOT(sample()));
+    blayout->addWidget(btnsample);
+    btns.insert("btnsample", btnsample);
 
-    btnWaveA = new QPushButton(this);
-    btnWaveA->setText(tr("添加样品"));
-    btnWaveA->setMinimumSize(90, 40);
-    connect(btnWaveA, SIGNAL(clicked(bool)), this, SLOT(sampleAdd()));
-    blayout->addWidget(btnWaveA);
+    QPushButton *btnappend = new QPushButton(this);
+    btnappend->setText(tr("添加样品"));
+    btnappend->setMinimumSize(90, 40);
+    connect(btnappend, SIGNAL(clicked(bool)), this, SLOT(sampleAdd()));
+    blayout->addWidget(btnappend);
+    btns.insert("btnappend", btnappend);
 
-    btnWaveD = new QPushButton(this);
-    btnWaveD->setText(tr("取消样品"));
-    btnWaveD->setMinimumSize(90, 40);
-    connect(btnWaveD, SIGNAL(clicked(bool)), this, SLOT(sampleDel()));
-    blayout->addWidget(btnWaveD);
+    QPushButton *btncancel = new QPushButton(this);
+    btncancel->setText(tr("取消样品"));
+    btncancel->setMinimumSize(90, 40);
+    connect(btncancel, SIGNAL(clicked(bool)), this, SLOT(sampleDel()));
+    blayout->addWidget(btncancel);
+    btns.insert("btncancel", btncancel);
 
-    btnWaveC = new QPushButton(this);
-    btnWaveC->setText(tr("完成采集"));
-    btnWaveC->setMinimumSize(90, 40);
-    connect(btnWaveC, SIGNAL(clicked(bool)), this, SLOT(sampleCalc()));
-    blayout->addWidget(btnWaveC);
+    QPushButton *btnresult = new QPushButton(this);
+    btnresult->setText(tr("完成采集"));
+    btnresult->setMinimumSize(90, 40);
+    connect(btnresult, SIGNAL(clicked(bool)), this, SLOT(sampleCalc()));
+    blayout->addWidget(btnresult);
+    btns.insert("btnresult", btnresult);
 
-    QPushButton *btnSave = new QPushButton(this);
-    btnSave->setText(tr("保存"));
-    btnSave->setMinimumSize(90, 40);
-    connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
-    blayout->addWidget(btnSave);
+    QPushButton *btnsqlite = new QPushButton(this);
+    btnsqlite->setText(tr("保存"));
+    btnsqlite->setMinimumSize(90, 40);
+    connect(btnsqlite, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
+    blayout->addWidget(btnsqlite);
+    btns.insert("btnsqlite", btnsqlite);
 
     QGroupBox *box = new QGroupBox(this);
     box->setLayout(blayout);
@@ -227,6 +232,8 @@ void TypSetImp::initSettings()
     earthBox->setEnabled((grnd == 1 && !issupper) ? false : true);
     powerBox->setVisible(grnd == 1 ? true : false);
     powerBox->setEnabled((grnd == 1 && !issupper) ? false : true);
+    textBox->setVisible(grnd == 1 ? true : false);
+    stepBox->setVisible(grnd == 1 ? true : false);
     btnWorkL->setVisible(work == 2 ? true : false);
     btnWorkR->setVisible(work == 2 ? true : false);
     if (grnd == 1 && !issupper) {
@@ -300,7 +307,7 @@ void TypSetImp::confSettings()
     if (vacuoBox->isChecked()) {
         sampleOver();
     }
-    btnWaveA->setEnabled((waveCopys.size() == 0) ? false : true);
+    btns.value("btnappend")->setEnabled((waveCopys.size() == 0) ? false : true);
     wView->setEnabled(false);
     QStringList names;
     names << "test" << "port1" << "port2" << "volt" << "time"
@@ -365,7 +372,7 @@ void TypSetImp::clickView()
         row = ((row - 1) * 2 + col / 2) * 10 + 1 + (col % 2) * 2;
     }
     waveCopys.clear();
-    btnWaveC->setText(tr("完成采集"));
+    btns.value("btnresult")->setText(tr("完成采集"));
 
     tmpMap.insert("enum", Qt::Key_View);
     tmpMap.insert("text", QString("6056 %1").arg(row));
@@ -417,11 +424,11 @@ void TypSetImp::swapWave()
     }
     btnWorkL->setEnabled(true);
     btnWorkR->setEnabled(true);
-    btnWaveS->setEnabled(true);
-    btnWaveA->setEnabled(false);
-    btnWaveD->setEnabled(false);
-    btnWaveC->setEnabled(false);
-    btnWaveC->setText(tr("完成采集"));
+    btns.value("btnsample")->setEnabled(true);
+    btns.value("btnappend")->setEnabled(false);
+    btns.value("btncancel")->setEnabled(false);
+    btns.value("btnresult")->setEnabled(false);
+    btns.value("btnresult")->setText(tr("完成采集"));
 }
 
 void TypSetImp::change()
@@ -438,7 +445,7 @@ void TypSetImp::sample()
 {  // 采集标准波形,命令为6041+dat1+dat2,dat1为工位0x13/0x14,dat2为是否真空
     waveCopys.clear();
     wvdata.clear();
-    btnWaveC->setText(tr("完成采集"));
+    btns.value("btnresult")->setText(tr("完成采集"));
 
     int vacuo = vacuoBox->isChecked() ? 1 : 0;
     int work = btnWorkL->isChecked() ? 0x13 : 0x14;
@@ -460,10 +467,10 @@ void TypSetImp::sampling()
     int time = tmpSet.value(syst + SystIMPS).toInt() * 1000;
     time = (time == 0) ? 12000 : time;
     timer->start(time);
-    btnWaveS->setEnabled(false);
-    btnWaveA->setEnabled(false);
-    btnWaveC->setEnabled(false);
-    btnWaveD->setEnabled(false);
+    btns.value("btnsample")->setEnabled(false);
+    btns.value("btnappend")->setEnabled(false);
+    btns.value("btnresult")->setEnabled(false);
+    btns.value("btncancel")->setEnabled(false);
     btnWorkL->setEnabled(false);
     btnWorkR->setEnabled(false);
 }
@@ -487,10 +494,10 @@ void TypSetImp::sampleDel()
 {  // 取消样品
     if (waveCopys.size() > 1) {
         waveCopys.removeLast();
-        btnWaveC->setText(tr("完成采集%1").arg(waveCopys.size()));
+        btns.value("btnresult")->setText(tr("完成采集%1").arg(waveCopys.size()));
     } else {
         waveCopys.removeLast();
-        btnWaveC->setText(tr("完成采集"));
+        btns.value("btnresult")->setText(tr("完成采集"));
         swapWave();
         if (vacuoBox->isChecked()) {
             sampleOver();
@@ -516,7 +523,6 @@ void TypSetImp::sampleCalc()
             }
             all[i] = tmpas.join(" ");
         }
-        qDebug() << all[i];
     }
     for (int i=0; i < all.keys().size(); i++) {  // 平均
         QString tmpa = all.value(i).toString();
@@ -527,7 +533,7 @@ void TypSetImp::sampleCalc()
         tmpas.insert(0, QString::number(i));
         recvWave(tmpas);
     }
-    btnWaveC->setText(tr("完成采集"));
+    btns.value("btnresult")->setText(tr("完成采集"));
     waveCopys.clear();
     swapWave();
 }
@@ -544,7 +550,7 @@ void TypSetImp::sampleWait()
 {
     btnWorkL->setEnabled(true);
     btnWorkR->setEnabled(true);
-    btnWaveS->setEnabled(true);
+    btns.value("btnsample")->setEnabled(true);
 }
 
 void TypSetImp::autoInput()
@@ -595,11 +601,11 @@ void TypSetImp::recvOver()
     btnWorkL->setEnabled(true);
     btnWorkR->setEnabled(true);
     waveCopys.append(wvdata);
-    btnWaveS->setEnabled(false);
-    btnWaveA->setEnabled(waveCopys.size() > 1 ? true : false);
-    btnWaveD->setEnabled(true);
-    btnWaveC->setText(tr("完成采集%1").arg(waveCopys.size()));
-    btnWaveC->setEnabled(waveCopys.size() > 1 ? true : false);
+    btns.value("btnsample")->setEnabled(false);
+    btns.value("btnappend")->setEnabled(waveCopys.size() > 1 ? true : false);
+    btns.value("btncancel")->setEnabled(true);
+    btns.value("btnresult")->setText(tr("完成采集%1").arg(waveCopys.size()));
+    btns.value("btnresult")->setEnabled(waveCopys.size() > 1 ? true : false);
     wView->setEnabled((waveCopys.size() == 1) ? true : false);
     if (waveCopys.size() > 1 && vacuoBox->isChecked())
         sampleOver();
@@ -687,7 +693,7 @@ void TypSetImp::showEvent(QShowEvent *e)
 {
     QTimer::singleShot(2000, this, SLOT(sampleWait()));
     recvShowEvent();
-    btnWaveS->setEnabled(false);
+    btns.value("btnsample")->setEnabled(false);
     int index = vacuoBox->isChecked() ? 1 : 0;
     tmpMap.insert("enum", Qt::Key_View);
     tmpMap.insert("text", QString("6052 %1").arg(index));

@@ -101,14 +101,13 @@ private:
     QCheckBox *vacuoBox;
     QCheckBox *earthBox;
     QCheckBox *powerBox;
+    QLabel *textBox;
     QSpinBox *stepBox;
     QRadioButton *btnWorkL;
     QRadioButton *btnWorkR;
-    QPushButton *btnWaveS;
-    QPushButton *btnWaveA;
-    QPushButton *btnWaveD;
-    QPushButton *btnWaveC;
     QList<QTmpMap> waveCopys;
+    QMap<QString, QCheckBox*> boxs;
+    QMap<QString, QPushButton*> btns;
 
     QVariantMap tmpMap;
     QVariantMap config;

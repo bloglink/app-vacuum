@@ -77,11 +77,13 @@ private:
     BoxQModel *mView;
     QSpinBox *timeBox;
     QDoubleSpinBox *nounBox;
+    QComboBox *voltBox;
     QComboBox *freqBox;
     QComboBox *modeBox;
     QComboBox *tempBox;
     QDoubleSpinBox *sminBox;
     QDoubleSpinBox *smaxBox;
+    QStringList volts;
     QStringList freqs;
     QStringList modes;
     QStringList speed;

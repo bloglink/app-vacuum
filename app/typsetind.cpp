@@ -82,6 +82,14 @@ void TypSetInd::initButtonBar()
     btnLayout->addWidget(new QLabel(tr("平均次数")), row, 0);
     btnLayout->addWidget(timeBox, row, 1);
 
+    voltBox = new QComboBox(this);
+    voltBox->setFixedSize(125, 40);
+    voltBox->setView(new QListView);
+    voltBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    connect(voltBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
+    btnLayout->addWidget(new QLabel(tr("测试电压")), row, 2);
+    btnLayout->addWidget(voltBox, row, 3);
+
     row++;
     freqBox = new QComboBox(this);
     freqBox->setFixedSize(125, 40);
@@ -148,6 +156,7 @@ void TypSetInd::initButtonBar()
 void TypSetInd::initItemDelegate()
 {
     isInit = false;
+
     freqs << "100" << "120" << "1k" << "10k";
     modes << tr("串联") << tr("并联");
     speed << tr("快测") << tr("慢测");
@@ -180,6 +189,17 @@ void TypSetInd::initItemDelegate()
 
 void TypSetInd::initSettings()
 {
+    isInit = false;
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int volt = tmpSet.value(back + 0x03).toInt();
+    if (voltBox->count() == 0) {
+        volts << "1.0V" << "0.6V" << "0.3V";
+        if (volt == 2) {
+            volts.clear();
+            volts << "1.5V" << "1.0V" << "0.5V";
+        }
+        voltBox->addItems(volts);
+    }
     int addr = tmpSet.value((4000 + Qt::Key_8)).toInt();
     nounBox->setValue(tmpSet.value(addr + 0).toDouble());
     timeBox->setValue(tmpSet.value(addr + 1).toDouble());
@@ -188,6 +208,7 @@ void TypSetInd::initSettings()
     tempBox->setCurrentIndex(tmpSet.value(addr + 4).toInt());
     smaxBox->setValue(tmpSet.value(addr + 5).toDouble());
     sminBox->setValue(tmpSet.value(addr + 6).toDouble());
+    voltBox->setCurrentIndex(tmpSet.value(addr + 7).toInt());
 
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_8)).toInt() + CACHEIND;
@@ -217,6 +238,7 @@ void TypSetInd::saveSettings()
     tmpMsg.insert(addr + 4, QString::number(tempBox->currentIndex()));
     tmpMsg.insert(addr + 5, QString::number(smaxBox->value()));
     tmpMsg.insert(addr + 6, QString::number(sminBox->value()));
+    tmpMsg.insert(addr + 7, QString::number(voltBox->currentIndex()));
 
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_8)).toInt() + CACHEIND;
@@ -247,6 +269,7 @@ void TypSetInd::confSettings()
     m << QString::number(freqBox->currentIndex());
     m << QString::number(modeBox->currentIndex());
     m << QString::number(tempBox->currentIndex());
+    m << QString::number(voltBox->currentIndex());
     tmpMap.insert("mode", m.join(","));
     tmpMap.insert("std_max", QString::number(smaxBox->value()));
     tmpMap.insert("std_min", QString::number(sminBox->value()));
