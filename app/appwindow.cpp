@@ -696,15 +696,13 @@ int AppWindow::taskToolIobrd()
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
     if (mode == 2) {  // 无刷模式
-        int pgnd = ((station == WORKL) ? Y02 : Y03);  // 接地
         int agnd = ((station == WORKL) ? Y04 : Y05);  // 耐压
         int down = ((station == WORKL) ? 0x00 : 0x03) + back + 0x40;
         int move = ((station == WORKL) ? 0x0C : 0x0F) + back + 0x40;
         down = tmpSet.value(down).toString().toInt(NULL, 16);  // 下压
         move = tmpSet.value(move).toString().toInt(NULL, 16);  // 夹紧
-        int sgnd = (currItem == nSetINR || currItem == nSetACW) ? agnd : pgnd;
         if (driv == 0) {
-            int tmp = (ioSave == 0) ? (down + move) : (sgnd + ioSave + Y06);
+            int tmp = (ioSave == 0) ? (down + move) : (agnd + ioSave + Y06);
             sendUdpStr(tr("6036 %1").arg(tmp).toUtf8());
         }
     }
@@ -943,8 +941,7 @@ int AppWindow::testStopIocan()
         if (currItem == nSetINR || currItem == nSetACW) {
             int item = getNextItem();
             if (item != nSetINR && item != nSetACW) {
-                quint16 cmd = (station == WORKL) ? Y02 : Y03;  // 接地
-                sendUdpStr(tr("6036 %1").arg(cmd | ioSave | Y06).toUtf8());
+                sendUdpStr(tr("6036 %1").arg(ioSave | Y06).toUtf8());
             }
         }
     }
@@ -1408,7 +1405,7 @@ void AppWindow::recvAppPrep()
         wait(100);
         if (eimp != 0 && hall != 0) {
             ioSave = Y00;
-            ioSave |= (driv != 0) ? Y01 : 0x00;
+            ioSave |= (driv != 0) ? Y01 : (Y02 | Y03);
             sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
             addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 空载配置地址
         }
