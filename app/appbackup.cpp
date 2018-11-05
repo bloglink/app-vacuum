@@ -21,6 +21,7 @@ void AppBackup::initUI()
     initMacText();
     initBoxItem();
     initActText();
+    initButtons();
 }
 
 void AppBackup::initLayout()
@@ -31,15 +32,8 @@ void AppBackup::initLayout()
     layout = new QHBoxLayout;
     box->setLayout(layout);
 
-    QHBoxLayout *slayout = new QHBoxLayout;
-    mlayout->addLayout(slayout);
-    slayout->addStretch();
-
-    QPushButton *btnSave = new QPushButton(this);
-    btnSave->setText(tr("保存"));
-    btnSave->setFixedSize(97, 44);
-    slayout->addWidget(btnSave);
-    connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
+    blayout = new QHBoxLayout;
+    mlayout->addLayout(blayout);
 }
 
 void AppBackup::initBoxText()
@@ -55,8 +49,8 @@ void AppBackup::initBoxText()
     QStringList names;
     names << tr("产品型号") << tr("产品编号") << tr("评审编号") << tr("出厂日期")
           << tr("语言支持") << tr("工位设置") << tr("最高电压") << tr("自动测试")
-          << tr("测试延时") << tr("目标网络") << tr("网络端口") << tr("测试模式")
-          << tr("屏蔽反嵌") << tr("波形比例");
+          << tr("测试延时") << tr("目标网络") << tr("匝间接地") << tr("测试模式")
+          << tr("屏蔽反嵌") << tr("波形比例") << tr("交耐真空") << tr("感应启动");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
@@ -246,6 +240,22 @@ void AppBackup::initMacText()
     blayout->addStretch();
 }
 
+void AppBackup::initButtons()
+{
+    QPushButton *btnReset = new QPushButton(this);
+    btnReset->setText(tr("恢复出厂"));
+    btnReset->setFixedSize(97, 44);
+    blayout->addWidget(btnReset);
+    connect(btnReset, SIGNAL(clicked(bool)), this, SLOT(recovery()));
+    blayout->addStretch();
+
+    QPushButton *btnSave = new QPushButton(this);
+    btnSave->setText(tr("保存"));
+    btnSave->setFixedSize(97, 44);
+    blayout->addWidget(btnSave);
+    connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
+}
+
 void AppBackup::initSettings()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
@@ -302,6 +312,16 @@ void AppBackup::saveSettings()
     tmpMsg.insert(Qt::Key_1, "aip_backup");
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
+}
+
+void AppBackup::recovery()
+{
+    QDir dir;
+    dir.setPath("nandflash");
+    dir.remove("system.db");
+    dir.remove("config.db");
+    dir.remove("record.db");
+    QApplication::closeAllWindows();
 }
 
 void AppBackup::recvAppMsg(QTmpMap msg)

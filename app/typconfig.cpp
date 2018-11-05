@@ -294,7 +294,8 @@ void TypConfig::initSettings()
 
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int mode = tmpSet.value(back + backMode).toInt();
-    testAutoBox->setVisible((mode == 1) ? true : false);
+    int test = tmpSet.value(back + backTest).toInt();
+    testAutoBox->setVisible((mode == 1 && test >= 1) ? true : false);
     testDrivBox->setVisible((mode >= 2) ? true : false);
     isRemove = false;
     isInit = true;

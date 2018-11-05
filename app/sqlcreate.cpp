@@ -224,7 +224,7 @@ void SqlCreate::initBack(QSqlQuery query)
     parm << "0";            // 自动测试
     parm << "2";            // 测试延时
     parm << "192.168.1.56";  // 公司网址
-    parm << "6000";         // 连接端口
+    parm << "0";         // 匝间接地
     parm << "1";         // 测试模式
     for (int i=parm.size(); i < 0x10; i++) {
         parm << "";

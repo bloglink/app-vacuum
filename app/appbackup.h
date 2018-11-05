@@ -9,6 +9,7 @@
 #ifndef APPBACKUP_H
 #define APPBACKUP_H
 
+#include <QDir>
 #include <QLabel>
 #include <QDebug>
 #include <QLayout>
@@ -28,6 +29,7 @@
 #include <QTableWidget>
 #include <QHostAddress>
 #include <QTextBrowser>
+#include <QApplication>
 #include <QStandardItem>
 #include <QNetworkInterface>
 #include <QtSerialPort/QSerialPort>
@@ -49,10 +51,12 @@ const int backVolt = 0x06;
 const int backAuto = 0x07;
 const int backWait = 0x08;
 const int backHost = 0x09;
-const int backPort = 0x0A;
+const int backGrnd = 0x0A;
 const int backMode = 0x0B;
 const int backNMag = 0x0C;
 const int backWave = 0x0D;
+const int backVacu = 0x0E;
+const int backTest = 0x0F;
 
 class AppBackup : public QWidget
 {
@@ -70,12 +74,15 @@ private slots:
     void initDevText();
     void initActText();
     void initMacText();
+    void initButtons();
     void initSettings();
     void saveSettings();
+    void recovery();
     void recvAppMsg(QTmpMap msg);
     virtual void showEvent(QShowEvent *e);
 private:
     QHBoxLayout *layout;
+    QHBoxLayout *blayout;
     QTableView *view;
     BoxQModel *mView;
     QTableWidget *offView;

@@ -27,7 +27,7 @@
 #include "boxqmodel.h"
 #include "boxdouble.h"
 #include "boxqitems.h"
-#include "boxqlabel.h"
+#include "boxqimage.h"
 
 #define MAG_SIZE 400
 
@@ -77,7 +77,7 @@ private:
     QList<QComboBox*> ports1;
     QList<QComboBox*> ports2;
     QList<QSpinBox*> uppers;
-    QList<BoxQLabel*> waves;
+    QList<BoxQImage*> waves;
     QRadioButton *btnWorkL;
     QRadioButton *btnWorkR;
     QComboBox *turnBox;

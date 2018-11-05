@@ -252,7 +252,7 @@ void TypSetLod::saveSettings()
     }
     for (int i=0; i < pMode->rowCount(); i++) {
         QString str = pMode->index(i, 0).data().toString();
-        if (i < 4)
+        if (i < 3)
             str = QString::number(pMode->index(i, 0).data().toDouble());
         if (i == 4)
             str = QString::number(sources.indexOf(str));

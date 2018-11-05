@@ -22,6 +22,16 @@ BoxQImage::BoxQImage(QWidget *parent) : QLabel(parent)
     Colors.append(QColor(Qt::darkYellow));
 }
 
+QList<QVariantMap> BoxQImage::getLines()
+{
+    return lines;
+}
+
+QList<QVariantMap> BoxQImage::getTexts()
+{
+    return texts;
+}
+
 void BoxQImage::setLines(QVariantMap msg)
 {
     bool n = true;
@@ -188,6 +198,12 @@ void BoxQImage::paintEvent(QPaintEvent *e)
     if (!bodys.isEmpty())
         drawBodys(painter);
     painter->end();
+    e->accept();
+}
+
+void BoxQImage::mousePressEvent(QMouseEvent *e)
+{
+    emit clicked();
     e->accept();
 }
 

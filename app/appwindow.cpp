@@ -85,7 +85,6 @@ int AppWindow::initLayout()
     frame->setLayout(layout);
 
     this->setCentralWidget(frame);
-    this->resize(1440, 900);
     return Qt::Key_Away;
 }
 
@@ -461,7 +460,7 @@ int AppWindow::initSerial()
             warnningString(tr("串口%1打开失败").arg(com));
         connect(this, SIGNAL(sendAppMsg(QTmpMap)), &mbdktR, SLOT(recvAppMsg(QTmpMap)));
     }
-    if (!tmpSet.value(back + 0x20 + 0x09).toString().isEmpty()) {  // PLC右
+    if (!tmpSet.value(back + 0x20 + 0x09).toString().isEmpty()) {  // 变频器
         QString com = tmpSet.value(back + 0x20 + 0x09).toString();
         if (invert.open(com) == Qt::Key_Meta)
             warnningString(tr("串口%1打开失败").arg(com));
@@ -580,6 +579,10 @@ int AppWindow::taskThread()
 int AppWindow::taskLoopSignin()
 {  // 每2.5秒发一次登录或心跳，无回应报警
     timeUdp++;
+    if (timeUdp == TIME_OUT) {
+        timeUdp = 0;
+        isudp = 0;
+    }
     if (timeUdp%(TIME_OUT/4) == 0) {
         if (isudp == 0)
             sendUdpStr("6000");
@@ -591,11 +594,6 @@ int AppWindow::taskLoopSignin()
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
     }
-    if (timeUdp == TIME_OUT) {
-        timeUdp = 0;
-        isudp = 0;
-    }
-
     return Qt::Key_Away;
 }
 
@@ -674,11 +672,7 @@ int AppWindow::taskStartView()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    if (mode == 1) {  // 真空模式
-        sendUdpStr(QString("6020 %1").arg(station).toUtf8());
-    } else {
-        sendUdpStr(QString("6066 %1").arg(station).toUtf8());
-    }
+    sendUdpStr(QString("%1 %2").arg((mode == 1) ? "6020" : "6066").arg(station).toUtf8());
     tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
     tmpMsg.insert(Qt::Key_2, DATAON);
     tmpMsg.insert(Qt::Key_1, "LEDY");
@@ -1182,7 +1176,6 @@ void AppWindow::showBoxPop(QString text, int t)
     wait(10);
     (this->*initMap[t])();
     boxbar->setValue((t+1)*100/initMap.size());
-    //    qDebug() << "box show:" << text;
 }
 
 void AppWindow::saveBackup(QTmpMap msg)
@@ -1537,6 +1530,7 @@ void AppWindow::warnningString(QString dat)
         QTimer *timer = new QTimer(this);
         timer->singleShot(2000, warnning, SLOT(deleteLater()));
         timer->deleteLater();
+        qWarning() << dat;
     }
 }
 
@@ -1610,7 +1604,6 @@ void AppWindow::recvAppMsg(QTmpMap msg)
         taskCheckStop();
         break;
     case Qt::Key_Call:  // 数据修改未保存
-        qDebug() << "change" << qobject_cast<QWidget*>(sender())->objectName();
         isChange = true;
         break;
     case Qt::Key_WLAN:
@@ -1771,8 +1764,8 @@ void AppWindow::recvUdpMsg(QByteArray msg)
     case 6035:  // 反嵌采样结果
     case 6039:  // 反嵌采样波形
         tmpMsg.insert(Qt::Key_0, Qt::Key_News);
-        tmpMsg.insert(Qt::Key_1, dat);
-        tmpMsg.insert(Qt::Key_2, cmd);
+        tmpMsg.insert(Qt::Key_1, cmd);
+        tmpMsg.insert(Qt::Key_5, dat);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
         break;
@@ -1789,8 +1782,8 @@ void AppWindow::recvUdpMsg(QByteArray msg)
     case 6055:  // 匝间采样结果
     case 6085:
         tmpMsg.insert(Qt::Key_0, Qt::Key_News);
-        tmpMsg.insert(Qt::Key_1, dat);
-        tmpMsg.insert(Qt::Key_2, cmd);
+        tmpMsg.insert(Qt::Key_1, cmd);
+        tmpMsg.insert(Qt::Key_5, dat);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
         break;
@@ -1828,6 +1821,16 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         codeShift = Qt::Key_Away;
         barcode = dat.toUpper();
         showBarCode();
+        break;
+    case 6087:
+        tmpMsg.insert(Qt::Key_0, Qt::Key_News);
+        tmpMsg.insert(Qt::Key_1, cmd);
+        tmpMsg.insert(Qt::Key_5, dat);
+        emit sendAppMsg(tmpMsg);
+        tmpMsg.clear();
+        break;
+    case 6088:  // 手动启动
+        taskShift = (dat.toInt() == 1) ? Qt::Key_Play : Qt::Key_Stop;
         break;
     default:
         break;
@@ -1868,9 +1871,9 @@ void AppWindow::recvNewMsg(QString dat)
             if (xml == "Test_Data_Result") {
                 timeRsl = ((currItem == 0x01) && (!temp.contains("Ω")) ? 0x08 : timeRsl);
             }
-            timeRsl = ((currItem == 0x02) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;
-            timeRsl = ((currItem == 0x02) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
-            timeRsl = ((currItem == 0x02) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
+            timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;
+            timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
+            timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
 
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
@@ -1947,7 +1950,7 @@ void AppWindow::recvStaMsg(QString msg)
         tmpMsg.insert(Qt::Key_1, err);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
-        warnningString("\n" + err + "\n");
+        warnningString(err);
     }
 }
 
@@ -2001,8 +2004,8 @@ void AppWindow::calcHALL(QString msg)
                 tmp = (item == 2) ? ddd : tmp;
                 tmp = (item == 3) ? fff : tmp;
                 for (int numb = 0; numb < tmp.size(); numb++) {
-                    reals << QString::number(tmp.at(numb), 'f', 2) + units.at(numb);
-                    int r = (tmp.at(numb) >= vmax || tmp.at(numb) <= vmin) ? DATANG : DATANG;
+                    reals << QString::number(tmp.at(numb), 'f', 2) + units.at(item);
+                    int r = (tmp.at(numb) >= vmax || tmp.at(numb) <= vmin) ? DATANG : DATAOK;
                     real = (r == DATANG) ? DATANG : real;
                     tmpSave.insert(addr + item*0x10 + numb*3 + 1, tmp.at(numb));
                     tmpSave.insert(addr + item*0x10 + numb*3 + 2, r);

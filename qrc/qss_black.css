@@ -54,6 +54,9 @@ image:url(:/icon_circle_10.png);
 QRadioButton::indicator::checked {
 image:url(:/icon_circle_9.png);
 }
+QRadioButton:disabled{
+color:gray;
+}
 /*QCheckBox*/
 QCheckBox::indicator::unchecked {
 image:url(:/icon_check_box_1.png);

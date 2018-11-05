@@ -99,6 +99,9 @@ private:
     QTableWidget *wView;
     QList<BoxQLabel*> waves;
     QCheckBox *vacuoBox;
+    QCheckBox *earthBox;
+    QCheckBox *powerBox;
+    QSpinBox *stepBox;
     QRadioButton *btnWorkL;
     QRadioButton *btnWorkR;
     QPushButton *btnWaveS;

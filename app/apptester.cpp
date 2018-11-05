@@ -8,6 +8,17 @@
 *******************************************************************************/
 #include "apptester.h"
 
+const QString strSW = "<p style='font:11pt;color:#FFFFFF;' align='left'>%1</p>";  // 小号白,状态信息
+const QString strSG = "<p style='font:11pt;color:#666666;' align='left'>%1</p>";  // 小号灰
+const QString strSY = "<p style='font:11pt;color:#FFFF00;'>%1</p>";  // 小号黄,错误信息
+
+const QString strMB = "<p style='font:18pt;color:#FFFF00;' align='center'>%1</p>";  // 中号蓝,公司
+const QString strMY = "<p style='font:18pt;color:#FFFF00;' align='left'>&nbsp;%1</p>";  // 中号黄
+
+const QString strLG = "<p style='font:72pt;color:#00FF00;'><b>%1</b></p>";  // 大号绿,OK
+const QString strLR = "<p style='font:72pt;color:#FF0000;'><b>%1</b></p>";  // 大号红,NG,中断
+const QString strLY = "<p style='font:72pt;color:#FFFF00;'><b>%1</b></p>";  // 大号黄,工位,测试
+
 AppTester::AppTester(QWidget *parent) : QWidget(parent)
 {
     initUI();
@@ -26,6 +37,7 @@ void AppTester::initUI()
     initWaveBMF();
     initWaveHAL();
     initTypeBar();
+    initWaveAll();
     initButtonBar();
     initHistogram();
     initWireColor();
@@ -87,7 +99,7 @@ void AppTester::initTestBar()
 void AppTester::initLogoBar()
 {
     QLabel *title = new QLabel(this);
-    title->setText(titleAP.arg(tr("青岛艾普智能仪器有限公司")));
+    title->setText(strMB.arg(tr("青岛艾普智能仪器有限公司")));
     wView->setCellWidget(0, 4, title);
     wView->setSpan(0, 4, 1, 2);
     wView->verticalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
@@ -99,7 +111,7 @@ void AppTester::initLogoBar()
 void AppTester::initWorkBar()
 {
     workText = new QLabel(this);
-    workText->setText(judgeON.arg("左"));
+    workText->setText(strLY.arg("左"));
     wView->setCellWidget(1, 4, workText);
     wView->setSpan(1, 4, 2, 1);
 }
@@ -107,7 +119,7 @@ void AppTester::initWorkBar()
 void AppTester::initRealBar()
 {
     realText = new QLabel(this);
-    realText->setText(judgeOK);
+    realText->setText(strLG.arg("OK"));
     wView->setCellWidget(1, 5, realText);
     wView->setSpan(1, 5, 2, 1);
 }
@@ -125,11 +137,12 @@ void AppTester::initWaveMAG()
         int col = i%3*2;
         QGridLayout *lay = new QGridLayout;
 
-        BoxQLabel *w = new BoxQLabel(this);
+        BoxQImage *w = new BoxQImage(this);
+        connect(w, SIGNAL(clicked()), this, SLOT(clickWave()));
         lay->addWidget(w, 0, 0, magitem.size()+1, 1);
 
         for (int k=0; k < magitem.size(); k++) {
-            QLabel *m = new QLabel(largeEN.arg(magitem.at(k) + ":----"), this);
+            QLabel *m = new QLabel(strSG.arg(magitem.at(k) + ":----"), this);
             lay->addWidget(m, k, 1);
             magText.append(m);
         }
@@ -164,13 +177,14 @@ void AppTester::initWaveIMP()
         QGridLayout *lay = new QGridLayout;
         frm->setLayout(lay);
 
-        BoxQLabel *w = new BoxQLabel(this);
+        BoxQImage *w = new BoxQImage(this);
         impWave.append(w);
+        connect(w, SIGNAL(clicked()), this, SLOT(clickWave()));
 
         lay->addWidget(w, 0, 0, impitem.size(), 1);
 
         for (int k=0; k < impitem.size(); k++) {
-            QLabel *m = new QLabel(largeEN.arg(impitem.at(k) + "----"), this);
+            QLabel *m = new QLabel(strSG.arg(impitem.at(k) + "----"), this);
             lay->addWidget(m, k, 1);
             impText.append(m);
         }
@@ -207,14 +221,21 @@ void AppTester::initWaveHAL()
 
 void AppTester::initTypeBar()
 {
-    typeText = new QLabel(largeHD.arg(tr("当前型号:X123456789ABCDEF")), this);
+    typeText = new QLabel(strMY.arg(tr("当前型号:X123456789ABCDEF")), this);
     wView->setCellWidget(3, 4, typeText);
     wView->setSpan(3, 4, 1, 2);
 
     codeText = new QLabel(this);
-    codeText->setText(largeHD.arg(tr("当前编码:178912013X")));
+    codeText->setText(strMY.arg(tr("当前编码:178912013X")));
     wView->setCellWidget(4, 4, codeText);
     wView->setSpan(4, 4, 1, 2);
+}
+
+void AppTester::initWaveAll()
+{
+    allWave = new BoxQImage(this);
+    allWave->hide();
+    connect(allWave, SIGNAL(clicked()), allWave, SLOT(hide()));
 }
 
 void AppTester::initButtonBar()
@@ -260,19 +281,37 @@ void AppTester::initButtonBar()
 
     btnTest = new QPushButton("开始测试", this);
     blayout->addWidget(btnTest);
-    btnTest->setMinimumSize(97, 81);
+    btnTest->setMinimumSize(97, 72);
     connect(btnTest, SIGNAL(clicked(bool)), this, SLOT(clickTest()));
 
     QPushButton *btnStop = new QPushButton("停止测试", this);
     blayout->addWidget(btnStop);
-    btnStop->setMinimumSize(97, 81);
+    btnStop->setMinimumSize(97, 72);
     connect(btnStop, SIGNAL(clicked(bool)), this, SLOT(clickStop()));
+
+    btnA = new QRadioButton(this);
+    btnA->setChecked(true);
+    btnA->setEnabled(false);
+    btnA->setText(tr("标准"));
+    btnM = new QRadioButton(this);
+    btnM->setEnabled(false);
+    btnM->setText(tr("手动"));
+
+    QHBoxLayout *alay = new QHBoxLayout;
+    alay->setMargin(0);
+    alay->addWidget(btnA);
+    alay->addWidget(btnM);
+    aFrame = new QFrame(this);
+    aFrame->setLayout(alay);
+    blayout->addWidget(aFrame);
 
     blayout->addStretch();
 
     warnText = new QLabel(this);
-    warnText->setMinimumHeight(100);
+    warnText->setMinimumHeight(80);
     blayout->addWidget(warnText);
+
+    blayout->addStretch();
 
     QGroupBox *box = new QGroupBox(this);
     box->setFixedWidth(180);
@@ -328,28 +367,28 @@ void AppTester::initOtherParm()
     blayout->addLayout(lay);
 
     signText = new QLabel(this);
-    signText->setText(largeTM.arg(tr("网络状态:____")));
+    signText->setText(strSW.arg(tr("网络状态:____")));
     lay->addWidget(signText, 0, 1);
 
     userText = new QLabel(this);
-    userText->setText(largeTM.arg(tr("当前用户:____")));
+    userText->setText(strSW.arg(tr("当前用户:____")));
     lay->addWidget(userText, 1, 1);
 
-    tempText = new QLabel(largeTM.arg(tr("当前温度:____")), this);
+    tempText = new QLabel(strSW.arg(tr("当前温度:____")), this);
     lay->addWidget(tempText, 2, 1);
 
-    testText = new QLabel(largeTM.arg(tr("测试时间:____")), this);
+    testText = new QLabel(strSW.arg(tr("测试时间:____")), this);
     lay->addWidget(testText, 3, 1);
 
     dateText = new QLabel(this);
     lay->addWidget(dateText, 4, 1);
     QString strA = tr("当前日期:") + QDate::currentDate().toString("yy-MM-dd");
-    dateText->setText(largeTM.arg(strA));
+    dateText->setText(strSW.arg(strA));
 
     timeText = new QLabel(this);
     lay->addWidget(timeText, 5, 1);
     QString strB = tr("当前时间:") + QTime::currentTime().toString("hh:mm:ss");
-    timeText->setText(largeTM.arg(strB));
+    timeText->setText(strSW.arg(strB));
 
     lay->setColumnStretch(0, 1);
     lay->setColumnStretch(1, 3);
@@ -364,8 +403,10 @@ void AppTester::initSettings()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int work = tmpSet.value(back + backWork).toInt();
+    int grnd = tmpSet.value(back + backGrnd).toInt();
     wFrame->setVisible((work == 2) ? true : false);
-    workText->setText(judgeON.arg((work == 0) ? "右" : "左"));
+    workText->setText(strLY.arg((work == 0) ? "右" : "左"));
+    aFrame->setVisible((grnd == 1) ? true : false);
 
     tmpNG.clear();
     initQuality();
@@ -374,8 +415,8 @@ void AppTester::initSettings()
         int sign = tmpSet.value(temp + TEMPSIGN).toInt();
         int setuser = tmpSet.value(DataUser).toInt();
         QString strSign = (sign == 0) ? tr("未登录") : tmpSet.value(setuser).toString();
-        userText->setText(largeTM.arg(tr("当前用户:") + strSign));
-        typeText->setText(largeHD.arg(tr("当前型号:") + tmpSet.value(DataType).toString()));
+        userText->setText(strSW.arg(tr("当前用户:") + strSign));
+        typeText->setText(strMY.arg(tr("当前型号:") + tmpSet.value(DataType).toString()));
     }
     if (Qt::Key_0) {
         tmpRow = 0;
@@ -473,13 +514,7 @@ void AppTester:: initSetDCR()
             QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            QTmpMap tmp;
-            tmp.insert(Qt::Key_0, tmpRow);
-            tmp.insert(Qt::Key_1, 0x01);
-            tmp.insert(Qt::Key_2, numb);
-            tmpView.append(tmp);
-            tmp.clear();
-            tmpRow++;
+            insertItem(nSetDCR, numb);
             row++;
             tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
             tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
@@ -488,13 +523,7 @@ void AppTester:: initSetDCR()
     if (noun != 0) {  // 不平衡度
         tmpItem.insert(tmpRow, tr("电阻平衡"));
         tmpParm.insert(tmpRow, tr("<%1%").arg(noun));
-        QTmpMap tmp;
-        tmp.insert(Qt::Key_0, tmpRow);
-        tmp.insert(Qt::Key_1, 0x01);
-        tmp.insert(Qt::Key_2, 0x08);
-        tmpView.append(tmp);
-        tmp.clear();
-        tmpRow++;
+        insertItem(nSetDCR, 0x08);
     }
 }
 
@@ -514,7 +543,7 @@ void AppTester::initSetMAG()
         int upper = tmpSet.value(addr + CACHEMAG + CACHEMAG*UPPERMAG + numb).toInt();
         check = (isTest) ? check : 0;
         check = (nmag == 0) ? check : 0;
-        QString str = (check != 0) ? largeTM : largeEN;
+        QString str = (check != 0) ? strSW : strSG;
         QString item = tr("反嵌%1-%2").arg(portf).arg(portt);
         QString parm = tr("%1%").arg(upper);
         magText.at(numb*3 + 0)->setText(str.arg(tr("项目: ") + item));
@@ -522,6 +551,25 @@ void AppTester::initSetMAG()
         magText.at(numb*3 + 2)->setText(str.arg(tr("差积: ----")));
         tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
         tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
+        magWave.at(numb)->setEnabled((check != 0) ? true : false);
+        QVariantMap tmp;
+        tmp.insert("index", 0);
+        tmp.insert("color", int(Qt::white));
+        magWave.at(numb)->setTexts(tmp);
+        if (check != 0) {
+            bool isShow = true;
+            for (int i=0; i < tmpView.size(); i++) {
+                QTmpMap tmp = tmpView.at(i);
+                if (tmp.value(Qt::Key_1) == nSetMAG) {
+                    isShow = false;
+                }
+            }
+            if (isShow) {
+                tmpItem.insert(tmpRow, tr("反嵌"));
+                tmpParm.insert(tmpRow, parm);
+                insertItem(nSetMAG, 0x00);
+            }
+        }
     }
 }
 
@@ -532,13 +580,7 @@ void AppTester::initSetCCW()
     if (turn != 2) {
         tmpItem.insert(tmpRow, tr("转向"));
         tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("正转") : tr("反转")));
-        QTmpMap tmp;
-        tmp.insert(Qt::Key_0, tmpRow);
-        tmp.insert(Qt::Key_1, 2);
-        tmp.insert(Qt::Key_2, 0x08);
-        tmpView.append(tmp);
-        tmp.clear();
-        tmpRow++;
+        insertItem(nSetMAG, 0x08);
     }
 }
 
@@ -556,13 +598,7 @@ void AppTester::initSetINR()
         QString parm = tr("%1V %2M %3s").arg(volt).arg(smin).arg(time);
         tmpItem.insert(tmpRow, item);
         tmpParm.insert(tmpRow, parm);
-        QTmpMap tmp;
-        tmp.insert(Qt::Key_0, tmpRow);
-        tmp.insert(Qt::Key_1, 3);
-        tmp.insert(Qt::Key_2, 0);
-        tmpView.append(tmp);
-        tmp.clear();
-        tmpRow++;
+        insertItem(nSetINR, 0x00);
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
     }
@@ -584,13 +620,7 @@ void AppTester::initSetACW()
         parm.append(last == 0 ? "" : tr(" ARC:%1").arg(last));
         tmpItem.insert(tmpRow, item);
         tmpParm.insert(tmpRow, parm);
-        QTmpMap tmp;
-        tmp.insert(Qt::Key_0, tmpRow);
-        tmp.insert(Qt::Key_1, 4);
-        tmp.insert(Qt::Key_2, 0);
-        tmpView.append(tmp);
-        tmp.clear();
-        tmpRow++;
+        insertItem(nSetACW, 0x00);
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
     }
@@ -613,18 +643,27 @@ void AppTester::initSetIMP()
         double sflut = tmpSet.value(addr + CACHEIMP + CACHEIMP*FLUTIMP1 + i).toDouble();
         double phase = tmpSet.value(addr + CACHEIMP + CACHEIMP*PHSEIMP1 + i).toDouble();
         check = (isTest) ? check : 0;
-        QString str = (check != 0) ? largeTM : largeEN;
+        QString str = (check != 0) ? strSW : strSG;
         QString item = tr("匝间%1-%2").arg(portf).arg(portt);
         impText.at(i*5 + 0)->setText(str.arg(tr("项目: 匝间%1-%2").arg(portf).arg(portt)));
         impText.at(i*5 + 1)->setText(str.arg(tr("面积: ----")));
-        str = (diff1 != 0) ? str : largeEN;
+        str = (diff1 != 0) ? str : strSG;
         impText.at(i*5 + 2)->setText(str.arg(tr("差积: ----")));
-        str = (sflut != 0) ? str : largeEN;
+        str = (sflut != 0) ? str : strSG;
         impText.at(i*5 + 3)->setText(str.arg(tr("电晕: ----")));
-        str = (phase != 0) ? str : largeEN;
+        str = (phase != 0) ? str : strSG;
         impText.at(i*5 + 4)->setText(str.arg(tr("相位: ----")));
         impWave.at(i)->setEnabled((check != 0) ? true : false);
-        impWave.at(i)->setText(tr("%1V").arg(volts), 1);
+        QVariantMap tmp;
+        tmp.insert("index", 0);
+        tmp.insert("color", int(Qt::white));
+        tmp.insert("width", 85);
+        tmp.insert("lenth", 85);
+        tmp.insert("title", tr("%1V").arg(volts));
+        impWave.at(i)->setTexts(tmp);
+        allWave->setTexts(tmp);
+        impWave.at(i)->update();
+        allWave->update();
         if (check != 0) {
             tmpSave.insert(save + i*0x10 + 0x00, item);  // 项目
             if (area1 > 0)
@@ -635,6 +674,20 @@ void AppTester::initSetIMP()
                 tmpSave.insert(save + i*0x10 + 0x07, tr("%1").arg(sflut));  // 项目
             if (phase > 0)
                 tmpSave.insert(save + i*0x10 + 0x0A, tr("%1").arg(phase));  // 项目
+        }
+        if (check != 0) {
+            bool isShow = true;
+            for (int i=0; i < tmpView.size(); i++) {
+                QTmpMap tmp = tmpView.at(i);
+                if (tmp.value(Qt::Key_1) == nSetIMP) {
+                    isShow = false;
+                }
+            }
+            if (isShow) {
+                tmpItem.insert(tmpRow, tr("匝间"));
+                tmpParm.insert(tmpRow, tr("%1% %2%").arg(area1).arg(diff1));
+                insertItem(nSetIMP, 0x00);
+            }
         }
     }
 }
@@ -647,22 +700,16 @@ void AppTester::initSetHAL()
     items << tr("霍尔高电平") << tr("霍尔低电平") << tr("霍尔占空比") << tr("霍尔频率");
     QStringList units;
     units << "V" << "V" << "%" << "Hz";
-    for (int i=0; i < items.size(); i++) {
-        double max = tmpSet.value(addr + i*2 + 0).toDouble();
-        double min = tmpSet.value(addr + i*2 + 1).toDouble();
+    for (int numb=0; numb < items.size(); numb++) {
+        double max = tmpSet.value(addr + numb*2 + 0).toDouble();
+        double min = tmpSet.value(addr + numb*2 + 1).toDouble();
         if (max != 0) {
-            QString item = items.at(i);
-            QString parm = tr("%1-%2").arg(min).arg(max) + units.at(i);
+            QString item = items.at(numb);
+            QString parm = tr("%1-%2").arg(min).arg(max) + units.at(numb);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            QTmpMap tmp;
-            tmp.insert(Qt::Key_0, tmpRow);
-            tmp.insert(Qt::Key_1, 0x0B);
-            tmp.insert(Qt::Key_2, i);
-            tmpView.append(tmp);
-            tmp.clear();
-            tmpRow++;
-            tmpSave.insert(real + i*0x10, parm);
+            insertItem(nSetHAL, numb);
+            tmpSave.insert(real + numb*0x10, parm);
         }
     }
 }
@@ -676,23 +723,17 @@ void AppTester::initSetLOD()
     QStringList units;
     units << "mA" << "W" << "mA" << "rpm";
 
-    for (int i=0; i < 5; i++) {
-        double max = tmpSet.value(addr + i*2 + 0).toDouble();
-        double min = tmpSet.value(addr + i*2 + 1).toDouble();
+    for (int numb=0; numb < 5; numb++) {
+        double max = tmpSet.value(addr + numb*2 + 0).toDouble();
+        double min = tmpSet.value(addr + numb*2 + 1).toDouble();
         if (max != 0) {
-            QString item = items.at(i);
+            QString item = items.at(numb);
             QString parm = tr("%1").arg(max == 1 ? "CCW" : "CW");
-            parm = (i < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(i) : parm);
+            parm = (numb < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(numb) : parm);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            QTmpMap tmp;
-            tmp.insert(Qt::Key_0, tmpRow);
-            tmp.insert(Qt::Key_1, 0x0C);
-            tmp.insert(Qt::Key_2, i);
-            tmpView.append(tmp);
-            tmp.clear();
-            tmpRow++;
-            tmpSave.insert(real + i*0x10, parm);
+            insertItem(nSetLOD, numb);
+            tmpSave.insert(real + numb*0x10, parm);
         }
     }
 }
@@ -707,30 +748,35 @@ void AppTester::initSetBMF()
     QStringList units;
     units << "V" << "V/krmp" << "°" << "%";
 
-    for (int i=0; i < 5; i++) {
-        double max = tmpSet.value(addr + i*2 + 0).toDouble();
-        double min = tmpSet.value(addr + i*2 + 1).toDouble();
+    for (int numb=0; numb < 5; numb++) {
+        double max = tmpSet.value(addr + numb*2 + 0).toDouble();
+        double min = tmpSet.value(addr + numb*2 + 1).toDouble();
         if (max != 0) {
-            QString item = items.at(i);
+            QString item = items.at(numb);
             QString parm = tr("%1").arg((max == 1) ? "ABC" : "ACB");
-            parm = (i < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(i) : parm);
+            parm = (numb < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(numb) : parm);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            QTmpMap tmp;
-            tmp.insert(Qt::Key_0, tmpRow);
-            tmp.insert(Qt::Key_1, 0x0E);
-            tmp.insert(Qt::Key_2, i);
-            tmpView.append(tmp);
-            tmp.clear();
-            tmpRow++;
-            tmpSave.insert(real + i*0x10, parm);
+            insertItem(nSetEMF, numb);
+            tmpSave.insert(real + numb*0x10, parm);
         }
     }
 }
 
+void AppTester::insertItem(int item, int numb)
+{
+    QTmpMap tmp;
+    tmp.insert(Qt::Key_0, tmpRow);
+    tmp.insert(Qt::Key_1, item);
+    tmp.insert(Qt::Key_2, numb);
+    tmpView.append(tmp);
+    tmp.clear();
+    tmpRow++;
+}
+
 void AppTester::initQuality()
 {
-    codeText->setText(largeHD.arg(tr("当前编码:")));
+    codeText->setText(strMY.arg(tr("当前编码:")));
     QStringList itemNams;
     itemNams << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
              << "匝间" << "电参" << "电感" << "堵转" << "低启"
@@ -794,6 +840,20 @@ void AppTester::clickStop()
     tmpMsg.clear();
 }
 
+void AppTester::clickWave()
+{
+    BoxQImage *ww = qobject_cast<BoxQImage*>(sender());
+    QList<QVariantMap> lines = ww->getLines();
+    for (int i=0; i < lines.size(); i++) {
+        allWave->setLines(lines.at(i));
+    }
+    QList<QVariantMap> texts = ww->getTexts();
+    for (int i=0; i < texts.size(); i++) {
+        allWave->setTexts(texts.at(i));
+    }
+    updateWave();
+}
+
 void AppTester::clickReset()
 {
     tmpMsg.insert(Qt::Key_0, Qt::Key_Stop);
@@ -810,57 +870,94 @@ void AppTester::clickButton()
     tmpMsg.clear();
 }
 
+void AppTester::updateWave()
+{
+    int w = 0;
+    for (int i=0; i < 4; i++) {
+        w += wView->columnWidth(i);
+    }
+    int h = 0;
+    for (int i=0; i < 6; i++) {
+        h += wView->rowHeight(i + 9);
+    }
+    int x = wView->x() + wView->parentWidget()->x() + 1;
+    int y = wView->y() + wView->parentWidget()->y() + wView->height() - h;
+    allWave->resize(w-18, h-17);
+    allWave->move(x+9, y+7);
+    allWave->update();
+    allWave->show();
+}
+
 void AppTester::updateShow()
 {
+    tmpMap.insert("width", 2);
+    tmpMap.insert("frame", 1);
+    tmpMap.insert("shade", 1);
     initSetMAG();
     initSetIMP();
     for (int i=0; i < magWave.size(); i++) {
-        magWave.at(i)->setZero();
+        for (int index=0; index < 2; index++) {
+            tmpMap.insert("index", index);
+            magWave.at(i)->setLines(tmpMap);
+            allWave->setLines(tmpMap);
+        }
         magWave.at(i)->update();
     }
+    allWave->update();
     for (int i=0; i < impWave.size(); i++) {
-        impWave.at(i)->setZero();
+        for (int index=0; index < 2; index++) {
+            tmpMap.insert("index", index);
+            impWave.at(i)->setLines(tmpMap);
+        }
         impWave.at(i)->update();
     }
     for (int i=0; i < 3; i++) {
-        QVariantMap tmp;
-        tmp.insert("width", 2);
-        tmp.insert("index", i);
-        tmp.insert("frame", 0);
-        tmp.insert("shade", 1);
-        tmp.insert("point", 0);
-        bWave->setLines(tmp);
+        tmpMap.insert("index", i);
+        tmpMap.insert("frame", 0);
+        bWave->setLines(tmpMap);
         bWave->update();
     }
     for (int i=3; i < 8; i++) {
-        QVariantMap tmp;
-        tmp.insert("width", 2);
-        tmp.insert("index", i);
-        tmp.insert("frame", 0);
-        tmp.insert("shade", 1);
-        tmp.insert("point", 0);
-        hWave->setLines(tmp);
+        tmpMap.insert("index", i);
+        hWave->setLines(tmpMap);
         hWave->update();
     }
-
     for (int i=0; i < mView->rowCount(); i++) {
         mView->item(i, 2)->setText("");
         mView->item(i, 3)->setText("");
     }
-    testText->setText(largeTM.arg(tr("测试时间:____")));
+    testText->setText(strSW.arg(tr("测试时间:____")));
+    tmpMap.clear();
 }
 
 void AppTester::updateTime()
 {
     QString strA = tr("当前日期:") + QDate::currentDate().toString("yy-MM-dd");
-    dateText->setText(largeTM.arg(strA));
+    dateText->setText(strSW.arg(strA));
     QString strB = tr("当前时间:") + QTime::currentTime().toString("hh:mm:ss");
-    timeText->setText(largeTM.arg(strB));
+    timeText->setText(strSW.arg(strB));
 }
 
 void AppTester::updateTest()
 {
     btnTest->setEnabled(true);
+}
+
+void AppTester::recvIMPMsg(QTmpMap msg)
+{
+    QString str = msg.value(Qt::Key_5).toString();
+    QVariantMap tmp;
+    tmp.insert("index", 0);
+    tmp.insert("color", int(Qt::white));
+    tmp.insert("width", 85);
+    tmp.insert("lenth", 85);
+    tmp.insert("title", tr("%1V").arg(str));
+    for (int i=0; i < 6; i++) {
+        impWave.at(i)->setTexts(tmp);
+        impWave.at(i)->update();
+    }
+    allWave->setTexts(tmp);
+    allWave->update();
 }
 
 void AppTester::recvErrMsg(QTmpMap msg)
@@ -869,7 +966,7 @@ void AppTester::recvErrMsg(QTmpMap msg)
     QStringList pp = err.split("\n");
     QString str;
     for (int i=0; i < pp.size(); i++) {
-        str.append(largeER.arg(pp.at(i)));
+        str.append(strSY.arg(pp.at(i)));
     }
     str.append("<br><\br>");
     warnText->setText(str);
@@ -880,8 +977,7 @@ void AppTester::recvTmpMsg(QTmpMap msg)
     int addr = tmpSet.value((3000 + Qt::Key_0)).toInt();
     if (!msg.value(addr + TEMPTEMP).isNull()) {
         QString temp = tr("当前") + msg.value(addr + TEMPTEMP).toString();
-
-        tempText->setText(largeTM.arg(temp));
+        tempText->setText(strSW.arg(temp));
     }
 }
 
@@ -894,25 +990,25 @@ void AppTester::recvLedMsg(QTmpMap msg)
         updateShow();
         ms.restart();
         tmpNG.clear();
-        realText->setText(judgeON.arg(tr("测试")));
+        realText->setText(strLY.arg(tr("测试")));
         int work = msg.value(Qt::Key_4).toInt();
         btnL->setChecked((work == WORKL) ? true : false);
         btnR->setChecked((work == WORKR) ? true : false);
         int back = tmpSet.value(1000 + Qt::Key_0).toInt();
         if (tmpSet.value(back + backWork).toInt() != 0)
-            workText->setText(judgeON.arg((work == WORKR) ? tr("右") : tr("左")));
+            workText->setText(strLY.arg((work == WORKR) ? tr("右") : tr("左")));
         btnHome->setEnabled(false);
         btnConf->setEnabled(false);
         btnTest->setEnabled(false);
     }
     if (c == DATAOK || c == DATANG || c == DATADC) {
-        QString str = judgeOK;
+        QString str = strLG.arg("OK");
         testQu = (c == DATADC) ? testQu : testQu + 1;
         testOK = (c != DATAOK) ? testOK : testOK + 1;
-        str = (c == DATADC) ? judgeDC.arg(tr("中断")) : str;
-        str = (c == DATANG) ? judgeNG : str;
+        str = (c == DATADC) ? strLR.arg(tr("中断")) : str;
+        str = (c == DATANG) ? strLR.arg(tr("NG")) : str;
         realText->setText(str);
-        testText->setText(largeTM.arg(tr("测试时间:%1s").arg(ms.elapsed()/1000.0)));
+        testText->setText(strSW.arg(tr("测试时间:%1s").arg(ms.elapsed()/1000.0)));
         initQuality();
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);
@@ -922,50 +1018,33 @@ void AppTester::recvLedMsg(QTmpMap msg)
 
 void AppTester::recvNewMsg(QTmpMap msg)
 {
+    tmpMap.insert("width", 2);
+    tmpMap.insert("frame", 1);
+    tmpMap.insert("shade", 1);
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int nmag = tmpSet.value(back + backNMag).toInt();
     int item = msg.value(Qt::Key_1).toInt();  // 测试项目
     int numb = msg.value(Qt::Key_2).toInt();  // 单项数量
     int work = msg.value(Qt::Key_6).toInt();  // 工位
-
-    if (((item != 6 && (item != 2)) || (item == 2 && numb == 0x08)) && item <= 0x0F) {
-        for (int i=0; i < tmpView.size(); i++) {
-            QTmpMap tmp = tmpView.at(i);
-            int pn = tmp.value(Qt::Key_1).toInt();
-            int pc = tmp.value(Qt::Key_2).toInt();
-            if (pn == item && pc == numb) {
-                if (!msg.value(Qt::Key_3).isNull()) {  // 测试结果
-                    int row = tmp.value(Qt::Key_0).toInt();
-                    QString str = msg.value(Qt::Key_3).toString();
-                    mView->item(row, 2)->setText(str);
-                }
-                if (!msg.value(Qt::Key_4).isNull()) {  // 测试判定
-                    int row = tmp.value(Qt::Key_0).toInt();
-                    QString str = msg.value(Qt::Key_4).toString();
-                    QColor brush = QColor((str == "OK") ? Qt::green : Qt::red);
-                    mView->item(row, 3)->setText(str);
-                    mView->item(row, 3)->setForeground(QBrush(brush));
-                    if (str != "OK")
-                        tmpNG.insert(item, "1");
-                }
-            }
-        }
-    }
-    if (item == 2 && numb < 3 && nmag == 0) {  // 更新反嵌结果
+    if (item == nSetMAG && numb < 3 && nmag == 0) {  // 更新反嵌结果
         if (!msg.value(Qt::Key_3).isNull()) {
             QString str = msg.value(Qt::Key_3).toString();
-            magText.at(numb*3 + 2)->setText(largeTM.arg(tr("差积: ") + str));
+            magText.at(numb*3 + 2)->setText(strSW.arg(tr("差积: ") + str));
         }
         if (!msg.value(Qt::Key_4).isNull()) {
             QString str = msg.value(Qt::Key_4).toString();
             QStringList ws = tmpStr.split(" ");
             if (ws.size() > 200) {
                 ws.removeFirst();
-                QVector<double> y(MAG_SIZE);
+                QStringList mPoint;
                 for (int i=0; i < qMin(MAG_SIZE, ws.size()); i++) {
-                    y[i] = ws.at(i).toInt() * 100 / 256;
+                    double p  = ws.at(i).toInt() * 100 / 256;
+                    mPoint.append(QString::number(p));
                 }
-                magWave.at(numb)->setWave(y, str == "OK" ? 0x00 : 0x10);
+                tmpMap.insert("index", 0);
+                tmpMap.insert("color", str == "OK" ? int(Qt::green) : int(Qt::red));
+                tmpMap.insert("point", mPoint);
+                magWave.at(numb)->setLines(tmpMap);
                 magWave.at(numb)->update();
             }
             if (str != "OK")
@@ -975,20 +1054,20 @@ void AppTester::recvNewMsg(QTmpMap msg)
             tmpStr = msg.value(Qt::Key_5).toString();
         }
     }
-    if (item == 6 && numb < 6) {  // 更新匝间结果
+    if (item == nSetIMP && numb < 6) {  // 更新匝间结果
         if (!msg.value(Qt::Key_3).isNull()) {
             QString str = msg.value(Qt::Key_3).toString();
             QStringList imp = str.split(",");
             for (int i=0; i < imp.size(); i++) {
                 QStringList pp = QString(imp.at(i)).split(":");
                 if (i == 0)
-                    impText.at(numb*5 + 1 + i)->setText(largeTM.arg(tr("面积: ") + pp.last()));
+                    impText.at(numb*5 + 1 + i)->setText(strSW.arg(tr("面积: ") + pp.last()));
                 if (i == 1)
-                    impText.at(numb*5 + 1 + i)->setText(largeTM.arg(tr("差积: ") + pp.last()));
+                    impText.at(numb*5 + 1 + i)->setText(strSW.arg(tr("差积: ") + pp.last()));
                 if (i == 2)
-                    impText.at(numb*5 + 1 + i)->setText(largeTM.arg(tr("电晕: ") + pp.last()));
+                    impText.at(numb*5 + 1 + i)->setText(strSW.arg(tr("电晕: ") + pp.last()));
                 if (i == 3)
-                    impText.at(numb*5 + 1 + i)->setText(largeTM.arg(tr("相位: ") + pp.last()));
+                    impText.at(numb*5 + 1 + i)->setText(strSW.arg(tr("相位: ") + pp.last()));
             }
         }
         if (!msg.value(Qt::Key_4).isNull()) {
@@ -999,23 +1078,60 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 int addr = tmpSet.value(4000 + Qt::Key_6).toInt() + CACHEIMP;  // 匝间配置地址
                 int from = tmpSet.value(addr + CACHEIMP*FROMIMP1 + numb).toInt();
                 int stop = tmpSet.value(addr + CACHEIMP*STOPIMP1 + numb).toInt();
-                int wave = qMax(50, stop - from);
                 int wimp = tmpSet.value(4000 + Qt::Key_H).toInt();  // 匝间标准波形地址
-                QVector<double> ty(wave), sy(wave);
+                QStringList mp1, mp0;
                 int ss = (work == 0x13) ? 0 : 1;
                 for (int i=from; i < qMin(stop, ws.size()); i++) {
-                    ty[i-from] = ws.at(i).toInt() * 100 / 1024;
-                    sy[i-from] = tmpSet.value(wimp + IMP_SIZE*(numb*2 + ss) + i).toInt()*100/1024;
+                    double p1 = ws.at(i).toInt() * 100.0 / 1024;
+                    mp1.append(QString::number(p1));
+                    double p2 = tmpSet.value(wimp + IMP_SIZE*(numb*2 + ss) + i).toInt()*100.0/1024;
+                    mp0.append(QString::number(p2));
                 }
-                impWave.at(numb)->setWave(sy, 1);
-                impWave.at(numb)->setWave(ty, str == "OK" ? 0x00 : 0x10);
+                tmpMap.insert("index", 0);
+                tmpMap.insert("color", int(Qt::white));
+                tmpMap.insert("point", mp0);
+                impWave.at(numb)->setLines(tmpMap);
+                allWave->setLines(tmpMap);
+                tmpMap.insert("index", 1);
+                tmpMap.insert("point", mp1);
+                tmpMap.insert("color", str == "OK" ? int(Qt::green) : int(Qt::red));
+                impWave.at(numb)->setLines(tmpMap);
+                allWave->setLines(tmpMap);
                 impWave.at(numb)->update();
+                allWave->update();
             }
             if (str != "OK")
                 tmpNG.insert(item, "1");
         }
         if (!msg.value(Qt::Key_5).isNull()) {
             tmpStr = msg.value(Qt::Key_5).toString();
+        }
+    }
+    if (item <= 0x0F) {
+        for (int i=0; i < tmpView.size(); i++) {
+            QTmpMap tmp = tmpView.at(i);
+            int pn = tmp.value(Qt::Key_1).toInt();
+            int pc = tmp.value(Qt::Key_2).toInt();
+            numb = (item == nSetMAG && numb < 0x03) ? 0 : numb;
+            numb = (item == nSetIMP && numb < 0x06) ? 0 : numb;
+            if (pn == item && pc == numb) {
+                if (!msg.value(Qt::Key_3).isNull()) {  // 测试结果
+                    int row = tmp.value(Qt::Key_0).toInt();
+                    QString str = msg.value(Qt::Key_3).toString();
+                    mView->item(row, 2)->setText(str);
+                }
+                if (!msg.value(Qt::Key_4).isNull()) {  // 测试判定
+                    int row = tmp.value(Qt::Key_0).toInt();
+                    QString str = msg.value(Qt::Key_4).toString();
+                    QString pre = mView->item(row, 3)->text();
+                    str = (pre == "NG") ? pre : str;
+                    QColor brush = QColor((str == "OK") ? Qt::green : Qt::red);
+                    mView->item(row, 3)->setText(str);
+                    mView->item(row, 3)->setForeground(QBrush(brush));
+                    if (str != "OK")
+                        tmpNG.insert(item, "1");
+                }
+            }
         }
     }
     if (item == 6021) {  // 空载/负载/反电势波形
@@ -1025,11 +1141,8 @@ void AppTester::recvNewMsg(QTmpMap msg)
             return;
         int index = ws.at(0).toInt();
         ws.removeFirst();
-        QVariantMap tmp;
-        tmp.insert("width", 2);
-        tmp.insert("index", index);
-        tmp.insert("frame", 0);
-        tmp.insert("shade", 1);
+        tmpMap.insert("index", index);
+        tmpMap.insert("frame", 0);
         QList<int> cc;
         cc << int(Qt::cyan) << int(Qt::yellow) << int(Qt::green);
         if (index < 3) {  // 反电动势波形
@@ -1039,9 +1152,9 @@ void AppTester::recvNewMsg(QTmpMap msg)
             for (int t=0; t < ws.size(); t++) {
                 mPoint.append(QString::number(((ws.at(t).toInt() - 128) * wbmf + 128) / 2.56));
             }
-            tmp.insert("color", cc.at(index));
-            tmp.insert("point", mPoint);
-            bWave->setLines(tmp);
+            tmpMap.insert("color", cc.at(index));
+            tmpMap.insert("point", mPoint);
+            bWave->setLines(tmpMap);
             bWave->update();
         } else {  // 空载/负载波形
             QStringList mPoint;
@@ -1049,12 +1162,76 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 int p = ws.at(t).toInt() * 30 / 256 + 16 * ((5 - index) * 2 + 1) - 10;
                 mPoint.append(QString::number(p));
             }
-            tmp.insert("color", cc.at(index%3));
-            tmp.insert("point", mPoint);
-            hWave->setLines(tmp);
+            tmpMap.insert("color", cc.at(index%3));
+            tmpMap.insert("point", mPoint);
+            hWave->setLines(tmpMap);
             hWave->update();
         }
     }
+    if (item == 6037) {
+        QString dat = msg.value(Qt::Key_5).toString();
+        quint32 hex = dat.toInt();
+        if (!aFrame->isHidden()) {
+            if (hex && XX20) {
+                if (!btnM->isChecked()) {
+                    btnM->setChecked(true);
+                    tmpMap.insert("enum", Qt::Key_View);
+                    tmpMap.insert("text", QString("6086 1"));
+                    emit sendAppMap(tmpMap);
+                    tmpMap.clear();
+                    btnL->setEnabled(false);
+                    btnR->setEnabled(false);
+                    btnHome->setEnabled(false);
+                    btnConf->setEnabled(false);
+                    btnTest->setEnabled(false);
+                    updateWave();
+                }
+            } else {
+                if (!btnA->isChecked()) {
+                    btnA->setChecked(true);
+                    tmpMap.insert("enum", Qt::Key_View);
+                    tmpMap.insert("text", QString("6086 0"));
+                    emit sendAppMap(tmpMap);
+                    tmpMap.insert("text", QString("6008"));
+                    emit sendAppMap(tmpMap);
+                    tmpMap.clear();
+                    btnL->setEnabled(true);
+                    btnR->setEnabled(true);
+                    btnHome->setEnabled(true);
+                    btnConf->setEnabled(true);
+                    btnTest->setEnabled(true);
+                    initSettings();
+                }
+            }
+        }
+    }
+    if (item == 6042) {
+        QString str = msg.value(Qt::Key_5).toString();
+        QStringList ws = str.split(" ");
+        if (ws.size() > 200) {
+            int numb = ws.at(0).toInt();
+            ws.removeFirst();
+            int addr = tmpSet.value(4000 + Qt::Key_6).toInt() + CACHEIMP;  // 匝间配置地址
+            int from = tmpSet.value(addr + CACHEIMP*FROMIMP1 + numb).toInt();
+            int stop = tmpSet.value(addr + CACHEIMP*STOPIMP1 + numb).toInt();
+            QStringList mPoint;
+            for (int i=from; i < qMin(stop, ws.size()); i++) {
+                double p = ws.at(i).toInt() * 100 / 1024;
+                mPoint.append(QString::number(p));
+            }
+            tmpMap.insert("index", 0);
+            tmpMap.insert("point", mPoint);
+            tmpMap.insert("color", int(Qt::green));
+            impWave.at(numb)->setLines(tmpMap);
+            allWave->setLines(tmpMap);
+            impWave.at(numb)->update();
+            allWave->update();
+        }
+    }
+    if (item == 6087) {  // 匝间电压
+        recvIMPMsg(msg);
+    }
+    tmpMap.clear();
 }
 
 void AppTester::recvAppMsg(QTmpMap msg)
@@ -1066,7 +1243,7 @@ void AppTester::recvAppMsg(QTmpMap msg)
         addr = tmpSet.value(3000 + Qt::Key_0).toInt();  // 临时参数地址
         if (!msg.value(addr + TEMPCODE).isNull()) {
             QString str = tr("当前编码:%1").arg(msg.value(addr + TEMPCODE).toString());
-            codeText->setText(largeHD.arg(str));
+            codeText->setText(strMY.arg(str));
         }
         break;
     case Qt::Key_Shop:
@@ -1082,9 +1259,9 @@ void AppTester::recvAppMsg(QTmpMap msg)
         break;
     case Qt::Key_WLAN:
         if (msg.value(Qt::Key_1).toInt() == 0) {
-            signText->setText(largeEN.arg(tr("网络状态:未连接")));
+            signText->setText(strSG.arg(tr("网络状态:未连接")));
         } else {
-            signText->setText(largeTM.arg(tr("网络状态:%1%").arg(msg.value(Qt::Key_2).toInt())));
+            signText->setText(strSW.arg(tr("网络状态:%1%").arg(msg.value(Qt::Key_2).toInt())));
         }
         break;
     case Qt::Key_Word:

@@ -22,28 +22,18 @@
 #include <QRadioButton>
 
 #include "main.h"
+#include "appsignin.h"
 #include "appsystem.h"
 #include "apppermit.h"
-#include "boxqlabel.h"
+#include "appioctrl.h"
 #include "boxqimage.h"
 #include "sqlimport.h"
-#include "appsignin.h"
 #include "typconfig.h"
 #include "typsetdcr.h"
 #include "typsetmag.h"
 #include "typsetinr.h"
 #include "typsetacw.h"
 #include "typsetimp.h"
-
-const QString largeTM = "<p style='font-size:11pt;color:#FFFFFF;' align='left'>&nbsp;%1</p>";
-const QString largeHD = "<p style='font-size:18pt;color:#FFFF00;' align='left'>&nbsp;%1</p>";
-const QString titleAP = "<p style='font-size:20pt;color:#0367E0;' align='center'>%1</p>";
-const QString largeEN = "<p style='font-size:11pt;color:#666666;' align='left'>&nbsp;%1</p>";
-const QString largeER = "<p style='font-size:13pt;color:#FFFF00;' align='center'>%1</p>";
-const QString judgeOK = "<p style='font-size:72pt;color:#00FF00;'align='center'><b>OK</b></p>";
-const QString judgeNG = "<p style='font-size:72pt;color:#FF0000;'align='center'><b>NG</b></p>";
-const QString judgeON = "<p style='font-size:72pt;color:#FFFF00;'align='center'><b>%1</b></p>";
-const QString judgeDC = "<p style='font-size:72pt;color:#FF0000;'align='center'><b>%1</b></p>";
 
 class AppTester : public QWidget
 {
@@ -66,6 +56,7 @@ private slots:
     void initWaveBMF();
     void initWaveHAL();
     void initTypeBar();
+    void initWaveAll();
     void initButtonBar();
     void initHistogram();
     void initWireColor();
@@ -80,14 +71,18 @@ private slots:
     void initSetHAL();
     void initSetLOD();
     void initSetBMF();
+    void insertItem(int item, int numb);
     void initQuality();
     void clickTest();
     void clickStop();
+    void clickWave();
     void clickReset();
     void clickButton();
+    void updateWave();
     void updateShow();
     void updateTime();
     void updateTest();
+    void recvIMPMsg(QTmpMap msg);
     void recvErrMsg(QTmpMap msg);
     void recvTmpMsg(QTmpMap msg);
     void recvLedMsg(QTmpMap msg);
@@ -101,9 +96,15 @@ private:
     QVBoxLayout *blayout;
     QPushButton *btnTest;
     QPushButton *btnZero;
+    QRadioButton *btnL;
+    QRadioButton *btnR;
+    QRadioButton *btnA;
+    QRadioButton *btnM;
     QFrame *wFrame;
-    QList<BoxQLabel*> magWave;
-    QList<BoxQLabel*> impWave;
+    QFrame *aFrame;
+    BoxQImage *allWave;
+    QList<BoxQImage*> magWave;
+    QList<BoxQImage*> impWave;
     QList<QLabel*> magText;
     QList<QLabel*> impText;
     QList<QLabel*> colors;
@@ -123,8 +124,6 @@ private:
     quint32 testOK;
     quint32 testQu;
     BoxQLabel *rate;
-    QRadioButton *btnL;
-    QRadioButton *btnR;
 
     QPushButton *btnHome;
     QPushButton *btnConf;
@@ -142,6 +141,7 @@ private:
     QTmpMap tmpSave;
     QTmpMap tmpItem;
     QTmpMap tmpParm;
+    QVariantMap tmpMap;
 };
 
 #endif // APPTESTER_H

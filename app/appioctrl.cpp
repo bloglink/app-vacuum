@@ -83,8 +83,8 @@ void AppIoCtrl::readButton()
 
 void AppIoCtrl::recvNewMsg(QTmpMap msg)
 {
-    int cmd = msg.value(Qt::Key_2).toInt();
-    QString dat = msg.value(Qt::Key_1).toString();
+    int cmd = msg.value(Qt::Key_1).toInt();
+    QString dat = msg.value(Qt::Key_5).toString();
     if (cmd == 6037) {
         quint32 hex = dat.toInt();
         for (int i=0; i < 24; i++) {

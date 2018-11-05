@@ -121,17 +121,13 @@ void TypSetAcw::initSettings()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int show = tmpSet.value(back + backVacu).toInt();
     BoxDouble *volt = new BoxDouble;
     volt->setMaxinum(vmax);
     volt->setMininum(300);
     volt->setDecimals(0);
     view->setItemDelegateForColumn(VOLTACW1, volt);
-    if (mode != 1) { // 非真空模式
-        vacuoBox->setChecked(false);
-        vacuoBox->hide();
-    } else {
-        vacuoBox->show();
-    }
+    vacuoBox->setVisible((mode == 1 && show == 1) ? true : false);
     isInit = (this->isHidden()) ? false : true;
 }
 

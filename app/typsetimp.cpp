@@ -96,7 +96,24 @@ void TypSetImp::initButtonBar()
     vacuoBox = new QCheckBox(tr("真空测试"), this);
     connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
     blayout->addWidget(vacuoBox);
+
+    earthBox = new QCheckBox(tr("接地测试"), this);
+    connect(earthBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
+    blayout->addWidget(earthBox);
+
+    powerBox = new QCheckBox(tr("放电测试"), this);
+    connect(powerBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
+    blayout->addWidget(powerBox);
+
     blayout->addStretch();
+
+    blayout->addWidget(new QLabel(tr("缓升步长(V)"), this));
+    stepBox = new QSpinBox(this);
+    stepBox->setFixedSize(70, 40);
+    stepBox->setMinimum(10);
+    stepBox->setMaximum(3000);
+    blayout->addWidget(stepBox);
+
 
     btnWorkL = new QRadioButton(this);
     btnWorkL->setChecked(true);
@@ -111,31 +128,31 @@ void TypSetImp::initButtonBar()
 
     btnWaveS = new QPushButton(this);
     btnWaveS->setText(tr("采集"));
-    btnWaveS->setMinimumSize(97, 40);
+    btnWaveS->setMinimumSize(90, 40);
     connect(btnWaveS, SIGNAL(clicked(bool)), this, SLOT(sample()));
     blayout->addWidget(btnWaveS);
 
     btnWaveA = new QPushButton(this);
     btnWaveA->setText(tr("添加样品"));
-    btnWaveA->setMinimumSize(97, 40);
+    btnWaveA->setMinimumSize(90, 40);
     connect(btnWaveA, SIGNAL(clicked(bool)), this, SLOT(sampleAdd()));
     blayout->addWidget(btnWaveA);
 
     btnWaveD = new QPushButton(this);
     btnWaveD->setText(tr("取消样品"));
-    btnWaveD->setMinimumSize(97, 40);
+    btnWaveD->setMinimumSize(90, 40);
     connect(btnWaveD, SIGNAL(clicked(bool)), this, SLOT(sampleDel()));
     blayout->addWidget(btnWaveD);
 
     btnWaveC = new QPushButton(this);
     btnWaveC->setText(tr("完成采集"));
-    btnWaveC->setMinimumSize(97, 40);
+    btnWaveC->setMinimumSize(90, 40);
     connect(btnWaveC, SIGNAL(clicked(bool)), this, SLOT(sampleCalc()));
     blayout->addWidget(btnWaveC);
 
     QPushButton *btnSave = new QPushButton(this);
     btnSave->setText(tr("保存"));
-    btnSave->setMinimumSize(97, 40);
+    btnSave->setMinimumSize(90, 40);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
     blayout->addWidget(btnSave);
 
@@ -185,9 +202,38 @@ void TypSetImp::initItemDelegate()
 
 void TypSetImp::initSettings()
 {
+    int setuser = tmpSet.value(DataUser).toInt();
+    bool issupper = (tmpSet.value(setuser).toString() == "supper") ? true : false;
     int addr = tmpSet.value(4000 + Qt::Key_6).toInt();
-    vacuoBox->setChecked(tmpSet.value(addr).toInt() == 0 ? false : true);
-
+    vacuoBox->setChecked(tmpSet.value(addr + 0x00).toInt() == 0 ? false : true);
+    earthBox->setChecked(tmpSet.value(addr + 0x01).toInt() == 0 ? false : true);
+    powerBox->setChecked(tmpSet.value(addr + 0x02).toInt() == 0 ? false : true);
+    stepBox->setValue(tmpSet.value(addr + 0x03).toInt());
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int work = tmpSet.value(back + backWork).toInt();  // 工位数量
+    int grnd = tmpSet.value(back + backGrnd).toInt();  // 接地测试
+    BoxDouble *volt = new BoxDouble;
+    volt->setMaxinum(vmax);
+    volt->setMininum(300);
+    volt->setDecimals(0);
+    view->setItemDelegateForColumn(VOLTIMP1, volt);
+    vacuoBox->setVisible(mode == 1 ? true : false);
+    earthBox->setVisible(grnd == 1 ? true : false);
+    earthBox->setEnabled((grnd == 1 && !issupper) ? false : true);
+    powerBox->setVisible(grnd == 1 ? true : false);
+    btnWorkL->setVisible(work == 2 ? true : false);
+    btnWorkR->setVisible(work == 2 ? true : false);
+    if (grnd == 1 && !issupper) {
+        view->hideColumn(CHECKIMP);
+        view->hideColumn(PORTIMP1);
+        view->hideColumn(PORTIMP2);
+    } else {
+        view->showColumn(CHECKIMP);
+        view->showColumn(PORTIMP1);
+        view->showColumn(PORTIMP2);
+    }
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_6)).toInt() + CACHEIMP;
         for (int i=0; i < mView->rowCount(); i++) {
@@ -205,28 +251,6 @@ void TypSetImp::initSettings()
             mView->setData(mView->index(i, t), str, Qt::DisplayRole);
         }
     }
-    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
-    int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
-    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    int work = tmpSet.value(back + backWork).toInt();
-    BoxDouble *volt = new BoxDouble;
-    volt->setMaxinum(vmax);
-    volt->setMininum(300);
-    volt->setDecimals(0);
-    view->setItemDelegateForColumn(VOLTIMP1, volt);
-    if (mode != 1) { // 非真空模式
-        vacuoBox->setChecked(false);
-        vacuoBox->hide();
-    } else {
-        vacuoBox->show();
-    }
-    if (work != 2) {  // 单工位
-        btnWorkL->hide();
-        btnWorkR->hide();
-    } else {
-        btnWorkL->show();
-        btnWorkR->show();
-    }
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -235,7 +259,10 @@ void TypSetImp::saveSettings()
     confSettings();
     int addr = tmpSet.value(4000 + Qt::Key_6).toInt();  // 匝间配置地址
     int wimp = tmpSet.value(4000 + Qt::Key_H).toInt();  // 波形存储地址
-    tmpMsg.insert(addr + 0, QString::number(vacuoBox->isChecked() ? 1 : 0));
+    tmpMsg.insert(addr + 0x00, QString::number(vacuoBox->isChecked() ? 1 : 0));
+    tmpMsg.insert(addr + 0x01, QString::number(earthBox->isChecked() ? 1 : 0));
+    tmpMsg.insert(addr + 0x02, QString::number(powerBox->isChecked() ? 1 : 0));
+    tmpMsg.insert(addr + 0x03, QString::number(stepBox->value()));
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_6)).toInt() + CACHEIMP;
         for (int i=0; i < mView->rowCount(); i++) {
@@ -278,6 +305,9 @@ void TypSetImp::confSettings()
     QStringList tmp;
     QStringList wl, wr;
     tmpMap.insert("vacuo", QString::number(vacuoBox->isChecked() ? 1 : 0));
+    tmpMap.insert("earth", QString::number(earthBox->isChecked() ? 1 : 0));
+    tmpMap.insert("power", QString::number(powerBox->isChecked() ? 1 : 0));
+    tmpMap.insert("step", QString::number(stepBox->value()));
     for (int t=0; t < names.size(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());
@@ -380,6 +410,8 @@ void TypSetImp::swapWave()
             waves.at(i)->update();
         }
     }
+    btnWorkL->setEnabled(true);
+    btnWorkR->setEnabled(true);
     btnWaveS->setEnabled(true);
     btnWaveA->setEnabled(false);
     btnWaveD->setEnabled(false);
@@ -503,6 +535,8 @@ void TypSetImp::sampleOver()
 
 void TypSetImp::sampleWait()
 {
+    btnWorkL->setEnabled(true);
+    btnWorkR->setEnabled(true);
     btnWaveS->setEnabled(true);
 }
 
@@ -597,8 +631,8 @@ void TypSetImp::recvWave(QStringList ws)
 
 void TypSetImp::recvNewMsg(QTmpMap msg)
 {
-    int cmd = msg.value(Qt::Key_2).toInt();
-    QString dat = msg.value(Qt::Key_1).toString();
+    int cmd = msg.value(Qt::Key_1).toInt();
+    QString dat = msg.value(Qt::Key_5).toString();
     QStringList ws = dat.split(" ");
     if (cmd == 6055)
         recvParm(dat);
@@ -659,6 +693,7 @@ void TypSetImp::showEvent(QShowEvent *e)
     tmpMap.insert("text", QString("6068 %1").arg(0));
     emit sendAppMap(tmpMap);
     tmpMap.clear();
+    this->setFocus();
     e->accept();
 }
 

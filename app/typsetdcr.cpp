@@ -384,8 +384,8 @@ void TypSetDcr::autoCal()
             rmin = qMin(2000.0, rmin);
             rmax = qMin(2000.0, rmax);
         }
-        mView->item(i, UPPERDCR)->setText(QString::number(rmax, 'g', 5));
-        mView->item(i, LOWERDCR)->setText(QString::number(rmin, 'g', 5));
+        mView->item(i, UPPERDCR)->setText(QString::number(rmax, 'g', rmax < 1 ? 3 : 4));
+        mView->item(i, LOWERDCR)->setText(QString::number(rmin, 'g', rmax < 1 ? 3 : 4));
     }
 }
 

@@ -51,7 +51,7 @@ void TypSetMag::initWaveBar()
         box->setColumnStretch(0, 1);
         box->setSpacing(12);
 
-        BoxQLabel *wave = new BoxQLabel(this);
+        BoxQImage *wave = new BoxQImage(this);
         box->addWidget(wave, 0, 0, 4, 1);
         waves.append(wave);
 
@@ -162,14 +162,22 @@ void TypSetMag::initSettings()
     for (int i=0; i < checks.size(); i++) {
         int t = tmpSet.value(addr + i).toInt();
         checks.at(i)->setChecked(t == 0 ? false : true);
+        QStringList mPoint;
         if (t != 0) {
-            QVector<double> y(MAG_SIZE);
             for (int k=0; k < MAG_SIZE; k++) {
-                y[k] = tmpSet.value(wmag + MAG_SIZE*i + k).toInt() * 100 / 256;
+                int p = tmpSet.value(wmag + MAG_SIZE*i + k).toInt() * 100 / 256;
+                mPoint.append(QString::number(p));
             }
-            waves.at(i)->setWave(y, 0);
-            waves.at(i)->update();
         }
+        QVariantMap tmp;
+        tmp.insert("width", 2);
+        tmp.insert("index", 0);
+        tmp.insert("frame", 1);
+        tmp.insert("shade", 1);
+        tmp.insert("color", int(Qt::green));
+        tmp.insert("point", mPoint);
+        waves.at(i)->setLines(tmp);
+        waves.at(i)->update();
     }
 
     addr += CACHEMAG;
@@ -370,8 +378,8 @@ void TypSetMag::recvShowEvent()
 
 void TypSetMag::recvNewMsg(QTmpMap msg)
 {
-    int cmd = msg.value(Qt::Key_2).toInt();
-    QString dat = msg.value(Qt::Key_1).toString();
+    int cmd = msg.value(Qt::Key_1).toInt();
+    QString dat = msg.value(Qt::Key_5).toString();
     QStringList ws = dat.split(" ");
     if (cmd == 6035) {  // 反嵌参数,第一位表示第几路反嵌,第45位表示面积,第6位表示频率
         int row = ws.at(0).toInt();
@@ -389,13 +397,21 @@ void TypSetMag::recvNewMsg(QTmpMap msg)
             return;
         int row = ws.at(0).toInt();
         ws.removeFirst();
-        QVector<double> y(MAG_SIZE);
         int addr = tmpSet.value(4000 + Qt::Key_G).toInt();
+        QStringList mPoint;
         for (int i=0; i < qMin(MAG_SIZE, ws.size()); i++) {
-            y[i] = ws.at(i).toInt() * 100 / 256;
+            double p  = ws.at(i).toInt() * 100.0 / 256;
+            mPoint.append(QString::number(p));
             tmpSet.insert(addr + row*MAG_SIZE + i, ws.at(i));
         }
-        waves.at(row)->setWave(y, 0);
+        QVariantMap tmp;
+        tmp.insert("width", 2);
+        tmp.insert("index", 0);
+        tmp.insert("frame", 1);
+        tmp.insert("shade", 1);
+        tmp.insert("color", int(Qt::green));
+        tmp.insert("point", mPoint);
+        waves.at(row)->setLines(tmp);
         waves.at(row)->update();
     }
 }

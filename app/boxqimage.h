@@ -23,8 +23,10 @@ public:
     explicit BoxQImage(QWidget *parent = 0);
 
 signals:
-
+    void clicked();
 public slots:
+    QList<QVariantMap> getLines();
+    QList<QVariantMap> getTexts();
     void setLines(QVariantMap msg);
     void setTexts(QVariantMap msg);
     void setGrids(QVariantMap msg);
@@ -35,6 +37,7 @@ private slots:
     void drawGrids(QPainter *painter);
     void drawBodys(QPainter *painter);
     void paintEvent(QPaintEvent *e);
+    void mousePressEvent(QMouseEvent *e);
 private:
     QList<QVariantMap> lines;
     QList<QVariantMap> texts;
