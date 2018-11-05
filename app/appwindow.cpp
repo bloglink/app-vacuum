@@ -41,6 +41,7 @@ int AppWindow::initTitle()
 #ifndef __linux__
     this->setWindowFlags(Qt::FramelessWindowHint);
 #endif
+
     char s_month[5];
     static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
     int month, day, year;
@@ -102,7 +103,7 @@ int AppWindow::initDevice()
     return Qt::Key_Away;
 }
 
-int AppWindow::  initScreen()
+int AppWindow::initScreen()
 {
     isChange = false;
     boxbar = new BoxDialog(this);
@@ -440,11 +441,13 @@ int AppWindow::initSerial()
         QString com = tmpSet.value(back + 0x20 + 0x04).toString();
         if (servoL.open(com) == Qt::Key_Meta)
             warnningString(tr("串口%1打开失败").arg(com));
+        connect(&servoL, SIGNAL(sendAppMap(QVariantMap)), this, SLOT(recvAppMap(QVariantMap)));
     }
     if (!tmpSet.value(back + 0x20 + 0x05).toString().isEmpty()) {  // 伺服右
         QString com = tmpSet.value(back + 0x20 + 0x05).toString();
         if (servoR.open(com) == Qt::Key_Meta)
             warnningString(tr("串口%1打开失败").arg(com));
+        connect(&servoR, SIGNAL(sendAppMap(QVariantMap)), this, SLOT(recvAppMap(QVariantMap)));
     }
     if (!tmpSet.value(back + 0x20 + 0x06).toString().isEmpty()) {  // PLC左
         QString com = tmpSet.value(back + 0x20 + 0x06).toString();
@@ -483,7 +486,7 @@ int AppWindow::initThread()
     QList<pClass> testBuf;
     testBuf << &AppWindow::testClearData << &AppWindow::testToolServo
             << &AppWindow::testStartSend << &AppWindow::testStartTest
-            << &AppWindow::testWaitServo;
+            << &AppWindow::testStopServo;
 
     testMap.clear();
     for (int i=0; i < testBuf.size(); i++) {
@@ -506,6 +509,9 @@ int AppWindow::initThread()
     currTask = 0;
     currTest = 0;
     station = 0x13;
+
+    loading = new QTimer(this);
+    connect(loading, SIGNAL(timeout()), this, SLOT(testWaitServo()));
 
     return Qt::Key_Away;
 }
@@ -600,10 +606,12 @@ int AppWindow::taskClearData()
     currTest = 0;
     currItem = 0;
     speed = 0;
+    speeds.clear();
     barcode.clear();
     codeShift = Qt::Key_Meta;
     taskShift = Qt::Key_Meta;
     testShift = Qt::Key_Meta;
+    tempShift = Qt::Key_Meta;
     return Qt::Key_Away;
 }
 
@@ -838,12 +846,14 @@ int AppWindow::taskResetTest()
         if (t.elapsed() - timeOut >= time*1000) {
             for (int i=0; i < taskMap.size(); i++) {
                 if (taskMap.value(i) == &AppWindow::taskCheckPlay) {
+                    taskClearData();
                     currTask = i;
                     taskShift = Qt::Key_Play;
                     station = (test == 1) ? WORKL : station;
                     station = (test == 2) ? WORKR : station;
                     station = (test == 3) ? ((station == WORKL) ? WORKR : WORKL) : station;
                     t.restart();
+                    break;
                 }
             }
         }
@@ -853,8 +863,6 @@ int AppWindow::taskResetTest()
 
 int AppWindow::taskCheckStop()
 {
-    if (currItem == 0x0C || currItem == 0x0D)
-        return Qt::Key_Away;
     int addr = tmpSet.value(3000 + Qt::Key_0).toInt();  // 综合测试结果
     int play = taskMap.values().indexOf(&AppWindow::taskCheckPlay);
     int save = taskMap.values().indexOf(&AppWindow::taskStartSave);
@@ -897,28 +905,26 @@ int AppWindow::testToolServo()
 {
     int ret = Qt::Key_Away;
     if (currItem == 0x0C) { // 负载
-        int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
-        int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
         int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         double from = tmpSet.value(addr + 0x09).toDouble();
-        double temp = tmpSet.value(addr + 0x13).toDouble();
-        double comp = tmpSet.value(addr + 0x23).toDouble();
-        temp = qMax(temp-comp, 0.0);
         tmpMap.insert("mode", 1);  // 转矩模式
         tmpMap.insert("turn", 0);
-        tmpMap.insert("data", (mode == 3) ? temp*1368 : temp*2500);
+        tmpMap.insert("data", 0);
         tmpMap.insert("from", from);
-        if (station == 0x13) {
+        if (station == WORKL) {
             if (from != 0)
                 servoL.test();
             ret = mbdktL.test(tmpMap);
-
         } else {
             if (from != 0)
                 servoR.test();
             ret = mbdktR.test(tmpMap);
         }
         tmpMap.clear();
+        if (ret == Qt::Key_Away) {
+            int time = tmpSet.value(addr + CACHELOD*0x02).toDouble() * 1000;
+            loading->start(time);
+        }
     }
     if (currItem == 0x0E) {  // 反电动势
         int addr = tmpSet.value(4000 + Qt::Key_E).toInt();  // 反电动势配置地址
@@ -946,6 +952,37 @@ int AppWindow::testToolServo()
 }
 
 int AppWindow::testWaitServo()
+{
+    int ret = Qt::Key_Away;
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
+    double from = tmpSet.value(addr + 0x09).toDouble();
+    double temp = tmpSet.value(addr + 0x13).toDouble();
+    double comp = tmpSet.value(addr + 0x23).toDouble();
+    temp = qMax(temp-comp, 0.0);
+    tmpMap.insert("mode", 1);  // 转矩模式
+    tmpMap.insert("turn", 0);
+    tmpMap.insert("data", (mode == 3) ? temp*1368 : temp*2500);
+    tmpMap.insert("from", from);
+    if (station == WORKL) {
+        if (from != 0)
+            servoL.test();
+        ret = mbdktL.test(tmpMap);
+    } else {
+        if (from != 0)
+            servoR.test();
+        ret = mbdktR.test(tmpMap);
+    }
+    tmpMap.clear();
+    if (ret == Qt::Key_Away)
+        loading->stop();
+    else
+        loading->start(10);
+    return ret;
+}
+
+int AppWindow::testStopServo()
 {
     int ret = Qt::Key_Away;
     if (currItem == 0x0C) { // 负载
@@ -1357,12 +1394,10 @@ void AppWindow::recvAppPrep()
         wait(100);
         sendUdpStr(tr("6073 %1").arg(driv).toUtf8());  // 内外置接触器切换
         wait(100);
-        if (driv == 1) {
-            int stop = (driv == 1) ? 1 : 2;
-            int work = (station == WORKL) ? 1 : 2;
-            sendUdpStr(QString("6074 %1 %2 3 %3 %4").arg(stop).arg(work).arg(3).arg(0).toUtf8());
-            wait(100);
-        }
+        int stop = (driv == 1) ? 1 : 2;
+        int work = (station == WORKL) ? 1 : 2;
+        sendUdpStr(QString("6074 %1 %2 3 %3 %4").arg(stop).arg(work).arg(3).arg(0).toUtf8());
+        wait(100);
     }
     if (mode == 1) {  // 真空模式
         QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
@@ -1546,6 +1581,10 @@ void AppWindow::recvAppMsg(QTmpMap msg)
         }
         break;
     case Qt::Key_Stop:  // 停止测试
+        if (currItem == 0x0C || currItem == 0x0D) {
+            tempShift = Qt::Key_Away;
+            break;
+        }
         taskCheckStop();
         if (!msg.value(Qt::Key_1).isNull()) {
             sendUdpStr("6081");
@@ -1674,6 +1713,8 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         break;
     case 6007:  // 单项测试完成
         testShift = Qt::Key_Away;
+        if (tempShift == Qt::Key_Away)
+            taskCheckStop();
         break;
     case 6015:  // 空载/负载启动完成
         break;
@@ -1751,6 +1792,10 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         taskShift = Qt::Key_Play;
         break;
     case 6061:  // 真空上传停止信号
+        if (currItem == 0x0C || currItem == 0x0D) {
+            tempShift = Qt::Key_Away;
+            break;
+        }
         taskCheckStop();
         break;
     case 6083:
@@ -1802,9 +1847,9 @@ void AppWindow::recvNewMsg(QString dat)
         QString temp = dom.text();
         if (dom.nodeName() == "Test_3") {
             if (xml == "Test_Data_Result") {
-                timeRsl = ((currItem == 0x01) && (!temp.contains("Ω")) ? 0x08 : timeRsl);  // 电阻平衡
+                timeRsl = ((currItem == 0x01) && (!temp.contains("Ω")) ? 0x08 : timeRsl);
             }
-            timeRsl = ((currItem == 0x02) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;  // 反嵌转向
+            timeRsl = ((currItem == 0x02) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == 0x02) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == 0x02) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
 
@@ -1829,16 +1874,15 @@ void AppWindow::recvNewMsg(QString dat)
                     temp = reals.last();  // 结果在最后
                 }
                 if (currItem == 0x06) {
-                    double area1 = tmpSet.value(conf + CACHEIMP + CACHEIMP*AREAIMP1 + timeRsl).toDouble();
-                    double diff1 = tmpSet.value(conf + CACHEIMP + CACHEIMP*DIFFIMP1 + timeRsl).toDouble();
-                    double sflut = tmpSet.value(conf + CACHEIMP + CACHEIMP*FLUTIMP1 + timeRsl).toDouble();
-                    double phase = tmpSet.value(conf + CACHEIMP + CACHEIMP*PHSEIMP1 + timeRsl).toDouble();
                     temp = temp.remove(tr("面积:"));
                     temp = temp.remove(tr("差积:"));
                     temp = temp.remove(tr("电晕:"));
                     temp = temp.remove(tr("相位:"));
                     QList<double> parm;
-                    parm << area1 << diff1 << sflut << phase;
+                    parm << tmpSet.value(conf + CACHEIMP + CACHEIMP*AREAIMP1 + timeRsl).toDouble()
+                         << tmpSet.value(conf + CACHEIMP + CACHEIMP*DIFFIMP1 + timeRsl).toDouble()
+                         << tmpSet.value(conf + CACHEIMP + CACHEIMP*FLUTIMP1 + timeRsl).toDouble()
+                         << tmpSet.value(conf + CACHEIMP + CACHEIMP*PHSEIMP1 + timeRsl).toDouble();
                     QStringList reals = temp.split(",");
                     for (int numb=0; numb < qMin(parm.size(), reals.size()); numb++) {
                         volatile double rr = reals.at(numb).toDouble();
@@ -1919,59 +1963,59 @@ void AppWindow::calcHALL(QString msg)
         for (int i=0; i < 3; i++) {
             int tst = tmpSet.value(hall + CACHEHAL + i).toInt();  // 是否显示
             if (tst != 0) {
-                hhh << (tmp2.at(100 + i*20).toDouble()*15.28/4095) * kh - bh;
-                lll << (tmp2.at(101 + i*20).toDouble()*15.28/4095) * kl - bl;
-                ddd << (tmp2.at(21 + i*4).toDouble()/1000) * kd - bd;
-                fff << (tmp2.at(20 + i*4).toDouble()/1000) * kf - bf;
+                hhh << qMax(0.0, (tmp2.at(100 + i*20).toDouble()*15.28/4095) * kh - bh);
+                lll << qMax(0.0, (tmp2.at(101 + i*20).toDouble()*15.28/4095) * kl - bl);
+                ddd << qMax(0.0, (tmp2.at(21 + i*4).toDouble()/1000) * kd - bd);
+                fff << qMax(0.0, (tmp2.at(20 + i*4).toDouble()/1000) * kf - bf);
             }
         }
-        for (int i=0; i < 4; i++) {
-            double vmax = tmpSet.value(hall + i*2 + 0x00).toDouble();
-            double vmin = tmpSet.value(hall + i*2 + 0x01).toDouble();
+        for (int numb=0; numb < 4; numb++) {
+            double vmax = tmpSet.value(hall + numb*2 + 0x00).toDouble();
+            double vmin = tmpSet.value(hall + numb*2 + 0x01).toDouble();
             int r = DATAOK;
             QStringList reals;
             if (vmax != 0) {
-                if (i == 0) {
+                if (numb == 0) {
                     for (int t=0; t < hhh.size(); t++) {
                         reals << QString::number(hhh.at(t), 'f', 2) +"V";
                         if (hhh.at(t) >= vmax || hhh.at(t) <= vmin) {
                             r = DATANG;
                         }
-                        //                        tmpDat.insert(addr + t*0x10 + i, hhh.at(t));
+                        tmpSave.insert(addr + t*0x10 + numb, hhh.at(t));
                     }
                 }
-                if (i == 1) {
+                if (numb == 1) {
                     for (int t=0; t < lll.size(); t++) {
                         reals << QString::number(lll.at(t), 'f', 2) +"V";
                         if (lll.at(t) >= vmax || lll.at(t) <= vmin) {
                             r = DATANG;
                         }
-                        //                        tmpDat.insert(addr + t*0x10 + i, lll.at(t));
+                        tmpSave.insert(addr + t*0x10 + numb, lll.at(t));
                     }
                 }
-                if (i == 2) {
+                if (numb == 2) {
                     for (int t=0; t < ddd.size(); t++) {
                         reals << QString::number(ddd.at(t), 'f', 2) +"%";
                         if (ddd.at(t) >= vmax || ddd.at(t) <= vmin) {
                             r = DATANG;
                         }
-                        //                        tmpDat.insert(addr + t*0x10 + i, ddd.at(t));
+                        tmpSave.insert(addr + t*0x10 + numb, ddd.at(t));
                     }
                 }
-                if (i == 3) {
+                if (numb == 3) {
                     for (int t=0; t < fff.size(); t++) {
                         reals << QString::number(fff.at(t), 'f', 2) +"Hz";
                         if (fff.at(t) >= vmax || fff.at(t) <= vmin) {
                             r = DATANG;
                         }
-                        //                        tmpDat.insert(addr + t*0x10 + i, fff.at(t));
+                        tmpSave.insert(addr + t*0x10 + numb, fff.at(t));
                     }
                 }
             }
             isok = (r == DATAOK) ? isok : DATANG;
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
-            tmpMsg.insert(Qt::Key_2, i);
+            tmpMsg.insert(Qt::Key_2, numb);
             tmpMsg.insert(Qt::Key_3, reals.join(","));
             tmpMsg.insert(Qt::Key_4, (r == DATAOK) ? "OK" : "NG");
             tmpMsg.insert(Qt::Key_6, station);
@@ -2016,10 +2060,37 @@ void AppWindow::calcLOAD(QString msg)
         double rpm = tmp2.at(20 + 0x03).toDouble()*60/1000/numb;  // 转速
         double ccw = tmp2.at(20 + 0x06).toDouble();  // 转向
         double ext = tmp2.at(20 + 0x09).toDouble();
-        if (from == 1) {
-            rpm = abs(speed); // 从伺服读取
-            ccw = (speed > 0) ? 0 : 1;
+        crr = qMax(0.0, crr);
+        vlt = qMax(0.0, vlt);
+        pwr = qMax(0.0, pwr);
+        icc = qMax(0.0, icc);
+        if (tempShift == Qt::Key_Away && crr < 0.1) {
+            int work = (station == WORKL) ? 1 : 2;
+            sendUdpStr(QString("6074 %1 %2 3 %3 %4").arg(5).arg(work).arg(3).arg(0).toUtf8());
         }
+        QString turn;
+        if (from == 1) {
+            double tmp = 0;
+            speeds.append(speed);
+            if (speeds.size() > 5) {
+                speeds.removeFirst();
+                for (int i=0; i < speeds.size()-2; i++) {
+                    tmp += speeds.at(i);
+                }
+                tmp = tmp / (speeds.size()-2);
+            } else {
+                tmp = speed;
+            }
+            rpm = abs(tmp);
+            ccw = (abs(tmp) < 5) ? 0: ccw;
+            ccw = (tmp < -5) ? 1 : ccw;
+            ccw = (tmp > 5) ? 2 : ccw;
+            qDebug() << "app load:" << speed;
+        }
+        turn = (ccw == 0) ? "NULL" : turn;
+        turn = (ccw == 1) ? "CCW" : turn;
+        turn = (ccw == 2) ? "CW" : turn;
+
         QList<double> reals;
         reals << crr << pwr << icc << rpm << ccw;
         for (int i=0; i < reals.size(); i++) {
@@ -2029,8 +2100,11 @@ void AppWindow::calcLOAD(QString msg)
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
             tmpMsg.insert(Qt::Key_2, i);
-            if (i == 0)
-                tmpMsg.insert(Qt::Key_3, QString::number(reals.at(i), 'f', 2) + "mA");
+            if (i == 0) {
+                QString str = QString::number(vlt, 'f', 2) + "V,";
+                str += QString::number(reals.at(i), 'f', 2) + "mA";
+                tmpMsg.insert(Qt::Key_3, str);
+            }
             if (i == 1)
                 tmpMsg.insert(Qt::Key_3, QString::number(vlt, 'f', 2) + "V");
             if (i == 2)
@@ -2038,17 +2112,18 @@ void AppWindow::calcLOAD(QString msg)
             if (i == 3)
                 tmpMsg.insert(Qt::Key_3, QString::number(reals.at(i), 'f', 0) + "rpm");
             if (i == 4)
-                tmpMsg.insert(Qt::Key_3, reals.at(i) == 0 ? "CCW" : "CW");
+                tmpMsg.insert(Qt::Key_3, turn);
             if (imax != 0) {
                 if (i == 1)
                     tmpMsg.insert(Qt::Key_3, QString::number(reals.at(i), 'f', 2) + "W");
-                if (i == 4 && reals.at(i) + 1 != imax)
+                if (i == 4 && reals.at(i) != imax)
                     r = DATANG;
                 if (i != 4 &&  (reals.at(i) >= imax || reals.at(i) <= imin))
                     r = DATANG;
             }
             if (ext != 0) {
-                //                tmpDat.insert(addr + i, reals.at(i));
+                if (imax != 0)
+                    tmpSave.insert(addr + i, reals.at(i));
                 isok = (r == DATAOK) ? isok : DATANG;
                 tmpMsg.insert(Qt::Key_4, (r == DATAOK) ? "OK" : "NG");
             }
@@ -2061,17 +2136,17 @@ void AppWindow::calcLOAD(QString msg)
 
 void AppWindow::calcBEMF(QString msg)
 {
-    int addr = tmpSet.value(3000 + Qt::Key_C).toInt();  // 反电动势结果地址
+    int addr = tmpSet.value(3000 + Qt::Key_E).toInt();  // 反电动势结果地址
     int bemf = tmpSet.value(4000 + Qt::Key_E).toInt();  // 反电动势配置地址
     QStringList tmp2 = msg.split(" ");
     if (tmp2.size() >= 30) {  // 反电动势计算
         int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x80;  // K,b值存储位置
-        double ku = tmpSet.value(back + 12).toDouble();
-        double bu = tmpSet.value(back + 13).toDouble();
-        double kv = tmpSet.value(back + 14).toDouble();
-        double bv = tmpSet.value(back + 15).toDouble();
-        double kw = tmpSet.value(back + 16).toDouble();
-        double bw = tmpSet.value(back + 17).toDouble();
+        double ku = tmpSet.value(back + 14).toDouble();
+        double bu = tmpSet.value(back + 15).toDouble();
+        double kv = tmpSet.value(back + 16).toDouble();
+        double bv = tmpSet.value(back + 17).toDouble();
+        double kw = tmpSet.value(back + 18).toDouble();
+        double bw = tmpSet.value(back + 19).toDouble();
         ku = (ku == 0) ? 1 : ku;
         kv = (kv == 0) ? 1 : kv;
         kw = (kw == 0) ? 1 : kw;
@@ -2080,72 +2155,74 @@ void AppWindow::calcBEMF(QString msg)
         QList<double> volts;
         QList<double> bemfs;
         QList<double> diffs;
-        for (int i=0; i < 5; i++) {
+        for (int numb=0; numb < 5; numb++) {
             int vr = DATAOK;
             QStringList vrs;
-            double vmax = tmpSet.value(bemf + i * 2 + 0x00).toDouble();
-            double vmin = tmpSet.value(bemf + i * 2 + 0x01).toDouble();
-            if (i == 0) {
-                for (int t=0; t < 3; t++) {
-                    volts << (tmp2.at(20 + 7 + t).toDouble() * 15.28 / 4095) * ku + bu;
-                    vrs << QString::number(volts.at(t), 'f', 2) + "V";
-                    if ((vmax != 0) && (volts.at(t) >= vmax || volts.at(t) < vmin))
+            double vmax = tmpSet.value(bemf + numb * 2 + 0x00).toDouble();
+            double vmin = tmpSet.value(bemf + numb * 2 + 0x01).toDouble();
+            if (vmax != 0) {
+                if (numb == 0) {
+                    for (int t=0; t < 3; t++) {
+                        volts << qMax(0.0, (tmp2.at(20+7+t).toDouble() * 15.28 / 4095) * ku + bu);
+                        vrs << QString::number(volts.at(t), 'f', 2) + "V";
+                        if ((vmax != 0) && (volts.at(t) >= vmax || volts.at(t) < vmin))
+                            vr = DATANG;
+                        tmpSave.insert(addr + t * 0x10 + numb, volts.at(t));
+                    }
+                }
+                if (numb == 1) {
+                    for (int t=0; t < 3; t++) {
+                        bemfs << qMax(0.0, (volts.at(t) * 1000 / stds) * kv + bv);
+                        vrs << QString::number(bemfs.at(t), 'f', 2) + "V/krpm";
+                        if ((vmax != 0) && (bemfs.at(t) >= vmax || bemfs.at(t) < vmin))
+                            vr = DATANG;
+                        tmpSave.insert(addr + t * 0x10 + numb, bemfs.at(t));
+                    }
+                }
+                if (numb == 2) {
+                    for (int t=0; t < 3; t++) {
+                        diffs << qMax(0.0, (tmp2.at(12 + t).toDouble() / 100) * kw + bw);
+                        vrs << QString::number(diffs.at(t), 'f', 1) + "°";
+                        if ((vmax != 0) && (diffs.at(t) >= vmax || diffs.at(t) < vmin))
+                            vr = DATANG;
+                        tmpSave.insert(addr + t * 0x10 + numb, diffs.at(t));
+                    }
+                }
+                if (numb == 3 && volts.size() >= 3) {
+                    double max = volts.at(0);
+                    double min = volts.at(0);
+                    double avr = 0;
+                    double tmp = 0;
+                    for (int t=0; t < volts.size(); t++) {
+                        avr += volts.at(t);
+                        max = qMax(max, volts.at(t));
+                        min = qMin(min, volts.at(t));
+                    }
+                    avr /= volts.size();
+                    if (avr != 0)
+                        tmp = (max - min) * 100 / avr;
+                    vrs << tr("%1%").arg(tmp, 0, 'g', 3);
+                    if ((vmax != 0) && (tmp >= vmax || tmp < vmin))
                         vr = DATANG;
-                    //                    tmpDat.insert(addr + t * 0x10 + i, volts.at(t));
+                    tmpSave.insert(addr + numb * 0x10, tmp);
                 }
-            }
-            if (i == 1) {
-                for (int t=0; t < 3; t++) {
-                    bemfs << (volts.at(t) * 1000 / stds) * kv + bv;
-                    vrs << QString::number(bemfs.at(t), 'f', 2) + "V/krpm";
-                    if ((vmax != 0) && (bemfs.at(t) >= vmax || bemfs.at(t) < vmin))
+                if (numb == 4) {
+                    int turn = tmp2.at(20 + 6).toInt();
+                    if (turn == 0)
+                        vrs << "NULL";
+                    if (turn == 1)
+                        vrs << "ABC";
+                    if (turn == 2)
+                        vrs << "ACB";
+                    if (turn != vmax)
                         vr = DATANG;
-                    //                    tmpDat.insert(addr + t * 0x10 + i, bemfs.at(t));
+                    tmpSave.insert(addr + numb * 0x10, vrs);
                 }
-            }
-            if (i == 2) {
-                for (int t=0; t < 3; t++) {
-                    diffs << (tmp2.at(12 + t).toDouble() / 100) * kw + bw;
-                    vrs << QString::number(diffs.at(t), 'f', 1) + "°";
-                    if ((vmax != 0) && (diffs.at(t) >= vmax || diffs.at(t) < vmin))
-                        vr = DATANG;
-                    //                    tmpDat.insert(addr + t * 0x10 + i, diffs.at(t));
-                }
-            }
-            if (i == 3 && volts.size() >= 3) {
-                double max = volts.at(0);
-                double min = volts.at(0);
-                double avr = 0;
-                double tmp = 0;
-                for (int t=0; t < volts.size(); t++) {
-                    avr += volts.at(t);
-                    max = qMax(max, volts.at(t));
-                    min = qMin(min, volts.at(t));
-                }
-                avr /= volts.size();
-                if (avr != 0)
-                    tmp = (max - min) * 100 / avr;
-                vrs << tr("%1%").arg(tmp, 0, 'g', 3);
-                if ((vmax != 0) && (tmp >= vmax || tmp < vmin))
-                    vr = DATANG;
-                //                tmpDat.insert(addr + i * 0x10, tmp);
-            }
-            if (i == 4) {
-                int turn = tmp2.at(20 + 6).toInt();
-                if (turn == 0)
-                    vrs << "NULL";
-                if (turn == 1)
-                    vrs << "ABC";
-                if (turn == 2)
-                    vrs << "ACB";
-                if (turn != vmax)
-                    vr = DATANG;
-                //                tmpDat.insert(bemf + i * 0x10, vrs);
             }
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
             tmpMsg.insert(Qt::Key_6, station);
-            tmpMsg.insert(Qt::Key_2, i);
+            tmpMsg.insert(Qt::Key_2, numb);
             tmpMsg.insert(Qt::Key_3, vrs.join("  "));
             if (ext != 0) {
                 isok = (vr == DATAOK) ? isok : DATANG;

@@ -114,12 +114,14 @@ void TypSetBmf::initItemDelegate()
     bemf->setMaxinum(3000);
     iView->setItemDelegateForRow(0, bemf);
     iView->setItemDelegateForRow(1, bemf);
-    BoxDouble *diff = new BoxDouble;
-    diff->setDecimals(0);
-    diff->setMaxinum(360);
-    iView->setItemDelegateForRow(2, diff);
-    BoxDouble *noun = new BoxDouble;
-    iView->setItemDelegateForRow(3, noun);
+//    BoxDouble *diff = new BoxDouble;
+//    diff->setDecimals(0);
+//    diff->setMaxinum(360);
+//    iView->setItemDelegateForRow(2, diff);
+//    BoxDouble *noun = new BoxDouble;
+//    iView->setItemDelegateForRow(3, noun);
+    iView->setItemDelegateForRow(2, new BoxQItems);
+    iView->setItemDelegateForRow(3, new BoxQItems);
     iView->setItemDelegateForRow(4, new BoxQItems);
 
     BoxDouble *speed = new BoxDouble;
@@ -227,16 +229,16 @@ void TypSetBmf::autoChange()
 {
     change();
     if (isInit) {
-        if (iView->hasFocus()) {
-            int r = iView->currentIndex().row();
-            int c = iView->currentIndex().column();
-            QString tmpStr;
-            if (r == 4 && c == 0) {
-                tmpStr = iMode->index(r, 0).data().toString();
-                tmpStr = sques.at((sques.indexOf(tmpStr) + 1) % sques.size());
-                iMode->setData(iMode->index(r, 0), tmpStr, Qt::DisplayRole);
-            }
-        }
+//        if (iView->hasFocus()) {
+//            int r = iView->currentIndex().row();
+//            int c = iView->currentIndex().column();
+//            QString tmpStr;
+//            if (r == 4 && c == 0) {
+//                tmpStr = iMode->index(r, 0).data().toString();
+//                tmpStr = sques.at((sques.indexOf(tmpStr) + 1) % sques.size());
+//                iMode->setData(iMode->index(r, 0), tmpStr, Qt::DisplayRole);
+//            }
+//        }
         if (pView->hasFocus()) {
             int r = pView->currentIndex().row();
             QString tmpStr;

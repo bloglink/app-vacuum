@@ -104,12 +104,17 @@ int SqlExport::exportHead(QTmpMap msg)
     tmpMsg.insert(addr + TEMPISOK, tr("判定"));
 
     QStringList names;
-    names << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
-          << "匝间" << "电参" << "电感" << "堵转" << "低启"
-          << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相";
+    names << tr("电阻") << tr("反嵌") << tr("绝缘") << tr("交耐") << tr("直耐")
+          << tr("匝间") << tr("电参") << tr("电感") << tr("堵转") << tr("低启")
+          << tr("霍尔") << tr("负载") << tr("空载") << tr("BEMF");
+    QList<int> index;
+    index << Qt::Key_1 << Qt::Key_2 << Qt::Key_3 << Qt::Key_4 << Qt::Key_5
+          << Qt::Key_6 << Qt::Key_7 << Qt::Key_8 << Qt::Key_9 << Qt::Key_A
+          << Qt::Key_B << Qt::Key_C << Qt::Key_D << Qt::Key_E;
     for (int i=0; i < names.size(); i++) {
-        int addr = tmpSet.value(3000 + Qt::Key_1 + i).toInt();
+        int addr = tmpSet.value(3000 + index.at(i)).toInt();
         if (names.at(i) == tr("电阻")) {
+            int addr = tmpSet.value(3000 + Qt::Key_1).toInt();
             tmpMsg.insert(addr + 0x80 + 0x02, tr("电阻平衡结果"));
             tmpMsg.insert(addr + 0x80 + 0x03, tr("电阻平衡判定"));
         }
@@ -138,30 +143,30 @@ int SqlExport::exportHead(QTmpMap msg)
         if (names.at(i) == tr("电感"))
             tmpMsg.insert(addr + 0x10, tr("电感平衡"));
         if (names.at(i) == tr("霍尔")) {
-            for (int t=0; t < 5; t++) {
-                tmpMsg.insert(addr + 0x10*t + 0x00, tr("高电平%1").arg(t+1, 2, 10, QChar('0')));
-                tmpMsg.insert(addr + 0x10*t + 0x01, tr("低电平%1").arg(t+1, 2, 10, QChar('0')));
-                tmpMsg.insert(addr + 0x10*t + 0x02, tr("占空比%1").arg(t+1, 2, 10, QChar('0')));
-                tmpMsg.insert(addr + 0x10*t + 0x03, tr("频率%1").arg(t+1, 2, 10, QChar('0')));
+            for (int numb=0; numb < 5; numb++) {
+                tmpMsg.insert(addr + 0x10*numb + 0x00, tr("霍尔高电平%1").arg(numb+1));
+                tmpMsg.insert(addr + 0x10*numb + 0x01, tr("霍尔低电平%1").arg(numb+1));
+                tmpMsg.insert(addr + 0x10*numb + 0x02, tr("霍尔占空比%1").arg(numb+1));
+                tmpMsg.insert(addr + 0x10*numb + 0x03, tr("霍尔频率%1").arg(numb+1));
             }
             continue;
         }
         if (names.at(i) == tr("负载")) {
-            tmpMsg.insert(addr + 0x00, tr("电流"));
-            tmpMsg.insert(addr + 0x01, tr("功率"));
-            tmpMsg.insert(addr + 0x02, tr("Icc"));
-            tmpMsg.insert(addr + 0x03, tr("转速"));
-            tmpMsg.insert(addr + 0x04, tr("转向"));
+            tmpMsg.insert(addr + 0x00, tr("负载电流"));
+            tmpMsg.insert(addr + 0x01, tr("负载功率"));
+            tmpMsg.insert(addr + 0x02, tr("负载Icc"));
+            tmpMsg.insert(addr + 0x03, tr("负载转速"));
+            tmpMsg.insert(addr + 0x04, tr("负载转向"));
             continue;
         }
         if (names.at(i) == tr("BEMF")) {
             for (int t=0; t < 3; t++) {
-                tmpMsg.insert(addr + t*0x10 + 0x00, tr("电压"));
-                tmpMsg.insert(addr + t*0x10 + 0x01, tr("常数"));
-                tmpMsg.insert(addr + t*0x10 + 0x02, tr("相位"));
+                tmpMsg.insert(addr + t*0x10 + 0x00, tr("BEMF电压%1").arg(t + 1));
+                tmpMsg.insert(addr + t*0x10 + 0x01, tr("BEMF常数%1").arg(t + 1));
+                tmpMsg.insert(addr + t*0x10 + 0x02, tr("BEMF相位%1").arg(t + 1));
             }
-            tmpMsg.insert(addr + 0x30, tr("平衡度"));
-            tmpMsg.insert(addr + 0x40, tr("相序"));
+            tmpMsg.insert(addr + 0x30, tr("BEMF不平衡度"));
+            tmpMsg.insert(addr + 0x40, tr("BEMF相序"));
             continue;
         }
         for (int numb=0; numb < 0x08; numb++) {
@@ -172,6 +177,7 @@ int SqlExport::exportHead(QTmpMap msg)
         }
     }
     qSort(numbs.begin(), numbs.end());
+    qDebug() << tmpMsg;
 
     title.clear();
     for (int i=0; i < numbs.size(); i++) {

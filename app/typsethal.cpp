@@ -32,7 +32,7 @@ void TypSetHal::initViewBar()
     QStringList names;
     names << tr("上限") << tr("下限");
     QStringList items;
-    items << tr("高电平") << tr("低电平") << tr("占空比") << tr("频率");
+    items << tr("高电平(V)") << tr("低电平(V)") << tr("占空比(%)") << tr("频率(Hz)");
     iMode = new BoxQModel(this);
     iMode->setRowCount(items.size());
     iMode->setColumnCount(names.size());
@@ -45,7 +45,7 @@ void TypSetHal::initViewBar()
     iView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->horizontalHeader()->setFixedHeight(30);
-    iView->verticalHeader()->setFixedWidth(56);
+    iView->verticalHeader()->setFixedWidth(80);
 
     QHBoxLayout *blay = new QHBoxLayout;
     blay->addWidget(new QLabel(tr("磁极数:")));
@@ -88,7 +88,7 @@ void TypSetHal::initViewBar()
     wView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     wView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     wView->horizontalHeader()->setFixedHeight(30);
-    wView->verticalHeader()->setFixedWidth(56);
+    wView->verticalHeader()->setFixedWidth(36);
     connect(wView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QHBoxLayout *vlay = new QHBoxLayout;
@@ -174,7 +174,8 @@ void TypSetHal::saveSettings()
     int addr = tmpSet.value(4000 + Qt::Key_B).toInt();  // 负载配置地址
     for (int i=0; i < iMode->rowCount()*2 + 2; i++) {
         if (i < 8) {
-            tmpMsg.insert(addr + i, iMode->index(i/2, i%2).data().toString());
+            QString str = QString::number(iMode->index(i/2, i%2).data().toDouble());
+            tmpMsg.insert(addr + i, str);
         }
         if (i == 8) {
             tmpMsg.insert(addr + i, QString::number(line->value()));

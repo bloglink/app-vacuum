@@ -32,7 +32,7 @@ void TypSetLod::initViewBar()
     QStringList names;
     names << tr("上限") << tr("下限");
     QStringList items;
-    items << tr("电流") << tr("功率") << tr("Icc") << tr("转速") << tr("转向");
+    items << tr("电流(mA)") << tr("功率(W)") << tr("Icc(mA)") << tr("转速(rpm)") << tr("转向");
     iMode = new BoxQModel(this);
     iMode->setRowCount(items.size());
     iMode->setColumnCount(names.size());
@@ -45,7 +45,7 @@ void TypSetLod::initViewBar()
     iView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->horizontalHeader()->setFixedHeight(30);
-    iView->verticalHeader()->setFixedWidth(40);
+    iView->verticalHeader()->setFixedWidth(90);
     connect(iView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QVBoxLayout *play = new QVBoxLayout;
@@ -58,8 +58,8 @@ void TypSetLod::initViewBar()
     QStringList vname;
     vname << tr("参数");
     QStringList volts;
-    volts << tr("Vm 电压") << tr("Vcc电压") << tr("Vsp电压")
-          << tr("扭矩设置") << tr("测试时间") << tr("外驱频率");
+    volts << tr("Vm 电压(V)") << tr("Vcc电压(V)") << tr("Vsp电压(V)")
+          << tr("扭矩设置(N·m)") << tr("测试时间(s)") << tr("外驱频率(Hz)");
     vMode = new BoxQModel(this);
     vMode->setRowCount(volts.size());
     vMode->setColumnCount(vname.size());
@@ -68,7 +68,7 @@ void TypSetLod::initViewBar()
     connect(vMode, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(change()));
     vView = new QTableView(this);
     vView->setModel(vMode);
-    vView->verticalHeader()->setFixedWidth(75);
+    vView->verticalHeader()->setFixedWidth(128);
     vView->horizontalHeader()->setFixedHeight(30);
     vView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     vView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -76,8 +76,8 @@ void TypSetLod::initViewBar()
     QStringList pname;
     pname << tr("参数");
     QStringList parms;
-    parms << tr("驱动设置")<< tr("Vcc补偿") << tr("Vsp补偿")
-          << tr("扭矩补偿") << tr("电源选择") << tr("外驱转向");
+    parms << tr("加载延时(s)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
+          << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("外驱转向");
     pMode = new BoxQModel(this);
     pMode->setRowCount(parms.size());
     pMode->setColumnCount(pname.size());
@@ -90,7 +90,7 @@ void TypSetLod::initViewBar()
     pView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     pView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     pView->horizontalHeader()->setFixedHeight(30);
-    pView->verticalHeader()->setFixedWidth(75);
+    pView->verticalHeader()->setFixedWidth(128);
     connect(pView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QHBoxLayout *vlay = new QHBoxLayout;
@@ -174,22 +174,24 @@ void TypSetLod::initItemDelegate()
     vView->setItemDelegateForRow(0, volt);
     BoxDouble *voff = new BoxDouble;
     voff->setMaxinum(30);
-    voff->setDecimals(1);
     vView->setItemDelegateForRow(1, voff);
     vView->setItemDelegateForRow(2, voff);
     BoxDouble *toff = new BoxDouble;
-    toff->setDecimals(1);
     toff->setMaxinum(1.5);
     vView->setItemDelegateForRow(3, toff);
     BoxDouble *time = new BoxDouble;
+    time->setDecimals(1);
+    time->setMininum(3);
     vView->setItemDelegateForRow(4, time);
     BoxDouble *freq = new BoxDouble;
     freq->setDecimals(0);
     vView->setItemDelegateForRow(5, freq);
 
-    pView->setItemDelegateForRow(0, new BoxQItems);
-    pView->setItemDelegateForRow(1, voff);
-    pView->setItemDelegateForRow(2, voff);
+    BoxDouble *poff = new BoxDouble;
+    poff->setMininum(-30);
+    pView->setItemDelegateForRow(0, curr);
+    pView->setItemDelegateForRow(1, poff);
+    pView->setItemDelegateForRow(2, poff);
     pView->setItemDelegateForRow(3, toff);
     pView->setItemDelegateForRow(4, new BoxQItems);
     pView->setItemDelegateForRow(5, new BoxQItems);
@@ -216,8 +218,6 @@ void TypSetLod::initSettings()
     row++;
     for (int i=0; i < pMode->rowCount(); i++) {
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
-        if (i == 0)
-            str = drivers.at(str.toInt() % drivers.size());
         if (i == 4)
             str = sources.at(str.toInt() % sources.size());
         if (i == 5)
@@ -252,10 +252,8 @@ void TypSetLod::saveSettings()
     }
     for (int i=0; i < pMode->rowCount(); i++) {
         QString str = pMode->index(i, 0).data().toString();
-        if (i > 0 && i < 4)
+        if (i < 4)
             str = QString::number(pMode->index(i, 0).data().toDouble());
-        if (i == 0)
-            str = QString::number(drivers.indexOf(str));
         if (i == 4)
             str = QString::number(sources.indexOf(str));
         if (i == 5)
@@ -296,7 +294,7 @@ void TypSetLod::confSettings()
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
         if (i == 0)
-            str = QString::number(drivers.indexOf(str));
+            str = QString::number(0);
         if (i == 4)
             str = QString::number(sources.indexOf(str));
         if (i == 5)
@@ -340,14 +338,10 @@ void TypSetLod::autoChange()
             }
         }
         if (pView->hasFocus()) {
-            int r = pView->currentIndex().row();
             QString tmpStr;
-            if (r == 0) {
-                tmpStr = pMode->index(r, 0).data().toString();
-                tmpStr = drivers.at((drivers.indexOf(tmpStr) + 1) % drivers.size());
-                pMode->setData(pMode->index(r, 0), tmpStr, Qt::DisplayRole);
-            }
-            if (r == 4) {
+            int r = pView->currentIndex().row();
+            int setuser = tmpSet.value(DataUser).toInt();
+            if ((r == 4) && (tmpSet.value(setuser).toString() == "supper")) {
                 tmpStr = pMode->index(r, 0).data().toString();
                 tmpStr = sources.at((sources.indexOf(tmpStr) + 1) % sources.size());
                 pMode->setData(pMode->index(r, 0), tmpStr, Qt::DisplayRole);

@@ -56,7 +56,7 @@ void AppBackup::initBoxText()
     names << tr("产品型号") << tr("产品编号") << tr("评审编号") << tr("出厂日期")
           << tr("语言支持") << tr("工位设置") << tr("最高电压") << tr("自动测试")
           << tr("测试延时") << tr("目标网络") << tr("网络端口") << tr("测试模式")
-          << tr("屏蔽反嵌");
+          << tr("屏蔽反嵌") << tr("波形比例");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;

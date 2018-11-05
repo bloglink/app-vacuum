@@ -22,7 +22,7 @@ void AppAuthor::initUI()
 
 void AppAuthor::initLayout()
 {
-    QString sty = ".QFrame{border-image:url(:/logo_aip.bmp)}.QWidget{background:transparent;}";
+    QString sty = ".QFrame{border-image:url(:/logo_aip_back.png)}.QWidget{background:transparent;}";
     this->setStyleSheet(sty);
     QVBoxLayout *mLayout = new QVBoxLayout(this);
     QFrame *frm = new QFrame(this);

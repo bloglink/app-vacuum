@@ -34,6 +34,7 @@
 
 #include "main.h"
 #include "appbackup.h"
+#include "apptester.h"
 #include "boxqitems.h"
 #include "boxqmodel.h"
 

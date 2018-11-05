@@ -21,7 +21,6 @@
         <file>qss_light.css</file>
         <file>qt_zh_CN.qm</file>
         <file>qtbase_zh_CN.qm</file>
-        <file>logo_aip.bmp</file>
         <file>loading1.png</file>
         <file>loading2.png</file>
         <file>logo_arm.png</file>
@@ -37,5 +36,7 @@
         <file>icon_aip_light.png</file>
         <file>icon_circle_5.png</file>
         <file>icon_circle_6.png</file>
+        <file>logo_aip_back.png</file>
+        <file>logo_aip.bmp</file>
     </qresource>
 </RCC>

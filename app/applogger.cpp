@@ -134,7 +134,7 @@ void AppLogger::initButtonBar()
     layout->addLayout(btnLayout);
 
     combo = new QComboBox(this);
-    combo->setFixedSize(220, 44);
+    combo->setFixedSize(280, 44);
     combo->setView(new QListView);
     combo->addItem(tr("目标:默认"));
     combo->addItem(tr("目标:窗口; 等级:一般"));

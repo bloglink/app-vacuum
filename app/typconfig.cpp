@@ -186,10 +186,11 @@ void TypConfig::initButtonBar()
     btnLayout->addWidget(next);
     connect(next, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
 
-    btnLayout->addWidget(new QLabel(tr("当前型号:")));
+    btnLayout->addWidget(new QLabel(tr("当前型号:"), this));
     type = new QLabel(this);
     type->setFixedHeight(40);
     btnLayout->addWidget(type);
+    type->setStyleSheet("color:yellow;font:24pt");
 
     btnLayout->addStretch();
 
@@ -231,7 +232,7 @@ void TypConfig::initSettings()
         view->item(i, 1)->setText(tmpTyp.value(t+1).toString());
     }
 
-    type->setText(tr("%1").arg(tmpSet.value(DataType).toString()));
+    type->setText(QString("%1").arg(tmpSet.value(DataType).toString()));
 
     int r = tmpSet.value(4000 + Qt::Key_0).toInt();
     QStringList testItems = tmpSet.value(r + ADDRITEM).toString().split(",");

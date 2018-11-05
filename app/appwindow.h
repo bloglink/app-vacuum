@@ -127,6 +127,7 @@ private slots:
     int testClearData();
     int testToolServo();
     int testWaitServo();
+    int testStopServo();
     int testToolInvrt();
     int testWaitInvrt();
     int testStartSend();
@@ -181,6 +182,7 @@ private:
     QString verNumb;
 
     int speed;
+    QList<int> speeds;
     int preindex;
     int currMode;
     int currTask;
@@ -188,6 +190,7 @@ private:
     int codeShift;
     int taskShift;
     int testShift;
+    int tempShift;
     int currItem;
     int isudp;
     int isok;
@@ -213,6 +216,8 @@ private:
     QList<QVariantMap> bufwin;
     quint32 ioHex;
     bool isChange;
+
+    QTimer *loading;
 };
 
 #endif // APPWINDOW_H

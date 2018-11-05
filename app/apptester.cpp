@@ -646,10 +646,9 @@ void AppTester::initSetHAL()
     items << tr("霍尔高电平") << tr("霍尔低电平") << tr("霍尔占空比") << tr("霍尔频率");
     QStringList units;
     units << "V" << "V" << "%" << "Hz";
-
     for (int i=0; i < items.size(); i++) {
-        int max = tmpSet.value(addr + i*2 + 0).toInt();
-        int min = tmpSet.value(addr + i*2 + 1).toInt();
+        double max = tmpSet.value(addr + i*2 + 0).toDouble();
+        double min = tmpSet.value(addr + i*2 + 1).toDouble();
         if (max != 0) {
             tmpItem.insert(tmpRow, items.at(i));
             tmpParm.insert(tmpRow, tr("%1-%2").arg(min).arg(max) + units.at(i));
@@ -888,7 +887,10 @@ void AppTester::recvLedMsg(QTmpMap msg)
         ms.restart();
         tmpNG.clear();
         realText->setText(judgeON.arg(tr("测试")));
-        workText->setText(judgeON.arg(msg.value(Qt::Key_4).toInt() == 0x14 ? tr("右") : tr("左")));
+        int work = msg.value(Qt::Key_4).toInt();
+        btnL->setChecked((work == WORKL) ? true : false);
+        btnR->setChecked((work == WORKR) ? true : false);
+        workText->setText(judgeON.arg((work == WORKR) ? tr("右") : tr("左")));
         btnHome->setEnabled(false);
         btnConf->setEnabled(false);
         btnTest->setEnabled(false);
@@ -993,7 +995,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 int ss = (work == 0x13) ? 0 : 1;
                 for (int i=from; i < qMin(stop, ws.size()); i++) {
                     ty[i-from] = ws.at(i).toInt() * 100 / 1024;
-                    sy[i-from] = tmpSet.value(wimp + IMP_SIZE*(numb*2 + ss) + i).toInt() * 100 / 1024;
+                    sy[i-from] = tmpSet.value(wimp + IMP_SIZE*(numb*2 + ss) + i).toInt()*100/1024;
                 }
                 impWave.at(numb)->setWave(sy, 1);
                 impWave.at(numb)->setWave(ty, str == "OK" ? 0x00 : 0x10);
@@ -1021,9 +1023,11 @@ void AppTester::recvNewMsg(QTmpMap msg)
         QList<int> cc;
         cc << int(Qt::cyan) << int(Qt::yellow) << int(Qt::green);
         if (index < 3) {  // 反电动势波形
+            int wbmf = tmpSet.value(back + backWave).toInt();
+            wbmf = (wbmf == 0) ? 1 : wbmf;
             QStringList mPoint;
             for (int t=0; t < ws.size(); t++) {
-                mPoint.append(QString::number(ws.at(t).toInt() * 100 / 256));
+                mPoint.append(QString::number(((ws.at(t).toInt() - 128) * wbmf + 128) / 2.56));
             }
             tmp.insert("color", cc.at(index));
             tmp.insert("point", mPoint);
