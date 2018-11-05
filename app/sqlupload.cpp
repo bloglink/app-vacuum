@@ -151,7 +151,8 @@ void SqlUpload::recvOpen()
 
 void SqlUpload::recvRead()
 {
-    int hostline = 123;
+    int addr = tmpSet.value(2000 + Qt::Key_4).toInt();
+    QString hostline = tmpSet.value(addr + 0x02).toString();
     QSqlQuery query(QSqlDatabase::database("upload"));
     QString ppn;
     if (!query.exec(tr("select PPN from V_WIP_ID_LINE where LINE_ID = '%1'").arg(hostline))) {
@@ -165,6 +166,7 @@ void SqlUpload::recvRead()
     if (ppn.isEmpty())
         return;
     if (ppn != tmpSet.value(DataType).toString()) {  // 切换型号
+        qDebug() << ppn;
         reload(ppn);
     }
 }

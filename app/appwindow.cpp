@@ -607,10 +607,12 @@ int AppWindow::taskClearData()
     speed = 0;
     speeds.clear();
     barcode.clear();
+    tmpItem.clear();
     codeShift = Qt::Key_Meta;
     taskShift = Qt::Key_Meta;
     testShift = Qt::Key_Meta;
     tempShift = Qt::Key_Meta;
+    isSetnvt = false;
     return Qt::Key_Away;
 }
 
@@ -765,8 +767,12 @@ int AppWindow::taskStartSave()
         int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
         if (mode == 3) {  // 产线模式,控石产线专用
             quint32 cmd = 0;
-            cmd |= (isok) ? YY0E : YY10;  // 总合格/总不合格
+            cmd += (isSetnvt) ? YY15 : 0x00;
+            cmd |= (isok == DATAOK && !barcode.isEmpty() && !isSetnvt) ? YY0E : YY10;  // 总合格/总不合格
             cmd |= barcode.isEmpty() ? YY09 : 0x00;  // RFID未读到
+            cmd |= (tmpItem.value(nSetNLD) == DATAOK) ? 0x00 : YY11;
+            cmd |= (tmpItem.value(nSetHAL) == DATAOK) ? 0x00 : YY12;
+            cmd |= (tmpItem.value(nSetLOD) == DATAOK) ? 0x00 : YY13;
             sendUdpStr(tr("6077 %1").arg(cmd).toUtf8());
         }
         if (mode >= 2)  // 无刷模式
@@ -1705,6 +1711,7 @@ void AppWindow::recvAppMap(QVariantMap msg)
         sendUdpStr(msg.value("text").toByteArray());
         break;
     case Qt::Key_Stop:
+        isSetnvt = true;
         warnningString(msg.value("text").toString());
         break;
     case Qt::Key_Send:
@@ -1849,7 +1856,7 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         break;
     case 6076:  // 上传RFID
         codeShift = Qt::Key_Away;
-        barcode = dat.toUpper();
+        tmpcode = dat.toUpper();
         showBarCode();
         break;
     case 6087:
@@ -2050,6 +2057,8 @@ void AppWindow::calcHALL(QString msg)
                 tmpMsg.insert(Qt::Key_6, station);
                 emit sendAppMsg(tmpMsg);
                 tmpMsg.clear();
+                int itemisok = tmpItem.value(nSetHAL);
+                tmpItem.insert(nSetHAL, (real == DATAOK) ? itemisok : real);
             }
         }
     }
@@ -2157,6 +2166,8 @@ void AppWindow::calcLOAD(QString msg)
                     isok = (rrrr == DATAOK) ? isok : DATANG;
                     tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");
                     tmpSave.insert(addr + i*0x10 + 2, (rrrr == DATAOK) ? "OK" : "NG");
+                    int itemisok = tmpItem.value(currItem);
+                    tmpItem.insert(currItem, (real == DATAOK) ? itemisok : rrrr);
                 }
                 tmpMsg.insert(Qt::Key_6, station);
                 emit sendAppMsg(tmpMsg);
@@ -2214,6 +2225,8 @@ void AppWindow::calcBEMF(QString msg)
                             tmpMsg.insert(Qt::Key_4, s);
                             tmpSave.insert(addr + i*0x10 + t*3 + 1, tmp.at(t));
                             tmpSave.insert(addr + i*0x10 + t*3 + 2, s);
+                            int itemisok = tmpItem.value(nSetEMF);
+                            tmpItem.insert(nSetEMF, (rrrr == DATAOK) ? itemisok : rrrr);
                         }
                     }
                 }
@@ -2226,6 +2239,8 @@ void AppWindow::calcBEMF(QString msg)
                         tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");
                         tmpSave.insert(addr + i*0x10 + 1, noun);
                         tmpSave.insert(addr + i*0x10 + 2, (rrrr == DATAOK) ? "OK" : "NG");
+                        int itemisok = tmpItem.value(nSetEMF);
+                        tmpItem.insert(nSetEMF, (rrrr == DATAOK) ? itemisok : rrrr);
                     }
                 }
                 if (i == 4) {
@@ -2239,6 +2254,8 @@ void AppWindow::calcBEMF(QString msg)
                         tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");
                         tmpSave.insert(addr + i*0x10 + 1, str);
                         tmpSave.insert(addr + i*0x10 + 2, (rrrr == DATAOK) ? "OK" : "NG");
+                        int itemisok = tmpItem.value(nSetEMF);
+                        tmpItem.insert(nSetEMF, (rrrr == DATAOK) ? itemisok : rrrr);
                     }
                 }
             }

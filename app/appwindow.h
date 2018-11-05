@@ -215,6 +215,7 @@ private:
     QTmpMap tmpSet;
     QTmpMap tmpMsg;
     QTmpMap tmpSave;
+    QMap<int, int> tmpItem;
 
     QString barcode;
     QString tmpcode;
@@ -230,6 +231,7 @@ private:
     int turnBuff;
     quint16 ioSave;
     QTimer *loading;
+    bool isSetnvt;
 };
 
 #endif // APPWINDOW_H
