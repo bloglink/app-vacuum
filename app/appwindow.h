@@ -29,6 +29,7 @@
 #include "applogger.h"
 #include "appmaster.h"
 #include "apppermit.h"
+#include "apprepair.h"
 #include "typconfig.h"
 #include "typsetdcr.h"
 #include "typsetmag.h"
@@ -86,6 +87,7 @@ private slots:
     int initPermit();
     int initBackup();
     int initLogger();
+    int initRepair();
     int initConfig();
     int initSetDcr();
     int initSetMag();
@@ -193,6 +195,7 @@ private:
     int taskShift;
     int testShift;
     int tempShift;
+    int prevShift;
     int currItem;
     int isudp;
     int isok;

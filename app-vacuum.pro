@@ -56,7 +56,8 @@ HEADERS += \
     app/devinvert.h \
     app/devdriver.h \
     app/apppermit.h \
-    app/typsetind.h
+    app/typsetind.h \
+    app/apprepair.h
 
 SOURCES += \
     app/appauthor.cpp \
@@ -96,6 +97,7 @@ SOURCES += \
     app/devinvert.cpp \
     app/devdriver.cpp \
     app/apppermit.cpp \
-    app/typsetind.cpp
+    app/typsetind.cpp \
+    app/apprepair.cpp
 
 

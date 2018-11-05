@@ -86,7 +86,6 @@ private slots:
     void updateShow();
     void updateTime();
     void updateTest();
-    void recvIMPMsg(QTmpMap msg);
     void recvErrMsg(QTmpMap msg);
     void recvTmpMsg(QTmpMap msg);
     void recvLedMsg(QTmpMap msg);
@@ -105,10 +104,7 @@ private:
     QPushButton *btnStop;
     QRadioButton *btnL;
     QRadioButton *btnR;
-    QRadioButton *btnA;
-    QRadioButton *btnM;
     QFrame *wFrame;
-    QFrame *aFrame;
     BoxQImage *allWave;
     QList<BoxQImage*> magWave;
     QList<BoxQImage*> impWave;
@@ -148,6 +144,7 @@ private:
     QVariantMap tmpMap;
     QVariantMap tmpTyp;
     bool isInit;
+    QString strv;
 };
 
 #endif // APPTESTER_H

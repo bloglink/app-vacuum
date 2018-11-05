@@ -22,6 +22,12 @@ BoxQImage::BoxQImage(QWidget *parent) : QLabel(parent)
     Colors.append(QColor(Qt::darkYellow));
 }
 
+void BoxQImage::setClear()
+{
+    texts.clear();
+    this->update();
+}
+
 QList<QVariantMap> BoxQImage::getLines()
 {
     return lines;

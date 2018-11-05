@@ -25,6 +25,7 @@ public:
 signals:
     void clicked();
 public slots:
+    void setClear();
     QList<QVariantMap> getLines();
     QList<QVariantMap> getTexts();
     void setLines(QVariantMap msg);

@@ -38,6 +38,7 @@ const int nPermit = 0x04;
 const int nBackup = 0x05;
 const int nLogger = 0x06;
 const int nIoctrl = 0x07;
+const int nRepair = 0x08;
 
 const int nConfig = 0x00;
 const int nSetDCR = 0x01;

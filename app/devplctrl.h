@@ -10,6 +10,7 @@
 #define DEVPLCTRL_H
 
 #include <QMap>
+#include <QTimer>
 #include <QDebug>
 #include <QObject>
 #include <QtSerialPort/QSerialPort>
@@ -33,20 +34,24 @@ private slots:
     void ready();
     void write(QByteArray msg);
     int thread();
+    int setPlay();
     int setMode();
     int setTurn();
     int setData();
     int setTest();
     int setStop();
+    int setParm();
     void recvAppMsg(QTmpMap msg);
 
 private:
     QSerialPort *com;
     QByteArray tmpByte;
+    int taskShift;
     bool isok;
     int timeOut;
     int currMap;
     QVariantMap tmpMap;
+    QTimer *timer;
 };
 
 #endif // DEVPLCTRL_H

@@ -126,6 +126,8 @@ int AppWindow::initScreen()
     names << tr("正在初始化后台设置");
     initMap[names.size()] = &AppWindow::initLogger;
     names << tr("正在初始化调试信息");
+    initMap[names.size()] = &AppWindow::initRepair;
+    names << tr("正在初始化日常保养");
     initMap[names.size()] = &AppWindow::initConfig;
     names << tr("正在初始化型号管理");
     initMap[names.size()] = &AppWindow::initSetDcr;
@@ -239,6 +241,13 @@ int AppWindow::initLogger()
 {
     AppLogger *app = AppLogger::instance();
     initWidget(nLogger, 1, "logger", tr("调试信息"), app);
+    return Qt::Key_Away;
+}
+
+int AppWindow::initRepair()
+{
+    AppRepair *app = new AppRepair(this);
+    initWidget(nRepair, 1, "repair", tr("日常保养"), app);
     return Qt::Key_Away;
 }
 
@@ -519,6 +528,7 @@ int AppWindow::initThread()
     currTest = 0;
     station = 0x13;
     isVacuum = false;
+    prevShift = Qt::Key_Meta;
 
     loading = new QTimer(this);
     connect(loading, SIGNAL(timeout()), this, SLOT(testWaitServo()));
@@ -613,6 +623,8 @@ int AppWindow::taskClearData()
 int AppWindow::taskCheckPlay()
 {
     int ret = Qt::Key_Meta;
+    taskShift = (prevShift == Qt::Key_Play) ? Qt::Key_Play : taskShift;  // 预启动
+    prevShift = Qt::Key_Meta;
     if (taskShift == Qt::Key_Play) {
         if (stack->currentWidget()->objectName() != "tester") {
             taskClearData();
@@ -863,8 +875,12 @@ int AppWindow::taskCheckStop()
     int item = getNextItem();
     bool isStop = currTask < save && currTask > play;
     isStop = (testShift == Qt::Key_Away && item == 0) ? false : isStop;
-    if (currTask <= play || isStop)
+    if (currTask <= play || isStop) {
         sendUdpStr(tr("6022 %1").arg(station).toUtf8());
+        tmpMsg.insert(Qt::Key_0, Qt::Key_Stop);
+        emit sendAppMsg(tmpMsg);
+        tmpMsg.clear();
+    }
     if (isStop) {
         taskShift = Qt::Key_Stop;
         isok = DATANG;
@@ -1626,6 +1642,16 @@ void AppWindow::recvAppMsg(QTmpMap msg)
             boxbar->setValue(msg.value(Qt::Key_2).toInt());
         }
         break;
+    case Qt::Key_Game: {
+        int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+        int mode = tmpSet.value(back + backMode).toInt();
+        int conf = tmpSet.value(2000 + Qt::Key_7).toInt();
+        int care = tmpSet.value(conf + 0x00).toInt();
+        if (mode == 2 && care == 1) {  // 无刷模式,自动进入界面
+            recvAppShow("repair");
+        }
+        break;
+    }
     default:
         break;
     }
@@ -1693,6 +1719,20 @@ void AppWindow::recvAppMap(QVariantMap msg)
     case Qt::Key_Send:
         speed = msg.value("text").toInt();
         break;
+    case Qt::Key_Shop: {
+        int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x40;  // 后台设置地址
+        int left = tmpSet.value(back + 0x0C).toString().toInt(NULL, 16);
+        int move = left + tmpSet.value(back + 0x0F).toString().toInt(NULL, 16);
+        if (!msg.value("data").isNull())
+            sendUdpStr(tr("6036 %1").arg(move).toUtf8());
+        wait(200);
+        mbdktL.test(msg);
+        mbdktR.test(msg);
+        wait(200);
+        if (msg.value("data").isNull())
+            sendUdpStr(tr("6036 %1").arg(0).toUtf8());
+        break;
+    }
     default:
         break;
     }
@@ -1793,6 +1833,7 @@ void AppWindow::recvUdpMsg(QByteArray msg)
     case 6060:  // 真空上传启动信号
         if (recvIoCtrl(Qt::Key_Play, dat.toInt()) == Qt::Key_Away) {
             taskShift = Qt::Key_Play;
+            prevShift = (station != dat.toInt()) ? Qt::Key_Play : Qt::Key_Meta;
             station = dat.toInt();
         }
         break;
@@ -1821,9 +1862,6 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         tmpMsg.insert(Qt::Key_5, dat);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
-        break;
-    case 6088:  // 手动启动
-        taskShift = (dat.toInt() == 1) ? Qt::Key_Play : Qt::Key_Stop;
         break;
     default:
         break;

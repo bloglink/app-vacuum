@@ -301,22 +301,6 @@ void AppTester::initButtonBar()
     btnStop->setMinimumSize(97, 72);
     connect(btnStop, SIGNAL(clicked(bool)), this, SLOT(clickStop()));
 
-    btnA = new QRadioButton(this);
-    btnA->setChecked(true);
-    btnA->setEnabled(false);
-    btnA->setText(tr("自动"));
-    btnM = new QRadioButton(this);
-    btnM->setEnabled(false);
-    btnM->setText(tr("手动"));
-
-    QHBoxLayout *alay = new QHBoxLayout;
-    alay->setMargin(0);
-    alay->addWidget(btnA);
-    alay->addWidget(btnM);
-    aFrame = new QFrame(this);
-    aFrame->setLayout(alay);
-    blayout->addWidget(aFrame);
-
     blayout->addStretch();
 
     warnText = new QLabel(this);
@@ -416,10 +400,8 @@ void AppTester::initSettings()
     isInit = false;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int work = tmpSet.value(back + backWork).toInt();
-    int grnd = tmpSet.value(back + backGrnd).toInt();
     wFrame->setVisible((work == 2) ? true : false);
     workText->setText(strLY.arg((work == 0) ? "右" : "左"));
-    aFrame->setVisible((grnd == 1) ? true : false);
 
     tmpNG.clear();
     initQuality();
@@ -678,7 +660,6 @@ void AppTester::initSetIMP()
         tmp.insert("title", tr("%1V").arg(volts));
         impWave.at(i)->setTexts(tmp);
         impWave.at(i)->update();
-        tmp.insert("title", tr("%1V").arg(btnM->isChecked() ? 500 : volts));
         allWave->setTexts(tmp);
         allWave->update();
         if (check != 0) {
@@ -977,11 +958,11 @@ void AppTester::updateWave()
 
 void AppTester::updateShow()
 {
+    initSetMAG();
+    initSetIMP();
     tmpMap.insert("width", 2);
     tmpMap.insert("frame", 1);
     tmpMap.insert("shade", 1);
-    initSetMAG();
-    initSetIMP();
     for (int i=0; i < magWave.size(); i++) {
         for (int index=0; index < 2; index++) {
             tmpMap.insert("index", index);
@@ -1029,23 +1010,11 @@ void AppTester::updateTest()
 {
     btnTest->setEnabled(true);
     typeText->setEnabled(true);
-}
 
-void AppTester::recvIMPMsg(QTmpMap msg)
-{
-    QString str = msg.value(Qt::Key_5).toString();
-    QVariantMap tmp;
-    tmp.insert("index", 0);
-    tmp.insert("color", int(Qt::white));
-    tmp.insert("width", 85);
-    tmp.insert("lenth", 85);
-    tmp.insert("title", tr("%1V").arg(str));
-    for (int i=0; i < 6; i++) {
-        impWave.at(i)->setTexts(tmp);
-        impWave.at(i)->update();
-    }
-    allWave->setTexts(tmp);
-    allWave->update();
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int grnd = tmpSet.value(back + backGrnd).toInt();
+    if (grnd == 1)
+        impWave.at(0)->clicked();
 }
 
 void AppTester::recvErrMsg(QTmpMap msg)
@@ -1256,36 +1225,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
             hWave->update();
         }
     }
-    if (item == 6037) {
-        QString dat = msg.value(Qt::Key_5).toString();
-        quint32 hex = dat.toInt();
-        if (!aFrame->isHidden()) {
-            bool isM = ((hex & XX20) != 0) && !btnM->isChecked();
-            bool isA = ((hex & XX20) == 0) && !btnA->isChecked();
-            if (isM || isA) {
-                btnM->setChecked(isM);
-                btnA->setChecked(isA);
-                btnL->setEnabled(isA);
-                btnR->setEnabled(isA);
-                btnHome->setEnabled(isA);
-                btnConf->setEnabled(isA);
-                btnTest->setEnabled(isA);
-                tmpMap.insert("enum", Qt::Key_View);
-                tmpMap.insert("text", QString("6086 %1").arg(isM ? 1 : 0));
-                emit sendAppMap(tmpMap);
-                if (isM) {
-                    updateWave();
-                }
-                if (isA) {
-                    tmpMap.insert("text", QString("6008"));
-                    emit sendAppMap(tmpMap);
-                }
-                initSettings();
-                tmpMap.clear();
-            }
-        }
-    }
-    if (item == 6042) {
+    if (item == 6042) {  // 手动波形
         QString str = msg.value(Qt::Key_5).toString();
         QStringList ws = str.split(" ");
         if (ws.size() > 200) {
@@ -1299,17 +1239,30 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 double p = ws.at(i).toInt() * 100 / 1024;
                 mPoint.append(QString::number(p));
             }
-            tmpMap.insert("index", 0);
-            tmpMap.insert("point", mPoint);
+            tmpMap.insert("index", 1);  // 清测试波形
             tmpMap.insert("color", int(Qt::green));
             impWave.at(numb)->setLines(tmpMap);
             allWave->setLines(tmpMap);
-            impWave.at(numb)->update();
+
+            tmpMap.insert("index", 0);  // 显示波形
+            tmpMap.insert("point", mPoint);
+            impWave.at(numb)->setLines(tmpMap);
+            allWave->setLines(tmpMap);
+
+            tmpMap.insert("index", 0);  // 显示电压
+            tmpMap.insert("color", int(Qt::white));
+            tmpMap.insert("width", 85);
+            tmpMap.insert("lenth", 85);
+            tmpMap.insert("title", tr("%1V").arg(strv));
+            impWave.at(0)->setTexts(tmpMap);
+            allWave->setTexts(tmpMap);
+
+            impWave.at(0)->update();
             allWave->update();
         }
     }
     if (item == 6087) {  // 匝间电压
-        recvIMPMsg(msg);
+        strv = msg.value(Qt::Key_5).toString();
     }
     tmpMap.clear();
 }

@@ -211,6 +211,7 @@ int SqlExport::exportData(QTmpMap msg)
     quint64 from = msg.value(Qt::Key_9).toLongLong();
     quint64 stop = msg.value(Qt::Key_A).toLongLong();
     QString type = msg.value(Qt::Key_B).toString();
+    volatile quint64 uuid = from;
 
     QSqlQuery query(QSqlDatabase::database(name));
     quint64 numb = 0;
@@ -223,7 +224,7 @@ int SqlExport::exportData(QTmpMap msg)
     int t = 0;
     while (1) {
         QString cmd = tr("select * from aip_record where ");
-        cmd += tr(" R_UUID > %1 and R_UUID < %2").arg(from).arg(stop);
+        cmd += tr(" R_UUID > %1 and R_UUID < %2").arg(uuid).arg(stop);
         if (!type.isEmpty()) {
             cmd += tr(" and R_TYPE = '%1'").arg(type);
         }
@@ -235,6 +236,7 @@ int SqlExport::exportData(QTmpMap msg)
             numb = query.value(1).toInt();
             buftmp.insert(numb, query.value(3).toString());
             if (numb == 0xFFFF) {
+                uuid = query.value(0).toLongLong();
                 foreach(int n, numbs) {
                     lineBuffer.append(buftmp.value(n).toString());
                 }

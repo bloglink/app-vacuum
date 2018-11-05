@@ -121,7 +121,7 @@ void AppSystem::initDelegate()
     texts.at(0)->addItems(tmp0);
 
     QStringList tmp1;
-    tmp1 << tr("未维护") << tr("已维护");
+    tmp1 << tr("开启");
     texts.at(1)->addItems(tmp1);
 
     QStringList tmp2;
@@ -138,11 +138,12 @@ void AppSystem::initSettings()
 {
     int addr = tmpSet.value(2000 + Qt::Key_1).toInt();
     for (int i=0; i < texts.size(); i++) {  // 系统配置存放在0x0020
+        QString str = tmpSet.value(addr + i).toString();
         if (i < 5 && i != 1) {
-            texts.at(i)->setCurrentIndex(tmpSet.value(addr + i).toInt());
+            texts.at(i)->setCurrentIndex(str.toInt());
         }
         if (i >= 5) {
-            texts.at(i)->lineEdit()->setText(tmpSet.value(addr + i).toString());
+            texts.at(i)->lineEdit()->setText(str);
         }
     }
     int ctrl = tmpSet.value(2000 + Qt::Key_2).toInt();
@@ -158,11 +159,6 @@ void AppSystem::saveSettings()
 {
     int addr = tmpSet.value(2000 + Qt::Key_1).toInt();
     for (int i=0; i < texts.size(); i++) {  // 系统配置存放在0x0020
-        if (i == 1) {
-            if (texts.at(i)->currentIndex() != 0) {
-                tmpMsg.insert(addr + i, "0");
-            }
-        }
         if (i < 5 && i != 1) {
             tmpMsg.insert(addr + i, QString::number(texts.at(i)->currentIndex()));
         }
@@ -198,30 +194,40 @@ void AppSystem::saveSettings()
 
 void AppSystem::recvWarnning()
 {
+    quint64 back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    quint64 mode = tmpSet.value(back + backMode).toInt();
     quint64 addr = tmpSet.value(2000 + Qt::Key_1).toInt();
     quint64 curr = QDate::currentDate().toJulianDay();
-    quint64 save = tmpSet.value(addr + 0x01).toInt();
+    quint64 save = tmpSet.value(addr + SystCare).toInt();
     quint64 last = (save / 100);
     quint64 time = (save % 100);
-    qDebug() << curr << save << last << time;
-    if (time > 60) {
-        QString sty = "<p style='font:11pt;color:#FFFFFF;' align='left'>%1</p>";
-        QString str;
+    QString sty = "<p style='font:11pt;color:#FFFFFF;' align='left'>%1</p>";
+    QString str;
+    if (mode == 1) {
         str += tr("真空测试设备中真空泵的油雾过滤器、油过滤器、粉尘过滤器、气镇滤芯到维护时间，");
         str += tr("请及时清洁或更换");
         str += tr("维护方法请参考<真空泵维护保养方法>");
         str += tr("如果备件不足，请及时与青岛艾普智能仪器有限公司销售人员联系购买");
         str += tr("或直接拨打购买热线：0532-87973318");
-        QMessageBox::warning(this, tr("重要提示"), sty.arg(str), QMessageBox::Close);
-    } else {
-        time += (curr == last) ? 0 : 1;
-        save = (curr * 100) + time;
-        tmpMsg.insert(addr + 1, QString::number(save));
-        tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
-        tmpMsg.insert(Qt::Key_1, "aip_system");
-        emit sendAppMsg(tmpMsg);
-        tmpMsg.clear();
+        str = sty.arg(str);
     }
+    if (mode == 2) {
+        str += sty.arg(tr("测试设备中轴承,夹头已到保养时间;"));
+        str += sty.arg(tr("请在轴承室中加入润滑油并拆下夹头进行防锈保养"));
+    }
+    int ret = 0;
+    if (time > 60) {
+        ret = QMessageBox::warning(this, tr("警告"), str, QMessageBox::Reset | QMessageBox::Ok);
+    }
+    time = (ret == QMessageBox::Reset) ? 0 : time;
+    time = time + ((curr == last) ? 0 : 1);
+    save = time + (curr * 100);
+    tmpMsg.insert(addr + SystCare, QString::number(save));
+    tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+    tmpMsg.insert(Qt::Key_1, "aip_system");
+    emit sendAppMsg(tmpMsg);
+    tmpMsg.clear();
+    qDebug() << curr << save << last << time;
 }
 
 void AppSystem::recvAppMsg(QTmpMap msg)

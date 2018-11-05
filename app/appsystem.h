@@ -25,8 +25,10 @@
 #include <QDateTimeEdit>
 
 #include "main.h"
+#include "appbackup.h"
 
 const int SystArea = 0x00;
+const int SystCare = 0x01;
 const int SystMode = 0x02;
 const int SystRate = 0x03;
 const int SystBeep = 0x04;

@@ -39,13 +39,14 @@ void SqlCreate::initTmpDat()
     tmpSet.insert((1000 + Qt::Key_4), 10000 + 0x0200);  // 绝缘后台地址
     tmpSet.insert((1000 + Qt::Key_8), 10000 + 0x0300);  // 匝间后台地址
 
-    tmpSet.insert((2000 + Qt::Key_0), 22000 + 0000);  // 零散数据地址
+    tmpSet.insert((2000 + Qt::Key_0), 20000 + 2000);  // 零散数据地址
     tmpSet.insert((2000 + Qt::Key_1), 20000 + 2120);  // 系统设置存放在2120
     tmpSet.insert((2000 + Qt::Key_2), 20000 + 2140);  // 系统网络存放在2140
     tmpSet.insert((2000 + Qt::Key_3), 20000 + 2160);  // 数据上传存放在2160
     tmpSet.insert((2000 + Qt::Key_4), 20000 + 2180);  // 登录信息存放在2180
-    tmpSet.insert((2000 + Qt::Key_6), 20000 + 2200);  // 界面信息存入在2200
     tmpSet.insert((2000 + Qt::Key_5), 20000 + 2300);  // 用户信息存放在2300
+    tmpSet.insert((2000 + Qt::Key_6), 20000 + 2200);  // 界面信息存入在2200
+    tmpSet.insert((2000 + Qt::Key_7), 20000 + 0x0000); // 日常保养参数
 
     tmpSet.insert((3000 + Qt::Key_0), 30000 + 0x0000);  // 综合结果地址
     tmpSet.insert((3000 + Qt::Key_1), 30000 + 0x0100);  // 电阻结果地址

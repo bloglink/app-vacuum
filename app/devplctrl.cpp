@@ -28,6 +28,7 @@ int DevPlctrl::open(QString name)
         com->setDataTerminalReady(true);
         com->setRequestToSend(false);
         connect(com, SIGNAL(readyRead()), this, SLOT(ready()));
+        timer->start(20);
         return Qt::Key_Away;
     } else {
         return Qt::Key_Meta;
@@ -41,14 +42,19 @@ int DevPlctrl::test(QVariantMap msg)
     tmpMap = msg;
     taskplc.clear();
     if (msg.value("data").isNull()) {
-        taskplc.insert(0x00, &DevPlctrl::setStop);
+        taskplc.insert(0x00, &DevPlctrl::setPlay);
+        taskplc.insert(0x01, &DevPlctrl::setStop);
+        taskplc.insert(0x02, &DevPlctrl::setParm);
     } else {
-        taskplc.insert(0x00, &DevPlctrl::setMode);
-        taskplc.insert(0x01, &DevPlctrl::setTurn);
-        taskplc.insert(0x02, &DevPlctrl::setData);
-        taskplc.insert(0x03, &DevPlctrl::setTest);
+        taskplc.insert(0x00, &DevPlctrl::setPlay);
+        taskplc.insert(0x01, &DevPlctrl::setMode);
+        taskplc.insert(0x02, &DevPlctrl::setTurn);
+        taskplc.insert(0x03, &DevPlctrl::setData);
+        taskplc.insert(0x04, &DevPlctrl::setTest);
+        taskplc.insert(0x05, &DevPlctrl::setParm);
     }
-    return thread();
+    taskShift = Qt::Key_Away;
+    return Qt::Key_Away;
 }
 
 void DevPlctrl::initParm()
@@ -57,6 +63,12 @@ void DevPlctrl::initParm()
     currMap = 0;
     timeOut = 0;
     isok = false;
+    taskShift = Qt::Key_Meta;
+    taskplc.insert(0x00, &DevPlctrl::setPlay);
+    taskplc.insert(0x01, &DevPlctrl::setStop);
+    taskplc.insert(0x02, &DevPlctrl::setParm);
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(thread()));
 }
 
 void DevPlctrl::ready()
@@ -92,6 +104,11 @@ int DevPlctrl::thread()
         }
     }
     return ret;
+}
+
+int DevPlctrl::setPlay()
+{
+    return taskShift;
 }
 
 int DevPlctrl::setMode()
@@ -184,6 +201,12 @@ int DevPlctrl::setStop()
         ret = Qt::Key_Away;
     }
     return ret;
+}
+
+int DevPlctrl::setParm()
+{
+    taskShift = Qt::Key_Meta;
+    return Qt::Key_Away;
 }
 
 void DevPlctrl::recvAppMsg(QTmpMap msg)
