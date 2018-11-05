@@ -72,8 +72,8 @@ void AppTester::initTestBar()
     mView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     mView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     mView->setColumnWidth(0, 120);
-    mView->setColumnWidth(1, 194);
-    mView->setColumnWidth(3, 108);
+    mView->setColumnWidth(1, 200);
+    mView->setColumnWidth(3, 85);
     QVBoxLayout *box = new QVBoxLayout;
     box->addWidget(mView);
 
@@ -364,10 +364,8 @@ void AppTester::initSettings()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int work = tmpSet.value(back + backWork).toInt();
-    if (work != 2)
-        wFrame->hide();
-    else
-        wFrame->show();
+    wFrame->setVisible((work == 2) ? true : false);
+    workText->setText(judgeON.arg((work == 0) ? "右" : "左"));
 
     tmpNG.clear();
     initQuality();
@@ -435,7 +433,7 @@ void AppTester::initSettings()
 
     if (Qt::Key_1) {
         int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-        if (mode == 2) {
+        if (mode >= 2) {
             for (int i=9; i < 15; i++)
                 wView->hideRow(i);
             for (int i=15; i < 21; i++)
@@ -579,9 +577,11 @@ void AppTester::initSetACW()
     double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
     double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
     double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
+    double last = tmpSet.value(addr + CACHEACW + CACHEACW*ADDRACWA + numb).toDouble();
     if (1) {
         QString item = tr("交耐");
         QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
+        parm.append(last == 0 ? "" : tr(" ARC:%1").arg(last));
         tmpItem.insert(tmpRow, item);
         tmpParm.insert(tmpRow, parm);
         QTmpMap tmp;
@@ -890,7 +890,9 @@ void AppTester::recvLedMsg(QTmpMap msg)
         int work = msg.value(Qt::Key_4).toInt();
         btnL->setChecked((work == WORKL) ? true : false);
         btnR->setChecked((work == WORKR) ? true : false);
-        workText->setText(judgeON.arg((work == WORKR) ? tr("右") : tr("左")));
+        int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+        if (tmpSet.value(back + backWork).toInt() != 0)
+            workText->setText(judgeON.arg((work == WORKR) ? tr("右") : tr("左")));
         btnHome->setEnabled(false);
         btnConf->setEnabled(false);
         btnTest->setEnabled(false);

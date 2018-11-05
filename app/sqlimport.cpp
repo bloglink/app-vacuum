@@ -47,7 +47,45 @@ void SqlImport::saveRecord(QTmpMap msg)
     if (!query.exec())
         qDebug() << query.lastError();
     QSqlDatabase::database("record").commit();
+
+    int conf = tmpSet.value(2000 + Qt::Key_3).toInt();
+    int mode = tmpSet.value(conf + 0x00).toInt();
+    if (mode >= 3) {
+        saveUpload(tmpMap);
+    }
     tmpMap.clear();
+}
+
+void SqlImport::saveUpload(QTmpMap msg)
+{
+    QString cmd = "insert into WIP_ID_PPARAM (ORG_ID,EVENT_ID,EVENT_NO,TRAY_ID,";
+    cmd += "PPN,LINE_ID,WL_ID,ITEM_ID,PPARAM_ID,PPARAM_VALUE,JUDGE_RESULT,TEST_SDT,";
+    cmd += "TEST_EDT,TEST_BY,CREATE_BY) ";
+    cmd += "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    QSqlQuery query(QSqlDatabase::database("upload"));
+    QString uuid = QUuid::createUuid().toString();
+    int addr = tmpSet.value((3000 + Qt::Key_0)).toInt();
+    QString code = msg.value(addr + TEMPCODE).toString();
+    loop = (prev == code) ? loop + 1 : 0;
+    prev = code;
+    QString type = tmpSet.value(DataType).toString();
+    query.prepare(cmd);
+    query.addBindValue("100101");
+    query.addBindValue(uuid);
+    query.addBindValue(QString::number(loop + 1));
+    query.addBindValue(code.toUpper());
+    query.addBindValue(type);
+    query.addBindValue("");  // 产线号
+    query.addBindValue("");  // 工位号
+    query.addBindValue("");  // 参数内容
+    query.addBindValue("");  // 参数代码
+    query.addBindValue("");  // 结果
+    query.addBindValue("");  // 判定
+    query.addBindValue(msg.value(addr + TEMPPLAY));  // 启动时间
+    query.addBindValue(msg.value(addr + TEMPSTOP));  // 完成时间
+    query.addBindValue("AIP");
+    query.addBindValue("KONGSHI");
+    query.exec();
 }
 
 void SqlImport::recvAppMsg(QTmpMap msg)

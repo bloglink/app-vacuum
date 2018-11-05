@@ -194,7 +194,7 @@ void SqlCreate::openRecord(bool isExist)
         QSqlQuery query(db);
         QString cmd;
         cmd = "create table if not exists aip_sqlite (";
-        cmd += "R_UUID bigintprimary key,R_DATE text,R_PLAY text,R_STOP text,R_TYPE text,";
+        cmd += "R_UUID bigint primary key,R_DATE text,R_PLAY text,R_STOP text,R_TYPE text,";
         cmd += "R_CODE text,R_USER text,R_WORK text,R_TEMP text,";
         cmd += "R_ISOK text)";
         if (!query.exec(cmd)) {
@@ -456,6 +456,21 @@ void SqlCreate::initType(QSqlQuery query)
 
 void SqlCreate::initConf(QSqlQuery query)
 {
+    int addr = tmpSet.value((4000 + Qt::Key_0)).toInt();
+    QStringList parm;
+    parm << "4,3,1,2,6"
+         << "ABC-Y"
+         << "#000000,#000000,#000000,#000000,#000000,#000000,#000000,#000000";  // 综合配置
+    for (int i=parm.size(); i < PSIZE; i++) {
+        parm << "0";
+    }
+    for (int i=0; i < parm.size(); i++) {
+        query.prepare("insert into T0001_aip_config values(?,?)");
+        query.addBindValue(addr + i);
+        query.addBindValue(parm.at(i));
+        if (!query.exec())
+            qWarning() << "aip_config" << query.lastError();
+    }
     initDCR(query);
     initMAG(query);
     initINR(query);
@@ -464,74 +479,72 @@ void SqlCreate::initConf(QSqlQuery query)
     initHAL(query);
     initLOD(query);
     initBMF(query);
-
-    int from = tmpSet.value((4000 + Qt::Key_0)).toInt();
-    QStringList parm;
-    parm.clear();
-    from = tmpSet.value((4000 + Qt::Key_0)).toInt();
-    parm << "4,3,1,2,6" << "ABC-Y"
-         << "#000000,#000000,#000000,#000000,#000000,#000000,#000000,#000000"
-         << "" << "" << "" << "" << "" << "" << "";  // 综合配置
-    for (int i=0; i < parm.size(); i++) {
-        query.prepare("insert into T0001_aip_config values(?,?)");
-        query.addBindValue(from + i);
-        query.addBindValue(parm.at(i));
-        if (!query.exec())
-            qWarning() << "aip_config" << query.lastError();
-    }
 }
 
 void SqlCreate::initDCR(QSqlQuery query)
 {
-    int from = tmpSet.value((4000 + Qt::Key_1)).toInt();
+    int addr = tmpSet.value((4000 + Qt::Key_1)).toInt();
+    int numb = 0;
     QStringList parm;
+    numb++;
     parm << "0" << "0" << "0" << "0" << "20" << "0" << "10" << "10";
-    for (int i=parm.size(); i < CACHEDCR*(CHECKDCR + 1); i++) {  // 其他参数
-        parm << "";
-    }
+    for (int i=parm.size(); i < STEP*numb; i++)   // 其他参数
+        parm << "0";
+    numb++;
     parm << "1" << "1" << "1" << "0" << "0" << "0" << "0" << "0";
-    for (int i=parm.size(); i < CACHEDCR*(CHECKDCR + 2); i++) {  // 是否测试
-        parm << "";
-    }
+    for (int i=parm.size(); i < STEP*numb; i++)   // 是否测试
+        parm << "0";
+    numb++;
     parm << "1" << "2" << "1" << "1" << "1" << "1" << "1" << "1";
-    for (int i=parm.size(); i < CACHEDCR*(PORTDCR1 + 2); i++) {  // 端口一
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 端口一
+        parm << "0";
     }
+    numb++;
     parm << "2" << "3" << "3" << "2" << "2" << "2" << "2" << "2";
-    for (int i=parm.size(); i < CACHEDCR*(PORTDCR2 + 2); i++) {  // 端口二
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 端口二
+        parm << "0";
     }
+    numb++;
     parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
-    for (int i=parm.size(); i < CACHEDCR*(WIREDCR1 + 2); i++) {  // 线圈材料
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 线圈材料
+        parm << "0";
     }
+    numb++;
     parm << "1" << "1" << "1" << "1" << "1" << "1" << "1" << "1";
-    for (int i=parm.size(); i < CACHEDCR*(UNITDCR1 + 2); i++) {  // 电阻单位
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 电阻单位
+        parm << "0";
     }
+    numb++;
     parm << "120" << "120" << "120" << "120" << "120" << "120" << "120" << "120";
-    for (int i=parm.size(); i < CACHEDCR*(UPPERDCR + 2); i++) {  // 电阻上限
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 电阻上限
+        parm << "0";
     }
+    numb++;
     parm << "80" << "80" << "80" << "80" << "80" << "80" << "80" << "80";
-    for (int i=parm.size(); i < CACHEDCR*(LOWERDCR + 2); i++) {  // 电阻下限
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 电阻下限
+        parm << "0";
     }
+    numb++;
     parm << "100" << "100" << "100" << "100" << "100" << "100" << "100" << "100";
-    for (int i=parm.size(); i < CACHEDCR*(SSTDDCR1 + 2); i++) {  // 标准电阻
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 标准电阻
+        parm << "0";
     }
+    numb++;
     parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
-    for (int i=parm.size(); i < CACHEDCR*(COMPDCR1 + 2); i++) {  // 线路补偿1
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 线路补偿1
+        parm << "0";
     }
+    numb++;
     parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
-    for (int i=parm.size(); i < CACHEDCR*(COMPDCR2 + 2); i++) {  // 线路补偿2
-        parm << "";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 线路补偿2
+        parm << "0";
+    }
+    for (int i=parm.size(); i < PSIZE; i++) {
+        parm << "0";
     }
     for (int i=0; i < parm.size(); i++) {
         query.prepare("insert into T0001_aip_config values(?,?)");
-        query.addBindValue(from + i);
+        query.addBindValue(addr + i);
         query.addBindValue(parm.at(i));
         if (!query.exec())
             qWarning() << "aip_config" << query.lastError();

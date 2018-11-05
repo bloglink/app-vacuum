@@ -129,7 +129,7 @@ private slots:
     int testWaitServo();
     int testStopServo();
     int testToolInvrt();
-    int testWaitInvrt();
+    int testStopInvrt();
     int testStartSend();
     int testStartTest();
     int getNextItem();
@@ -216,6 +216,7 @@ private:
     QList<QVariantMap> bufwin;
     quint32 ioHex;
     bool isChange;
+    bool isVacuum;
 
     QTimer *loading;
 };

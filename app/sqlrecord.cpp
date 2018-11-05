@@ -56,20 +56,22 @@ void SqlRecord::initTextBar()
 
     type = new QComboBox(this);
     type->setEditable(true);
-    type->setFixedHeight(40);
+    type->setFixedSize(240, 40);
+    type->setView(new QListView);
     blayout->addWidget(new QLabel(tr("测试型号"), this));
     blayout->addWidget(type);
 
-    from = new QDateEdit(this);
+    from = new QDateTimeEdit(this);
     from->setFixedHeight(40);
-    from->setDisplayFormat("yyyy-MM-dd");
+    from->setCalendarPopup(true);
+    from->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
     blayout->addWidget(new QLabel(tr("起始日期"), this));
     blayout->addWidget(from);
 
-    stop = new QDateEdit(this);
+    stop = new QDateTimeEdit(this);
     stop->setFixedHeight(40);
-    stop->setDate(QDate::currentDate());
-    stop->setDisplayFormat("yyyy-MM-dd");
+    stop->setCalendarPopup(true);
+    stop->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
     blayout->addWidget(new QLabel(tr("结束日期"), this));
     blayout->addWidget(stop);
 
@@ -88,10 +90,25 @@ void SqlRecord::initTextBar()
     connect(btnUpdate, SIGNAL(clicked(bool)), this, SLOT(clickExport()));
 }
 
+void SqlRecord::initSettings()
+{
+    QSqlQuery query(QSqlDatabase::database("config"));
+    query.exec("select name from sqlite_master where type='table' order by name");
+    tmpTyp.clear();
+    type->clear();
+    type->addItem("");
+    while (query.next()) {
+        QString t = query.value(0).toString();
+        QString numb = t.mid(1, 4);
+        tmpTyp.insert(numb.toInt(), t.mid(6, 50));
+        type->addItem(t.mid(6, 50));
+    }
+}
+
 void SqlRecord::clickSelect()
 {
     qint64 t1 = from->dateTime().toMSecsSinceEpoch();
-    qint64 t2 = (stop->dateTime().addDays(1)).toMSecsSinceEpoch();
+    qint64 t2 = stop->dateTime().toMSecsSinceEpoch();
     t1 = (t1 << 20);
     t2 = (t2 << 20);
     mView->setFilter(QObject::tr("R_UUID >= '%1' and R_UUID <= '%2'").arg(t1).arg(t2));
@@ -104,7 +121,7 @@ void SqlRecord::clickExport()
     tmpMsg.insert(Qt::Key_1, getSaveFileName());
     tmpMsg.insert(Qt::Key_4, "record");
     tmpMsg.insert(Qt::Key_9, (from->dateTime().toMSecsSinceEpoch() << 20));
-    tmpMsg.insert(Qt::Key_A, ((stop->dateTime().addDays(1)).toMSecsSinceEpoch() << 20));
+    tmpMsg.insert(Qt::Key_A, (stop->dateTime().toMSecsSinceEpoch() << 20));
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
 }
@@ -133,7 +150,8 @@ void SqlRecord::recvAppMsg(QTmpMap msg)
 
 void SqlRecord::showEvent(QShowEvent *e)
 {
-    this->setFocus();
+    stop->setDateTime(QDateTime::currentDateTime());
+    initSettings();
     clickSelect();
     e->accept();
 }

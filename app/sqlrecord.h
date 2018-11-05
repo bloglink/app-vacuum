@@ -17,6 +17,7 @@
 #include <QProcess>
 #include <QGroupBox>
 #include <QDateEdit>
+#include <QListView>
 #include <QComboBox>
 #include <QTableView>
 #include <QHeaderView>
@@ -24,6 +25,7 @@
 #include <QElapsedTimer>
 #include <QMessageBox>
 #include <QShowEvent>
+#include <QDateTimeEdit>
 
 #include <QSqlQuery>
 #include <QSqlDatabase>
@@ -47,6 +49,7 @@ private slots:
     void initLayout();
     void initViewBar();
     void initTextBar();
+    void initSettings();
     void clickSelect();
     void clickExport();
     QString getSaveFileName();
@@ -59,19 +62,12 @@ private:
     QTableView *item;
     QSqlTableModel *mItem;
     QComboBox *type;
-    QDateEdit *from;
-    QDateEdit *stop;
+    QDateTimeEdit *from;
+    QDateTimeEdit *stop;
     QVBoxLayout *boxLayout;
 
-    QLabel *text;
-
-    BoxQLabel *view;
-
-    QString sqlName;
-
-
-
     QVariantMap tmpMap;
+    QTmpMap tmpTyp;
     QTmpMap tmpSet;
     QTmpMap tmpQuan;
     QTmpMap tmpOKNG;

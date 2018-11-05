@@ -37,7 +37,7 @@
 
 const QString largeTM = "<p style='font-size:11pt;color:#FFFFFF;' align='left'>&nbsp;%1</p>";
 const QString largeHD = "<p style='font-size:18pt;color:#FFFF00;' align='left'>&nbsp;%1</p>";
-const QString titleAP = "<p style='font-size:20pt;color:#FFFF00;' align='center'>%1</p>";
+const QString titleAP = "<p style='font-size:20pt;color:#0367E0;' align='center'>%1</p>";
 const QString largeEN = "<p style='font-size:11pt;color:#666666;' align='left'>&nbsp;%1</p>";
 const QString largeER = "<p style='font-size:13pt;color:#FFFF00;' align='center'>%1</p>";
 const QString judgeOK = "<p style='font-size:72pt;color:#00FF00;'align='center'><b>OK</b></p>";

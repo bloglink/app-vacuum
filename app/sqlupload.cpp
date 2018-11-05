@@ -91,21 +91,102 @@ void SqlUpload::initBoxCtrl()
 
 void SqlUpload::initSettings()
 {
-    int addr = tmpSet[(2000 + Qt::Key_3)].toInt();
+    int addr = tmpSet.value(2000 + Qt::Key_3).toInt();
     for (int i=0; i < texts.size(); i++) {  // 上传配置存放在0x0120~0x0127
-        texts.at(i)->setText(tmpSet[addr + i].toString());
+        texts.at(i)->setText(tmpSet.value(addr + i).toString());
     }
 }
 
 void SqlUpload::saveSettings()
 {
-    int addr = tmpSet[(2000 + Qt::Key_3)].toInt();
+    int addr = tmpSet.value(2000 + Qt::Key_3).toInt();
     for (int i=0; i < texts.size(); i++) {  // 上传配置存放在0x0120~0x0127
-        tmpSet[addr + i] = texts.at(i)->text();
+        tmpSet.insert(addr + i, texts.at(i)->text());
     }
     tmpSet.insert(Qt::Key_0, Qt::Key_Save);
     tmpSet.insert(Qt::Key_1, "aip_system");
     emit sendAppMsg(tmpSet);
+}
+
+void SqlUpload::recvOpen()
+{
+    int addr = tmpSet.value(2000 + Qt::Key_3).toInt();
+    int mode = tmpSet.value(addr + 0x00).toInt();
+    QString host = tmpSet.value(addr + 0x01).toString();
+    QString user = tmpSet.value(addr + 0x02).toString();
+    QString pswd = tmpSet.value(addr + 0x03).toString();
+    QString base = tmpSet.value(addr + 0x04).toString();
+    QString dsn;
+    QString driver;
+    if (mode == 0) {
+        // 存本地,不上传
+        return;
+    }
+    if (mode == 1) {  // QMYSQL3
+        driver = "QMYSQL3";
+    }
+    if (mode >= 2) {  // QODBC3
+        driver = "QODBC3";
+        dsn = QString("DRIVER={SQL SERVER};SERVER=%1;DATABASE=%2;").arg(host).arg(base);
+    }
+    qDebug() << "sql open:" << driver;
+    QSqlDatabase db = QSqlDatabase::addDatabase(driver, "upload");
+    db.setHostName(host);
+    db.setUserName(user);
+    db.setPassword(pswd);
+    db.setDatabaseName(dsn);
+    db.setConnectOptions("SQL_ATTR_LOGIN_TIMEOUT=2;SQL_ATTR_CONNECTION_TIMEOUT=2");
+    if (!db.open()) {
+        qDebug() << db.lastError();
+    } else {
+        if (mode >= 3) {
+            isConnected = true;
+            QTimer *timer = new QTimer(this);
+            connect(timer, SIGNAL(timeout()), this, SLOT(recvRead()));
+            timer->start(5000);
+            recvRead();
+        }
+    }
+}
+
+void SqlUpload::recvRead()
+{
+    int hostline = 123;
+    QSqlQuery query(QSqlDatabase::database("upload"));
+    QString ppn;
+    if (!query.exec(tr("select PPN from V_WIP_ID_LINE where LINE_ID = '%1'").arg(hostline))) {
+        qDebug() << "sql read:" << query.lastError();
+        isConnected = false;
+        return;
+    }
+    if (query.next()) {
+        ppn = query.value(0).toString();
+    }
+    if (ppn.isEmpty())
+        return;
+    if (ppn != tmpSet.value(DataType).toString()) {  // 切换型号
+        reload(ppn);
+    }
+}
+
+void SqlUpload::reload(QString name)
+{
+    QSqlQuery query(QSqlDatabase::database("config"));
+    query.exec("select name from sqlite_master where type='table' order by name");
+    while (query.next()) {
+        QString t = query.value(0).toString();
+        QString numb = t.mid(1, 4);
+        QString type = t.mid(6, 50);
+        if (type == name) {
+            tmpMsg.insert(DataFile, numb);
+            tmpMsg.insert(DataType, name);
+            tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+            tmpMsg.insert(Qt::Key_1, "aip_reload");
+            emit sendAppMsg(tmpMsg);
+            tmpMsg.clear();
+            break;
+        }
+    }
 }
 
 void SqlUpload::recvAppMsg(QTmpMap msg)
@@ -113,6 +194,9 @@ void SqlUpload::recvAppMsg(QTmpMap msg)
     switch (msg.value(Qt::Key_0).toInt()) {
     case Qt::Key_Copy:
         tmpSet = msg;
+        break;
+    case Qt::Key_Game:
+        QTimer::singleShot(5000, this, SLOT(recvOpen()));
         break;
     default:
         break;

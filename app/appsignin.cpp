@@ -125,15 +125,10 @@ void AppSignin::initLoginBar()
     layout->addWidget(setLabel, 3, 3);
     connect(setLabel, SIGNAL(linkActivated(QString)), this, SLOT(clickLink(QString)));
 
-    autosave = new QCheckBox(this);
-    autosave->setText(tr("记住密码"));
-    autosave->setMinimumSize(64, 32);
-    layout->addWidget(autosave, 3, 1);
-
     autosign = new QCheckBox(this);
-    autosign->setText(tr("自动登录"));
+    autosign->setText(tr("记住密码并自动登录"));
     autosign->setMinimumSize(64, 32);
-    layout->addWidget(autosign, 3, 2);
+    layout->addWidget(autosign, 3, 1, 1, 2);
 
     QPushButton *btnSignin = new QPushButton(this);
     btnSignin->setText(tr("登录"));
@@ -243,7 +238,6 @@ void AppSignin::initSettings()
 
     QString curruser = tmpSet.value(real + mName).toString();
     QString currpass = tmpSet.value(real + mPass).toString();
-    QString currsave = tmpSet.value(real + mSave).toString();
 
     users.append(curruser);
     for (int i=addr; i < addr + 95; i+=5) {
@@ -253,14 +247,9 @@ void AppSignin::initSettings()
     users.removeAll("");
     username->clear();
     username->addItems(users);
-    if (currsave == "1") {
-        autosave->setChecked(true);
-        password->setText(currpass);
-    } else {
-        password->clear();
-    }
     if (sign == 1) {
         autosign->setChecked(true);
+        password->setText(currpass);
         if (!isOk) {
             isAuto = true;
             checkSignin();
@@ -276,8 +265,7 @@ void AppSignin::saveSettings()
     isOk = true;
     int real = tmpSet.value(DataUser).toInt();  // 当前用户
     tmpMsg.insert(DataUser, real);
-    tmpMsg.insert(DataAuto, (autosign->isChecked() || autosave->isChecked()) ? 1 : 0);
-    tmpMsg.insert(real + mSave, autosave->isChecked() ? 1 : 0);
+    tmpMsg.insert(DataAuto, (autosign->isChecked()) ? 1 : 0);
     tmpMsg.insert(real + mLast, QDateTime::currentDateTime().toString("yy-MM-dd hh:mm:ss"));
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
     if (isAuto)

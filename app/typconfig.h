@@ -78,8 +78,8 @@ private slots:
     void recvShow();
     virtual void showEvent(QShowEvent *e);
 private:
-    QVBoxLayout *vlayout;
-    QHBoxLayout *hlayout;
+    QGridLayout *blayout;
+    QVBoxLayout *hlayout;
     QTableWidget *view;
     QTableView *item;
     BoxQModel *mView;

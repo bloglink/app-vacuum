@@ -27,13 +27,18 @@ void TypConfig::initUI()
 
 void TypConfig::initLayout()
 {
-    hlayout = new QHBoxLayout;
-    vlayout = new QVBoxLayout;
-    vlayout->addLayout(hlayout);
+    blayout = new QGridLayout;
+    hlayout = new QVBoxLayout;
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->addLayout(hlayout);
+    layout->addLayout(blayout);
+    layout->setStretch(0, 5);
+    layout->setStretch(1, 4);
+    layout->setSpacing(10);
 
     QVBoxLayout *mlayout = new QVBoxLayout(this);
     QGroupBox *box = new QGroupBox(this);
-    box->setLayout(vlayout);
+    box->setLayout(layout);
     mlayout->addWidget(box);
 }
 
@@ -53,6 +58,7 @@ void TypConfig::initViewBar()
     view->setSelectionBehavior(QAbstractItemView::SelectRows);
     view->setSelectionMode(QAbstractItemView::SingleSelection);
     view->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    connect(view, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(selectModel()));
     connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(clickViewBar()));
     for (int col=0; col < headers.size(); col++) {
         for (int row=0; row < maxRow; row++) {
@@ -61,15 +67,38 @@ void TypConfig::initViewBar()
             view->setItem(row, col, item);
         }
     }
-    hlayout->addWidget(view);
+    QVBoxLayout *vlay = new QVBoxLayout;
+    vlay->addWidget(view);
+    hlayout->addLayout(vlay);
     hlayout->setStretch(0, 15);
+
+    QHBoxLayout *blay = new QHBoxLayout;
+    vlay->addLayout(blay);
+    QPushButton *prev = new QPushButton(this);
+    prev->setFixedSize(97, 40);
+    prev->setText(tr("上一页"));
+    blay->addWidget(prev);
+    connect(prev, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
+
+    page = new QLineEdit(this);
+    page->setText("1");
+    page->setFixedSize(50, 36);
+    page->setAlignment(Qt::AlignCenter);
+    blay->addWidget(page);
+
+    QPushButton *next = new QPushButton(this);
+    next->setFixedSize(97, 40);
+    next->setText(tr("下一页"));
+    blay->addWidget(next);
+    connect(next, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
+
+    blay->addStretch();
 }
 
 void TypConfig::initItemBar()
 {
     QVBoxLayout *layout = new QVBoxLayout;
-    hlayout->addLayout(layout);
-    hlayout->setStretch(1, 6);
+    blayout->addLayout(layout, 0, 0);
 
     itemNams << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
              << "匝间" << "电参" << "电感" << "堵转" << "低启"
@@ -111,8 +140,7 @@ void TypConfig::initItemBar()
 void TypConfig::initConfigBar()
 {
     QVBoxLayout *layout = new QVBoxLayout;
-    hlayout->addLayout(layout);
-    hlayout->setStretch(2, 6);
+    blayout->addLayout(layout, 0, 1);
 
     QDir dir("./types");
     QStringList typeNames =  dir.entryList(QDir::Files);
@@ -166,33 +194,18 @@ void TypConfig::initConfigBar()
 
 void TypConfig::initButtonBar()
 {
-    QHBoxLayout *btnLayout = new QHBoxLayout;
+    QHBoxLayout *blay = new QHBoxLayout;
+    blayout->addLayout(blay, 1, 0, 1, 2);
 
-    QPushButton *prev = new QPushButton(this);
-    prev->setFixedSize(97, 40);
-    prev->setText(tr("上一页"));
-    btnLayout->addWidget(prev);
-    connect(prev, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
-
-    page = new QLineEdit(this);
-    page->setText("1");
-    page->setFixedSize(50, 36);
-    page->setAlignment(Qt::AlignCenter);
-    btnLayout->addWidget(page);
-
-    QPushButton *next = new QPushButton(this);
-    next->setFixedSize(97, 40);
-    next->setText(tr("下一页"));
-    btnLayout->addWidget(next);
-    connect(next, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
-
-    btnLayout->addWidget(new QLabel(tr("当前型号:"), this));
+    blay->addWidget(new QLabel(tr("当前型号:"), this));
     type = new QLabel(this);
-    type->setFixedHeight(40);
-    btnLayout->addWidget(type);
-    type->setStyleSheet("color:yellow;font:24pt");
+    type->setFixedSize(342, 40);
+    blay->addWidget(type);
+    type->setStyleSheet("color:yellow;font:24pt;qproperty-alignment:AlignLeft;");
+    blay->addStretch();
 
-    btnLayout->addStretch();
+    QHBoxLayout *btnLayout = new QHBoxLayout;
+    blayout->addLayout(btnLayout, 2, 0, 1, 2);
 
     QRegExp rx1;
     rx1.setPattern("^[-|0-9|A-Z|a-z|^\s]{1,50}$"); // 限制接受1至50个字符,减号、数字和英文字母
@@ -200,18 +213,23 @@ void TypConfig::initButtonBar()
 
     btnLayout->addWidget(new QLabel(tr("选中型号:"), this));
     name = new QLineEdit(this);
-    name->setFixedHeight(35);
+    name->setFixedHeight(40);
     btnLayout->addWidget(name);
     name->setValidator(validator_16c);
     connect(name, SIGNAL(textChanged(QString)), this, SLOT(change()));
+    QString str;
+    str += tr("切换型号:双击型号\n");
+    str += tr("添加型号:选中空白型号->输入型号名称->保存\n");
+    str += tr("修改型号:选中已有型号->修改型号名称->保存\n");
+    str += tr("删除型号:选中已有型号->删除型号名称->保存");
+    name->setToolTip(str);
+    name->setToolTipDuration(60000);
 
     btnSave = new QPushButton(this);
     btnSave->setFixedSize(97, 40);
     btnSave->setText(tr("保存"));
     btnLayout->addWidget(btnSave);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(clickSave()));
-
-    vlayout->addLayout(btnLayout);
 }
 
 void TypConfig::initSettings()
@@ -372,7 +390,12 @@ void TypConfig::createModel()
     t_name = tr("T%1_%2").arg(t_numb).arg(t_name);
     QSqlQuery query(QSqlDatabase::database(sqlName));
     QSqlDatabase::database(sqlName).transaction();
-    if (!query.exec(tr("create table '%1' as select * from '%2'").arg(t_name).arg(c_name)))
+    QString cmd = tr("create table if not exists '%1' (").arg(t_name);
+    cmd += "uuid integer primary key, parm text)";
+    if (!query.exec(cmd)) {
+        qWarning() << t_name << query.lastError();
+    }
+    if (!query.exec(tr("insert into '%1' select * from '%2'").arg(t_name).arg(c_name)))
         qWarning() << "sql error:" << query.lastError() << t_name << c_name;
     QSqlDatabase::database(sqlName).commit();
 
@@ -418,7 +441,13 @@ void TypConfig::removeModel()
     QSqlDatabase::database(sqlName).transaction();
     if (!isRemove) {
         t_name = tr("T%1_%2").arg(t_numb).arg(t_name);
-        query.exec(tr("create table '%1' as select * from '%2'").arg(t_name).arg(c_name));
+        QString cmd = tr("create table if not exists '%1' (").arg(t_name);
+        cmd += "uuid integer primary key, parm text)";
+        if (!query.exec(cmd)) {
+            qWarning() << t_name << query.lastError();
+        }
+        if (!query.exec(tr("insert into '%1' select * from '%2'").arg(t_name).arg(c_name)))
+            qWarning() << "sql error:" << query.lastError() << t_name << c_name;
     }
     query.exec(tr("drop table '%1'").arg(c_name));
     QSqlDatabase::database(sqlName).commit();
@@ -484,12 +513,8 @@ void TypConfig::clickSave()
     int row = qMax(0, view->currentRow());
     QString n = view->item(row, 1)->text();  // 点中的型号
     QString c = name->text();  // 输出的型号
-    QString p = type->text();
-    if ((!c.isEmpty() && !n.isEmpty() && n == c && n == p) || c.isEmpty()) {  // 保存型号
+    if ((!c.isEmpty() && !n.isEmpty() && n == c) || c.isEmpty()) {  // 保存型号
         saveSettings();
-    }
-    if ((!c.isEmpty() && !n.isEmpty() && n == c && n != p)) {  // 调入型号
-        selectModel();
     }
     if ((!c.isEmpty() && !n.isEmpty() && n != c)) {  // 修改型号
         removeModel();

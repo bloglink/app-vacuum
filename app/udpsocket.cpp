@@ -12,7 +12,7 @@ UdpSocket::UdpSocket(QObject *parent) : QUdpSocket(parent)
 {
     hostPort = 6000;
 #ifdef __linux__
-    hostAddr = "192.168.1.53";
+    hostAddr = "192.168.1.134";
 #else
     hostAddr = "192.168.1.56";
 #endif

@@ -10,6 +10,7 @@
 #define SQLIMPORT_H
 
 #include <qmath.h>
+#include <QUuid>
 #include <QTimer>
 #include <QObject>
 #include <QProcess>
@@ -45,6 +46,7 @@ signals:
     void sendAppMsg(QTmpMap msg);
 private slots:
     void saveRecord(QTmpMap msg);
+    void saveUpload(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
 private:
     QTmpMap tmpQuan;
@@ -52,6 +54,8 @@ private:
     QElapsedTimer t;
     QTmpMap tmpMap;
     QTmpMap tmpSet;
+    QString prev;
+    int loop;
 };
 
 #endif // SQLIMPORT_H

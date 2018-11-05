@@ -34,6 +34,7 @@
 #include "typsetbmf.h"
 
 #define STEP 0x0010
+#define PSIZE 0x0100
 
 class SqlCreate : public QObject
 {

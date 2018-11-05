@@ -10,6 +10,8 @@
 #define SQLUPLOAD_H
 
 #include <QLabel>
+#include <QDebug>
+#include <QTimer>
 #include <QLayout>
 #include <QWidget>
 #include <QVariant>
@@ -18,6 +20,12 @@
 #include <QShowEvent>
 #include <QPushButton>
 #include <QMessageBox>
+
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QSqlRecord>
+#include <QSqlDatabase>
+#include <QSqlQueryModel>
 
 #include "main.h"
 
@@ -36,12 +44,17 @@ private slots:
     void initBoxCtrl();
     void initSettings();
     void saveSettings();
+    void recvOpen();
+    void recvRead();
+    void reload(QString name);
     void recvAppMsg(QTmpMap msg);
     virtual void showEvent(QShowEvent *e);
 private:
     QHBoxLayout *layout;
     QList<QLineEdit*> texts;
     QTmpMap tmpSet;
+    bool isConnected;
+    QTmpMap tmpMsg;
 };
 
 #endif // SQLUPLOAD_H
