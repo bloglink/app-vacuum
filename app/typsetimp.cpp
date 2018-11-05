@@ -578,6 +578,7 @@ void TypSetImp::recvParm(QString dat)
 
 void TypSetImp::recvWave(QStringList ws)
 {
+    isRecv = true;
     if (ws.size() < 2)
         return;
     int addr = tmpSet.value(4000 + Qt::Key_H).toInt();
@@ -596,7 +597,6 @@ void TypSetImp::recvWave(QStringList ws)
 
 void TypSetImp::recvNewMsg(QTmpMap msg)
 {
-    isRecv = true;
     int cmd = msg.value(Qt::Key_2).toInt();
     QString dat = msg.value(Qt::Key_1).toString();
     QStringList ws = dat.split(" ");

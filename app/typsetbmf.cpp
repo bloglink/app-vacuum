@@ -42,10 +42,10 @@ void TypSetBmf::initViewBar()
 
     iView = new QTableView(this);
     iView->setModel(iMode);
-    iView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    iView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    iView->horizontalHeader()->setFixedHeight(30);
     iView->verticalHeader()->setFixedWidth(108);
+    iView->horizontalHeader()->setFixedHeight(30);
+    iView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    iView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     connect(iView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QVBoxLayout *ilay = new QVBoxLayout;
@@ -65,14 +65,13 @@ void TypSetBmf::initViewBar()
     pMode->setColumnCount(pname.size());
     pMode->setHorizontalHeaderLabels(pname);
     pMode->setVerticalHeaderLabels(phead);
-    connect(pMode, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(autoInput()));
 
     pView = new QTableView(this);
     pView->setModel(pMode);
-    pView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    pView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    pView->horizontalHeader()->setFixedHeight(30);
     pView->verticalHeader()->setFixedWidth(75);
+    pView->horizontalHeader()->setFixedHeight(30);
+    pView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    pView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     connect(pView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QHBoxLayout *play = new QHBoxLayout;
@@ -195,12 +194,12 @@ void TypSetBmf::confSettings()
     int row = 0;
     QStringList tmpStr;
     tmpStr << "volt_max" << "volt_min" << "bemf_max" << "bemf_min" << "angle_max" << "angle_min"
-           << "phase"  << "phase_min" << "noun" << "noun_min";
+           << "noun" << "noun_min" << "phase" << "phase_min";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = iMode->index(i/2, i%2).data().toString();
-        if (i == 8)
+        if (i == tmpStr.indexOf("phase"))
             str = QString::number(sques.indexOf(str));
-        if (i == 7 || i == 9)
+        if (i == tmpStr.indexOf("phase_min") || i == tmpStr.indexOf("noun_min"))
             continue;
         tmpMap.insert(tmpStr.at(i), str);
     }
@@ -209,12 +208,11 @@ void TypSetBmf::confSettings()
     tmpStr << "speed" << "turn" << "volt_vcc" << "time" << "tmpcomp" << "driver";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
-        if (i == 1)
+        if (i == tmpStr.indexOf("turn"))
             str = QString::number(turns.indexOf(str));
-        if (i == 4)
+        if (i == tmpStr.indexOf("tmpcomp"))
             continue;
-        //            str = QString::number(comps.indexOf(str));
-        if (i == 5)
+        if (i == tmpStr.indexOf("driver"))
             str = "0";
         tmpMap.insert(tmpStr.at(i), str);
     }

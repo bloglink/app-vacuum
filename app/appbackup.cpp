@@ -55,7 +55,8 @@ void AppBackup::initBoxText()
     QStringList names;
     names << tr("产品型号") << tr("产品编号") << tr("评审编号") << tr("出厂日期")
           << tr("语言支持") << tr("工位设置") << tr("最高电压") << tr("自动测试")
-          << tr("测试延时") << tr("目标网络") << tr("网络端口") << tr("测试模式");
+          << tr("测试延时") << tr("目标网络") << tr("网络端口") << tr("测试模式")
+          << tr("屏蔽反嵌");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
@@ -219,7 +220,7 @@ void AppBackup::initMacText()
     headers << "K" << "b";
     QStringList items;
     items << tr("电流") << tr("电压") << tr("功率") << tr("转速") << tr("Icc")
-          << tr("Isp") << tr("转向") << tr("电压U") << tr("电压V") << tr("电压W")
+          << tr("Isp") << tr("转向") << tr("电压") << tr("常数") << tr("相位")
           << tr("高电平") << tr("低电平") << tr("占空比") << tr("频率");
     offView->setRowCount(items.size());
     offView->setColumnCount(headers.size());

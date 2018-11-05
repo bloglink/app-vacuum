@@ -139,6 +139,7 @@ private:
     BoxQImage *bodys;
     QList<QVariantMap> tmpQua;
     QTmpMap tmpNG;
+    QTmpMap tmpSave;
     QTmpMap tmpItem;
     QTmpMap tmpParm;
 };

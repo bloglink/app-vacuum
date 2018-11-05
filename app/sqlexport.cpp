@@ -109,16 +109,29 @@ int SqlExport::exportHead(QTmpMap msg)
           << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相";
     for (int i=0; i < names.size(); i++) {
         int addr = tmpSet.value(3000 + Qt::Key_1 + i).toInt();
-        if (names.at(i) == tr("电阻"))
-            tmpMsg.insert(addr + 0x10, tr("电阻平衡"));
-        if (names.at(i) == tr("反嵌"))
-            tmpMsg.insert(addr + 0x10, tr("磁旋"));
+        if (names.at(i) == tr("电阻")) {
+            tmpMsg.insert(addr + 0x80 + 0x02, tr("电阻平衡结果"));
+            tmpMsg.insert(addr + 0x80 + 0x03, tr("电阻平衡判定"));
+        }
+        if (names.at(i) == tr("反嵌")) {
+            tmpMsg.insert(addr + 0x80 + 0x02, tr("转向结果"));
+            tmpMsg.insert(addr + 0x80 + 0x03, tr("转向判定"));
+        }
         if (names.at(i) == tr("匝间")) {
-            for (int t=0; t < 16; t++) {
-                tmpMsg.insert(addr + t*0x10 + 0, tr("面积") + tr("%1").arg(t+1, 2, 10, QChar('0')));
-                tmpMsg.insert(addr + t*0x10 + 1, tr("差积") + tr("%1").arg(t+1, 2, 10, QChar('0')));
-                tmpMsg.insert(addr + t*0x10 + 2, tr("电晕") + tr("%1").arg(t+1, 2, 10, QChar('0')));
-                tmpMsg.insert(addr + t*0x10 + 3, tr("相位") + tr("%1").arg(t+1, 2, 10, QChar('0')));
+            for (int numb=0; numb < 0x08; numb++) {
+                tmpMsg.insert(addr + numb*0x10 + 0x00, names.at(i) + tr("项目%1").arg(numb + 1));
+                tmpMsg.insert(addr + numb*0x10 + 0x01, tr("面积上限%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x02, tr("面积结果%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x03, tr("面积判定%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x04, tr("差积上限%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x05, tr("差积结果%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x06, tr("差积判定%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x07, tr("电晕上限%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x08, tr("电晕结果%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x09, tr("电晕判定%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x0A, tr("相位上限%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x0B, tr("相位结果%1").arg(numb+1));
+                tmpMsg.insert(addr + numb*0x10 + 0x0C, tr("相位判定%1").arg(numb+1));
             }
             continue;
         }
@@ -151,8 +164,11 @@ int SqlExport::exportHead(QTmpMap msg)
             tmpMsg.insert(addr + 0x40, tr("相序"));
             continue;
         }
-        for (int t=0; t < 16; t++) {
-            tmpMsg.insert(addr + t, names.at(i) + tr("%1").arg(t+1, 2, 10, QChar('0')));
+        for (int numb=0; numb < 0x08; numb++) {
+            tmpMsg.insert(addr + numb*0x10 + 0x00, names.at(i) + tr("项目%1").arg(numb + 1));
+            tmpMsg.insert(addr + numb*0x10 + 0x01, names.at(i) + tr("参数%1").arg(numb + 1));
+            tmpMsg.insert(addr + numb*0x10 + 0x02, names.at(i) + tr("结果%1").arg(numb + 1));
+            tmpMsg.insert(addr + numb*0x10 + 0x03, names.at(i) + tr("判定%1").arg(numb + 1));
         }
     }
     qSort(numbs.begin(), numbs.end());

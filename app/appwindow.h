@@ -202,7 +202,7 @@ private:
 
     QTmpMap tmpSet;
     QTmpMap tmpMsg;
-    QTmpMap tmpDat;
+    QTmpMap tmpSave;
 
     QString barcode;
     QString tmpcode;

@@ -151,9 +151,10 @@ void TypConfig::initConfigBar()
     testAutoBox->setFixedHeight(44);
     layout->addWidget(testAutoBox);
 
-    testDrivBox = new QCheckBox(tr("外置变频驱动"), this);
+    testDrivBox = new QCheckBox(tr("外置驱动"), this);
     testDrivBox->setFixedHeight(44);
     layout->addWidget(testDrivBox);
+    testDrivBox->setToolTip(tr("切换后需重启设备"));
 
     testKeepBox = new QCheckBox(tr("不合格中断测试"), this);
     testKeepBox->setFixedHeight(44);

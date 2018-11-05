@@ -51,6 +51,7 @@ const int backWait = 0x08;
 const int backHost = 0x09;
 const int backPort = 0x0A;
 const int backMode = 0x0B;
+const int backNMag = 0x0C;
 
 class AppBackup : public QWidget
 {
