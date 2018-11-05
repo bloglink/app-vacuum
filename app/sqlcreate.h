@@ -72,6 +72,7 @@ private slots:
     void initLOD(QSqlQuery query);
     void initNLD(QSqlQuery query);
     void initBMF(QSqlQuery query);
+    void initLVS(QSqlQuery query);
 private:
     QTmpMap tmpSet;
 };

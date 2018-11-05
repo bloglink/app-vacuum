@@ -39,7 +39,6 @@
 #include "typsetind.h"
 #include "typsethal.h"
 #include "typsetlod.h"
-#include "typsetpwr.h"
 #include "typsetbmf.h"
 #include "sqlcreate.h"
 #include "sqlimport.h"
@@ -100,6 +99,7 @@ private slots:
     int initSetLod();
     int initSetNld();
     int initSetBmf();
+    int initSetLvs();
     int initImport();
     int initExport();
     int initRecord();
@@ -130,6 +130,8 @@ private slots:
     int taskCheckStop();
     int testThread();
     int testClearData();
+    int testToolIocan();
+    int testStopIocan();
     int testToolServo();
     int testWaitServo();
     int testStopServo();
@@ -197,7 +199,7 @@ private:
     int tempShift;
     int prevShift;
     int currItem;
-    int isudp;
+    int handUdp;
     int isok;
     qint64 timeUdp;
     qint64 timeOut;
@@ -222,7 +224,9 @@ private:
     quint32 ioHex;
     bool isChange;
     bool isVacuum;
-
+    QString mTurn;
+    int turnBuff;
+    quint16 ioSave;
     QTimer *loading;
 };
 

@@ -270,6 +270,7 @@ void TcpSocket::recvSocketConnected()
     timer->start(5000);
 
     tmpMsg.insert(Qt::Key_0, Qt::Key_WLAN);
+    tmpMsg.insert(Qt::Key_1, 1);
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
 }

@@ -16,6 +16,7 @@
 #include <QLayout>
 #include <QWidget>
 #include <QGroupBox>
+#include <QScrollBar>
 #include <QPushButton>
 #include <QHeaderView>
 #include <QTableWidget>
@@ -74,6 +75,7 @@ private slots:
     void initSetLOD();
     void initSetNLD();
     void initSetBMF();
+    void initSetLVS();
     void insertItem(int item, int numb);
     void initQuality();
     void clickType();

@@ -399,7 +399,7 @@ void TypSetMag::recvNewMsg(QTmpMap msg)
         waves.at(row)->setLines(tmp);
         waves.at(row)->update();
     }
-    if (cmd == 6086 && dat.toInt() < 3 && turnBox->currentIndex() != 2) {  // 上传转向0不转1反转2正转
+    if (cmd == 6086 && dat.toInt() < 3 && turnBox->currentIndex() != 2) {  // 0不转1反转2正转
         int index = dat.toInt();
         index = (index == 0) ? 2 : index;
         index = (index == 2) ? 0 : index;

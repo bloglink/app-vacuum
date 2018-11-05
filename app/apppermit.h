@@ -55,6 +55,7 @@ const int nSetHAL = 0x0B;
 const int nSetLOD = 0x0C;
 const int nSetNLD = 0x0D;
 const int nSetEMF = 0x0E;
+const int nSetLPH = 0x0F;
 
 const int nRecord = 0x00;
 const int nUpload = 0x01;

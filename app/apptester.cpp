@@ -73,7 +73,6 @@ void AppTester::initTestBar()
     headers << tr("测试项目") << tr("测试参数") << tr("测试结果") << tr("测试判定");
 
     mView = new QTableWidget(this);
-    mView->setEnabled(false);
     mView->setStyleSheet("border:none");
     mView->setColumnCount(headers.size());
     mView->setHorizontalHeaderLabels(headers);
@@ -81,6 +80,7 @@ void AppTester::initTestBar()
     mView->horizontalHeader()->setFixedHeight(32);
     mView->verticalHeader()->setMinimumSectionSize(30);
     mView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    mView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     mView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     mView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     mView->setColumnWidth(0, 120);
@@ -453,6 +453,9 @@ void AppTester::initSettings()
             if (str.toInt() == 0x0E) {
                 initSetBMF();
             }
+            if (str.toInt() == 0x0F) {
+                initSetLVS();
+            }
         }
         mView->setRowCount(qMax(tmpItem.keys().size(), 11));
         for (int t=0; t < mView->rowCount(); t++) {
@@ -473,17 +476,33 @@ void AppTester::initSettings()
     }
 
     if (Qt::Key_1) {
-        int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-        if (mode >= 2) {
-            for (int i=9; i < 15; i++)
-                wView->hideRow(i);
-            for (int i=15; i < 21; i++)
-                wView->showRow(i);
-        } else {
-            for (int i=9; i < 15; i++)
-                wView->showRow(i);
-            for (int i=15; i < 21; i++)
-                wView->hideRow(i);
+        int emag = tmpSet.value(back + 0x10 + nSetMAG - 1).toInt();  // 测试反嵌
+        int eimp = tmpSet.value(back + 0x10 + nSetIMP - 1).toInt();  // 测试匝间
+        int hall = tmpSet.value(back + 0x10 + nSetHAL - 1).toInt();  // 测试霍尔
+        int bemf = tmpSet.value(back + 0x10 + nSetEMF - 1).toInt();  // 测试反电动势
+        btnTest->setVisible((eimp != 0) && (hall != 0) ? false : true);
+        QTmpMap tmpShow;
+        tmpShow.insert(0x09, ((emag != 0) || (hall == 0 && eimp != 0)) ? 1 : 0);
+        tmpShow.insert(0x0A, ((emag != 0) || (hall == 0 && eimp != 0)) ? 1 : 0);
+        tmpShow.insert(0x0B, (eimp != 0) ? 1 : 0);
+        tmpShow.insert(0x0C, (eimp != 0) ? 1 : 0);
+        tmpShow.insert(0x0D, (eimp != 0 && hall == 0) ? 1 : 0);
+        tmpShow.insert(0x0E, (eimp != 0 && hall == 0) ? 1 : 0);
+        tmpShow.insert(0x0F, (bemf != 0 || eimp == 0) ? 1 : 0);
+        tmpShow.insert(0x10, (bemf != 0 || eimp == 0) ? 1 : 0);
+        tmpShow.insert(0x11, (hall != 0) ? 1 : 0);
+        tmpShow.insert(0x12, (hall != 0) ? 1 : 0);
+        tmpShow.insert(0x13, (hall != 0) ? 1 : 0);
+        tmpShow.insert(0x14, (hall != 0) ? 1 : 0);
+        QList<int> keys = tmpShow.keys();
+        for (int i=0; i < keys.size(); i++) {
+            int t = keys.at(i);
+            int k = tmpShow.value(t).toInt();
+            if (k == 1) {
+                wView->showRow(t);
+            } else {
+                wView->hideRow(t);
+            }
         }
     }
     tmpSave.insert(Qt::Key_0, Qt::Key_Save);
@@ -773,8 +792,8 @@ void AppTester::initSetLOD()
 
 void AppTester::initSetNLD()
 {
-    int real = tmpSet.value(3000 + Qt::Key_D).toInt();  // 负载结果地址
-    int addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 负载配置地址
+    int real = tmpSet.value(3000 + Qt::Key_D).toInt();  // 空载结果地址
+    int addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 空载配置地址
     QStringList items;
     items << tr("空载电流") << tr("空载功率") << tr("Icc电流") << tr("空载转速") << tr("空载转向");
     QStringList units;
@@ -789,7 +808,7 @@ void AppTester::initSetNLD()
             parm = (numb < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(numb) : parm);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            insertItem(nSetLOD, numb);
+            insertItem(nSetNLD, numb);
             tmpSave.insert(real + numb*0x10, parm);
         }
     }
@@ -815,6 +834,30 @@ void AppTester::initSetBMF()
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
             insertItem(nSetEMF, numb);
+            tmpSave.insert(real + numb*0x10, parm);
+        }
+    }
+}
+
+void AppTester::initSetLVS()
+{
+    int real = tmpSet.value(3000 + Qt::Key_F).toInt();  // 低启结果地址
+    int addr = tmpSet.value(4000 + Qt::Key_F).toInt();  // 低启配置地址
+    QStringList items;
+    items << tr("低启电流") << tr("低启功率") << tr("Icc电流") << tr("低启转速") << tr("低启转向");
+    QStringList units;
+    units << "mA" << "W" << "mA" << "rpm";
+
+    for (int numb=0; numb < 5; numb++) {
+        double max = tmpSet.value(addr + numb*2 + 0).toDouble();
+        double min = tmpSet.value(addr + numb*2 + 1).toDouble();
+        if (max != 0) {
+            QString item = items.at(numb);
+            QString parm = tr("%1").arg(max == 1 ? "CCW" : "CW");
+            parm = (numb < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(numb) : parm);
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetLPH, numb);
             tmpSave.insert(real + numb*0x10, parm);
         }
     }
@@ -1014,6 +1057,7 @@ void AppTester::updateShow()
     }
     for (int i=3; i < 8; i++) {
         tmpMap.insert("index", i);
+        tmpMap.insert("shade", 0);
         hWave->setLines(tmpMap);
         hWave->update();
     }
@@ -1121,7 +1165,7 @@ void AppTester::recvFGWave(QTmpMap msg)
     }
     tmpMap.insert("index", index);
     tmpMap.insert("frame", 0);
-    tmpMap.insert("color", cc.at(index));
+    tmpMap.insert("color", cc.at(index%cc.size()));
     tmpMap.insert("point", mPoint);
     BoxQImage *ww = (index < 3) ? bWave : hWave;
     ww->setLines(tmpMap);
@@ -1270,6 +1314,9 @@ void AppTester::recvNewMsg(QTmpMap msg)
                     int row = tmp.value(Qt::Key_0).toInt();
                     QString str = msg.value(Qt::Key_3).toString();
                     mView->item(row, 2)->setText(str);
+                    if (row > 13) {
+                        mView->verticalScrollBar()->setValue(row - 13);
+                    }
                 }
                 if (!msg.value(Qt::Key_4).isNull()) {  // 测试判定
                     int row = tmp.value(Qt::Key_0).toInt();

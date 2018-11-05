@@ -114,7 +114,7 @@ int SqlExport::exportHead(QTmpMap msg)
     QStringList names;
     names << tr("电阻") << tr("反嵌") << tr("绝缘") << tr("交耐") << tr("直耐")
           << tr("匝间") << tr("电参") << tr("电感") << tr("堵转") << tr("低启")
-          << tr("霍尔") << tr("负载") << tr("空载") << tr("BEMF");
+          << tr("霍尔") << tr("负载") << tr("空载") << tr("BEMF") << tr("缺相");
     QList<int> index;
     index << Qt::Key_1 << Qt::Key_2 << Qt::Key_3 << Qt::Key_4 << Qt::Key_5
           << Qt::Key_6 << Qt::Key_7 << Qt::Key_8 << Qt::Key_9 << Qt::Key_A
@@ -171,6 +171,22 @@ int SqlExport::exportHead(QTmpMap msg)
             tmpMsg.insert(addr + 0x20, tr("负载Icc"));
             tmpMsg.insert(addr + 0x30, tr("负载转速"));
             tmpMsg.insert(addr + 0x40, tr("负载转向"));
+            continue;
+        }
+        if (names.at(i) == tr("空载")) {
+            tmpMsg.insert(addr + 0x00, tr("空载电流"));
+            tmpMsg.insert(addr + 0x10, tr("空载功率"));
+            tmpMsg.insert(addr + 0x20, tr("空载Icc"));
+            tmpMsg.insert(addr + 0x30, tr("空载转速"));
+            tmpMsg.insert(addr + 0x40, tr("空载转向"));
+            continue;
+        }
+        if (names.at(i) == tr("缺相")) {
+            tmpMsg.insert(addr + 0x00, tr("缺相电流"));
+            tmpMsg.insert(addr + 0x10, tr("缺相功率"));
+            tmpMsg.insert(addr + 0x20, tr("缺相Icc"));
+            tmpMsg.insert(addr + 0x30, tr("缺相转速"));
+            tmpMsg.insert(addr + 0x40, tr("缺相转向"));
             continue;
         }
         if (names.at(i) == tr("BEMF")) {

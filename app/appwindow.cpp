@@ -56,7 +56,7 @@ int AppWindow::initTitle()
 
 int AppWindow::initLayout()
 {
-    isudp = 0;
+    handUdp = 0;
     preindex = 0;
     stack = new QStackedWidget(this);
     btnLayout = new QVBoxLayout;
@@ -142,6 +142,8 @@ int AppWindow::initScreen()
     names << tr("正在初始化空载配置");
     initMap[names.size()] = &AppWindow::initSetBmf;
     names << tr("正在初始化BEMF配置");
+    initMap[names.size()] = &AppWindow::initSetLvs;
+    names << tr("正在初始化低启配置");
     initMap[names.size()] = &AppWindow::initImport;
     names << tr("正在初始化数据存储");
     initMap[names.size()] = &AppWindow::initExport;
@@ -293,7 +295,7 @@ int AppWindow::initSetLod()
 
 int AppWindow::initSetNld()
 {
-    TypSetPwr *app = new TypSetPwr(this);
+    TypSetLod *app = new TypSetLod(this);
     return initWidget(nSetNLD, 2, "setnld", tr("空载配置"), app);
 }
 
@@ -301,6 +303,12 @@ int AppWindow::initSetBmf()
 {
     TypSetBmf *app = new TypSetBmf(this);
     return initWidget(nSetEMF, 2, "setbmf", tr("BEMF配置"), app);
+}
+
+int AppWindow::initSetLvs()
+{
+    TypSetLod *app = new TypSetLod(this);
+    return initWidget(0x0F, 2, "setlvs", tr("低启配置"), app);
 }
 
 int AppWindow::initImport()
@@ -481,10 +489,11 @@ int AppWindow::initThread()
     }
 
     QList<pClass> testBuf;
-    testBuf << &AppWindow::testClearData << &AppWindow::testToolInvrt
+    testBuf << &AppWindow::testClearData << &AppWindow::testToolIocan
+            << &AppWindow::testToolInvrt
             << &AppWindow::testToolServo << &AppWindow::testStartSend
             << &AppWindow::testStartTest << &AppWindow::testStopServo
-            << &AppWindow::testStopInvrt;
+            << &AppWindow::testStopInvrt << &AppWindow::testStopIocan;
 
     testMap.clear();
     for (int i=0; i < testBuf.size(); i++) {
@@ -504,6 +513,7 @@ int AppWindow::initThread()
     tasks->start(10);
 
     ioHex = 0;
+    ioSave = 0;
     currTask = 0;
     currTest = 0;
     station = 0x13;
@@ -563,12 +573,12 @@ int AppWindow::taskThread()
 
 int AppWindow::taskLoopSignin()
 {  // 每2.5秒发一次登录或心跳，无回应报警
+    handUdp = (timeUdp == TIME_OUT) ? 0 : handUdp;
     timeUdp = (timeUdp == TIME_OUT) ? 0 : timeUdp;
-    isudp = (timeUdp == TIME_OUT) ? 0 : isudp;
     if (timeUdp%(TIME_OUT/4) == 0) {
-        sendUdpStr((isudp == 0) ? "6000" : "6030");
+        sendUdpStr((handUdp == 0) ? "6000" : "6030");
         tmpMsg.insert(Qt::Key_0, Qt::Key_WLAN);
-        tmpMsg.insert(Qt::Key_1, isudp);
+        tmpMsg.insert(Qt::Key_1, handUdp);
         tmpMsg.insert(Qt::Key_2, timeUdp * 100 / TIME_OUT);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
@@ -585,6 +595,7 @@ int AppWindow::taskClearData()
     currTask = 0;
     currTest = 0;
     currItem = 0;
+    turnBuff = 0;
     speed = 0;
     speeds.clear();
     barcode.clear();
@@ -654,7 +665,8 @@ int AppWindow::taskStartView()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    sendUdpStr(QString("%1 %2").arg((mode == 1) ? "6020" : "6066").arg(station).toUtf8());
+    QString s = (mode == 1 || mode == 0) ? "6020" : "6066";
+    sendUdpStr(QString("%1 %2").arg(s).arg(station).toUtf8());
     tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
     tmpMsg.insert(Qt::Key_2, DATAON);
     tmpMsg.insert(Qt::Key_1, "LEDY");
@@ -674,6 +686,14 @@ int AppWindow::taskToolIobrd()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    if (ioSave != 0 && driv == 0) {
+        quint16 cmd = (station == WORKL) ? Y02 : Y03;  // 接地
+        if (currItem == nSetINR || currItem == nSetACW) {
+            cmd = (station == WORKL) ? Y04 : Y05;  // 耐压
+        }
+        sendUdpStr(tr("6036 %1").arg(cmd | ioSave | Y06).toUtf8());
+    }
     QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
     if (mode == 2 && !testItems.contains(QString::number(0x0D))) { // 无刷模式
         int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x40;
@@ -726,6 +746,9 @@ int AppWindow::taskClearCtrl()
         }
     } else {
         ret = Qt::Key_Away;
+    }
+    if (ioSave != 0) {
+        sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
     }
     return ret;
 }
@@ -803,7 +826,7 @@ int AppWindow::taskClearBeep()
     int tt = tmpSet.value(syst + (isok == DATAOK ? SystTime : SystWarn)).toDouble()*1000;
     if (t.elapsed() - timeOut >= tt) {
         if (mode == 2) { // 无刷模式
-            sendUdpStr("6036 0");
+            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
         }
         timeOut = t.elapsed();
         ret = Qt::Key_Away;
@@ -886,6 +909,35 @@ int AppWindow::testClearData()
 {
     testShift = Qt::Key_Meta;
     timeTst = 0;
+    return Qt::Key_Away;
+}
+
+int AppWindow::testToolIocan()
+{
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    if (ioSave != 0 && driv == 0) {
+        if (currItem == nSetINR || currItem == nSetACW) {
+            quint16 cmd = (station == WORKL) ? Y04 : Y05;  // 耐压
+            sendUdpStr(tr("6036 %1").arg(cmd | ioSave | Y06).toUtf8());
+        }
+    }
+    return Qt::Key_Away;
+}
+
+int AppWindow::testStopIocan()
+{
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    if (ioSave != 0 && driv == 0) {
+        if (currItem == nSetINR || currItem == nSetACW) {
+            int item = getNextItem();
+            if (item != nSetINR && item != nSetACW) {
+                quint16 cmd = (station == WORKL) ? Y02 : Y03;  // 接地
+                sendUdpStr(tr("6036 %1").arg(cmd | ioSave | Y06).toUtf8());
+            }
+        }
+    }
     return Qt::Key_Away;
 }
 
@@ -992,11 +1044,11 @@ int AppWindow::testStopServo()
 int AppWindow::testToolInvrt()
 {
     int ret = Qt::Key_Meta;
-    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
-    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 型号设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();  // 内外置驱动设置
-    if (currItem == 0x0C && mode == 3 && driv == 1) {  // 控石产线模式,外驱
+    bool isvr = (currItem == nSetLOD || currItem == nSetNLD || currItem == nSetLPH) ? true :false;
+    isvr = (driv != 0) ? isvr : false;
+    if (isvr) {  // 控石产线模式,外驱
         int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         int time = tmpSet.value(addr + 0x10 + 0x04).toDouble() * 100; // 测试时间
         int freq = tmpSet.value(addr + 0x10 + 0x05).toInt();  // 外驱频率
@@ -1022,15 +1074,15 @@ int AppWindow::testToolInvrt()
 int AppWindow::testStopInvrt()
 {
     int ret = Qt::Key_Away;
-    if (currItem == 0x0C) { // 负载
-        int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 型号设置地址
-        int mode = tmpSet.value(conf + ADDRDRIV).toInt();  // 内外置驱动设置
-        if (mode == 1) {  // 外驱
-            tmpMap.insert("freq", 0);
-            tmpMap.insert("turn", 0);
-            invert.test(tmpMap);
-            tmpMap.clear();
-        }
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 型号设置地址
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();  // 内外置驱动设置
+    bool isvr = (currItem == nSetLOD || currItem == nSetNLD || currItem == nSetLPH) ? true :false;
+    isvr = (driv != 0) ? isvr : false;
+    if (isvr) { // 外驱
+        tmpMap.insert("freq", 0);
+        tmpMap.insert("turn", 0);
+        invert.test(tmpMap);
+        tmpMap.clear();
     }
     return ret;
 }
@@ -1339,17 +1391,27 @@ void AppWindow::recvAppPrep()
 
     if (mode >= 2) {
         int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+        int eimp = tmpSet.value(back + 0x10 + nSetIMP - 1).toInt();  // 测试匝间
+        int hall = tmpSet.value(back + 0x10 + nSetHAL - 1).toInt();  // 测试霍尔
+        int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         sendUdpStr("6058 1");  // IO状态上传
         wait(100);
-        sendUdpStr(tr("6072 %1").arg(driv).toUtf8());  // 内外置接触器切换
-        wait(100);
-        sendUdpStr(tr("6073 %1").arg(driv).toUtf8());  // 内外置接触器切换
-        wait(100);
+        if (eimp != 0 && hall != 0) {
+            ioSave = Y00;
+            ioSave |= (driv != 0) ? Y01 : 0x00;
+            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
+            addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 空载配置地址
+        }
+        if (mode == 3) {
+            sendUdpStr(tr("6072 %1").arg(driv).toUtf8());  // 内外置接触器切换
+            wait(100);
+            sendUdpStr(tr("6073 %1").arg(driv).toUtf8());  // 内外置接触器切换
+            wait(100);
+        }
         int stop = (driv == 1) ? 1 : 2;
         int work = (station == WORKL) ? 1 : 2;
-        int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         int volt = tmpSet.value(addr + 0x10).toInt();
-        volt = (mode == 2) ? 0 : volt;
+        //        volt = (mode == 2) ? 0 : volt;
         int powr = tmpSet.value(addr + 0x24).toInt();
         // 开关 工位 Vm 电源 电压
         sendUdpStr(tr("6074 %1 %2 3 %3 %4").arg(stop).arg(work).arg(powr).arg(volt).toUtf8());
@@ -1442,6 +1504,9 @@ void AppWindow::closeEvent(QCloseEvent *e)
         sendUdpStr("6052 0");
         sendUdpStr("6068 0");
         sendUdpStr("6067 0");
+    }
+    if (mode == 2) {  // 无刷模式
+        sendUdpStr("6036 0");
     }
     e->accept();
 }
@@ -1659,9 +1724,9 @@ void AppWindow::recvAppMap(QVariantMap msg)
 
 void AppWindow::recvUdpMsg(QByteArray msg)
 {
-    if (isudp == 0)
+    if (handUdp == 0)
         QTimer::singleShot(1000, this, SLOT(taskConfig()));
-    isudp = 1;
+    handUdp = 1;
     timeUdp = 0;
     int cmd = msg.mid(0, 4).toInt();
     QString dat = msg.mid(5, msg.size());
@@ -1685,8 +1750,12 @@ void AppWindow::recvUdpMsg(QByteArray msg)
             calcHALL(dat);
         if (currItem == 0x0C) // 负载
             calcLOAD(dat);
+        if (currItem == 0x0D)
+            calcLOAD(dat);
         if (currItem == 0x0E)  // 反电动势
             calcBEMF(dat);
+        if (currItem == 0x0F)
+            calcLOAD(dat);
         break;
     case 6021:  // 空载/负载/反电势波形
         tmpMsg.insert(Qt::Key_0, Qt::Key_News);
@@ -1782,6 +1851,9 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         tmpMsg.insert(Qt::Key_5, dat);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
+        break;
+    case 6088:
+        mTurn = dat;
         break;
     default:
         break;
@@ -1978,9 +2050,12 @@ void AppWindow::calcHALL(QString msg)
 
 void AppWindow::calcLOAD(QString msg)
 {
-    int addr = tmpSet.value(3000 + Qt::Key_C).toInt();  // 负载结果地址
+    int item = Qt::Key_C;
+    item = (currItem == 0x0D) ? Qt::Key_D : item;
+    item = (currItem == 0x0F) ? Qt::Key_F : item;
+    int addr = tmpSet.value(3000 + item).toInt();  // 负载结果地址
     int hall = tmpSet.value(4000 + Qt::Key_B).toInt();  // 霍尔配置地址
-    int load = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
+    int load = tmpSet.value(4000 + item).toInt();  // 负载配置地址
     int numb = tmpSet.value(hall + 8).toInt();  // 磁极数
     int from = tmpSet.value(load + 9).toInt();  // 转速读取位置
     if (from != 0) {
@@ -1990,7 +2065,7 @@ void AppWindow::calcLOAD(QString msg)
             servoR.test();
     }
     QStringList tmp2 = msg.split(" ");
-    if (tmp2.size() >= 30 && currItem == 0x0C) {  // 负载计算
+    if (tmp2.size() >= 30) {  // 负载计算
         int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x80;  // K,b值存储位置
         double kc = tmpSet.value(back + 0x00).toDouble();
         double bc = tmpSet.value(back + 0x01).toDouble();
@@ -2011,6 +2086,14 @@ void AppWindow::calcLOAD(QString msg)
         double rpm = tmp2.at(20 + 0x03).toDouble()*60/1000/numb;  // 转速
         double ccw = tmp2.at(20 + 0x06).toDouble();  // 转向
         double ext = tmp2.at(20 + 0x09).toDouble();
+        if (!mTurn.isEmpty()) {
+            QStringList tt = mTurn.split(" ");
+            if (tt.size() >= 2) {
+                ccw = QString(tt.at(station == WORKL ? 0 : 1)).toInt();
+                ccw = (ccw == 0) ? turnBuff : ccw;
+                turnBuff = ccw;
+            }
+        }
         crr = qMax(0.0, crr);
         vlt = qMax(0.0, vlt);
         pwr = qMax(0.0, pwr);
@@ -2056,7 +2139,7 @@ void AppWindow::calcLOAD(QString msg)
                 QString real;
                 real = (i == 0) ? (volt + QString::number(reals.at(i), 'f', 2) + "mA") : real;
                 real = (i == 1) ? (QString::number(reals.at(i), 'f', 2) + "W") : real;
-                real = (i == 2) ? (QString::number(reals.at(i), 'f', 0) + "mA") : real;
+                real = (i == 2) ? (QString::number(reals.at(i), 'f', 2) + "mA") : real;
                 real = (i == 3) ? (QString::number(reals.at(i), 'f', 0) + "rpm") : real;
                 real = (i == 4) ? turn : real;
                 tmpMsg.insert(Qt::Key_3, real);

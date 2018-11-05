@@ -63,6 +63,7 @@ void SqlCreate::initTmpDat()
     tmpSet.insert((3000 + Qt::Key_C), 30000 + 0x0C00);  // 负载结果地址
     tmpSet.insert((3000 + Qt::Key_D), 30000 + 0x0D00);  // 空载结果地址
     tmpSet.insert((3000 + Qt::Key_E), 30000 + 0x0E00);  // 反电动势结果地址
+    tmpSet.insert((3000 + Qt::Key_F), 30000 + 0x0F00);  // 低启结果地址
     tmpSet.insert((3000 + Qt::Key_G), 30000 + 0x1000);  // 反嵌波形地址
     tmpSet.insert((3000 + Qt::Key_H), 30000 + 0x2000);  // 匝间波形地址
     tmpSet.insert((3000 + Qt::Key_I), 30000 + 0x0110);  // 电阻平衡地址
@@ -82,6 +83,7 @@ void SqlCreate::initTmpDat()
     tmpSet.insert((4000 + Qt::Key_C), 40000 + 0x0C00);  // 负载配置地址
     tmpSet.insert((4000 + Qt::Key_D), 40000 + 0x0D00);  // 空载配置地址
     tmpSet.insert((4000 + Qt::Key_E), 40000 + 0x0E00);  // 反电动势配置地址
+    tmpSet.insert((4000 + Qt::Key_F), 40000 + 0x0F00);  // 低启配置地址
     tmpSet.insert((4000 + Qt::Key_G), 40000 + 0x1000);  // 反嵌波形地址
     tmpSet.insert((4000 + Qt::Key_H), 40000 + 0x2000);  // 匝间波形地址
 
@@ -481,6 +483,7 @@ void SqlCreate::initConf(QSqlQuery query)
     initLOD(query);
     initNLD(query);
     initBMF(query);
+    initLVS(query);
 }
 
 void SqlCreate::initDCR(QSqlQuery query)
@@ -957,6 +960,40 @@ void SqlCreate::initBMF(QSqlQuery query)
         parm << "";
     }
 
+    for (int i=0; i < parm.size(); i++) {
+        query.prepare("insert into T0001_aip_config values(?,?)");
+        query.addBindValue(from + i);
+        query.addBindValue(parm.at(i));
+        if (!query.exec())
+            qWarning() << "aip_config" << query.lastError();
+    }
+}
+
+void SqlCreate::initLVS(QSqlQuery query)
+{
+    int row = 0;
+    int from = tmpSet.value((4000 + Qt::Key_F)).toInt();
+    QStringList parm;
+    parm << "500" << "0" << "500" << "0" << "500" << "0" << "3000" << "0" << "0" << "0";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    parm << "310" << "15" << "3.3" << "0" << "5" << "50";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    parm << "0" << "0" << "0" << "0" << "0" << "1";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    parm << "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
     for (int i=0; i < parm.size(); i++) {
         query.prepare("insert into T0001_aip_config values(?,?)");
         query.addBindValue(from + i);

@@ -39,13 +39,13 @@
 #define XX23 0x080000  // 轴移除完成
 
 #define Y00 0x000001  // 右启动
-#define Y01 0x000002  // 右抽气
-#define Y02 0x000004  // 右回气
-#define Y03 0x000008  // 左启动
-#define Y04 0x000010  // 左抽气
+#define Y01 0x000008  // 右抽气
+#define Y02 0x000002  // 右回气
+#define Y03 0x000010  // 左启动
+#define Y04 0x000004  // 左抽气
 #define Y05 0x000020  // 左回气
 #define Y06 0x000040  // 右罩上
-#define Y07 0x000080  // 右罩下
+#define Y07 0x000200  // 右罩下
 
 #define X00 0x000001  // 右启动
 #define X01 0x000002

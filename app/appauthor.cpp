@@ -99,7 +99,7 @@ void AppAuthor::recvAppMsg(QTmpMap msg)
         verStat->setText(msg.value(DataSoft).toString());
         break;
     case Qt::Key_WLAN:
-        tcpStat->show();
+        tcpStat->setVisible((msg.value(Qt::Key_1).toInt() == 1) ? true : false);
         break;
     case Qt::Key_Game:
         QTimer::singleShot(800, bframe, SLOT(show()));

@@ -76,7 +76,7 @@ void TypSetLod::initViewBar()
     QStringList pname;
     pname << tr("参数");
     QStringList parms;
-    parms << tr("加载延时(s)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
+    parms << tr("启动延时(s)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
           << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("外驱转向");
     pMode = new BoxQModel(this);
     pMode->setRowCount(parms.size());
@@ -200,7 +200,10 @@ void TypSetLod::initItemDelegate()
 void TypSetLod::initSettings()
 {
     int row = 0;
-    int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
+    int item = Qt::Key_C;
+    item = (this->objectName() == "setnld") ? Qt::Key_D : item;
+    item = (this->objectName() == "setlvs") ? Qt::Key_F : item;
+    int addr = tmpSet.value(4000 + item).toInt();  // 负载配置地址
 
     for (int i=0; i < iMode->rowCount()*2; i++) {
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
@@ -235,7 +238,10 @@ void TypSetLod::initSettings()
 void TypSetLod::saveSettings()
 {
     confSettings();
-    int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
+    int item = Qt::Key_C;
+    item = (this->objectName() == "setnld") ? Qt::Key_D : item;
+    item = (this->objectName() == "setlvs") ? Qt::Key_F : item;
+    int addr = tmpSet.value(4000 + item).toInt();  // 负载配置地址
     for (int i=0; i < iMode->rowCount()*2; i++) {
         QString str = iMode->index(i/2, i%2).data().toString();
         if (i < 8)
@@ -309,7 +315,11 @@ void TypSetLod::confSettings()
     tmpMap.insert("sequence", tmpStr.join(","));
     tmpMap.insert("freq_std", 1000);
 
-    config.insert("LOAD", tmpMap);
+    QString str = QString("LOAD");
+    str = (this->objectName() == "setnld") ? QString("NOLOAD") : str;
+    str = (this->objectName() == "setlvs") ? QString("LPH") : str;
+
+    config.insert(str, tmpMap);
     config.insert("enum", Qt::Key_Save);
     emit sendAppMap(config);
     config.clear();
@@ -454,8 +464,15 @@ void TypSetLod::change()
 
 void TypSetLod::recvShowEvent()
 {
+    QString str = QString("LOAD");
+    str = (this->objectName() == "setnld") ? QString("NOLOAD") : str;
+    str = (this->objectName() == "setlvs") ? QString("LPH") : str;
+    if (this->objectName() != "setlod") {
+        vView->hideRow(3);
+        pView->hideRow(3);
+    }
     tmpMap.insert("enum", Qt::Key_View);
-    tmpMap.insert("text", QString("6004 LOAD"));
+    tmpMap.insert("text", QString("6004 %1").arg(str));
     emit sendAppMap(tmpMap);
     tmpMap.clear();
     initSettings();
