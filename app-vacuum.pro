@@ -57,7 +57,8 @@ HEADERS += \
     app/devdriver.h \
     app/apppermit.h \
     app/typsetind.h \
-    app/apprepair.h
+    app/apprepair.h \
+    app/typsetpwr.h
 
 SOURCES += \
     app/appauthor.cpp \
@@ -98,6 +99,7 @@ SOURCES += \
     app/devdriver.cpp \
     app/apppermit.cpp \
     app/typsetind.cpp \
-    app/apprepair.cpp
+    app/apprepair.cpp \
+    app/typsetpwr.cpp
 
 

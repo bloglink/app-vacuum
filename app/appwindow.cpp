@@ -132,6 +132,8 @@ int AppWindow::initScreen()
     names << tr("正在初始化高压配置");
     initMap[names.size()] = &AppWindow::initSetImp;
     names << tr("正在初始化匝间配置");
+    initMap[names.size()] = &AppWindow::initSetPwr;
+    names << tr("正在初始化电参配置");
     initMap[names.size()] = &AppWindow::initSetInd;
     names << tr("正在初始化电感配置");
     initMap[names.size()] = &AppWindow::initSetHal;
@@ -273,6 +275,12 @@ int AppWindow::initSetImp()
 {
     TypSetImp *app = new TypSetImp(this);
     return initWidget(nSetIMP, 2, "setimp", tr("匝间配置"), app);
+}
+
+int AppWindow::initSetPwr()
+{
+    TypSetPwr *app = new TypSetPwr(this);
+    return initWidget(nSetPWR, 2, "setpwr", tr("电参配置"), app);
 }
 
 int AppWindow::initSetInd()
@@ -682,26 +690,23 @@ int AppWindow::taskStartView()
 }
 
 int AppWindow::taskToolIobrd()
-{
+{  // 常规无刷测试夹紧->下压;无刷整机内置驱动切换接触器,外置驱动器无动作
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (ioSave != 0 && driv == 0) {
-        quint16 cmd = (station == WORKL) ? Y02 : Y03;  // 接地
-        if (currItem == nSetINR || currItem == nSetACW) {
-            cmd = (station == WORKL) ? Y04 : Y05;  // 耐压
+    if (mode == 2) {  // 无刷模式
+        int pgnd = ((station == WORKL) ? Y02 : Y03);  // 接地
+        int agnd = ((station == WORKL) ? Y04 : Y05);  // 耐压
+        int down = ((station == WORKL) ? 0x00 : 0x03) + back + 0x40;
+        int move = ((station == WORKL) ? 0x0C : 0x0F) + back + 0x40;
+        down = tmpSet.value(down).toString().toInt(NULL, 16);  // 下压
+        move = tmpSet.value(move).toString().toInt(NULL, 16);  // 夹紧
+        int sgnd = (currItem == nSetINR || currItem == nSetACW) ? agnd : pgnd;
+        if (driv == 0) {
+            int tmp = (ioSave == 0) ? (down + move) : (sgnd + ioSave + Y06);
+            sendUdpStr(tr("6036 %1").arg(tmp).toUtf8());
         }
-        sendUdpStr(tr("6036 %1").arg(cmd | ioSave | Y06).toUtf8());
-    }
-    QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
-    if (mode == 2 && !testItems.contains(QString::number(0x0D))) { // 无刷模式
-        int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x40;
-        int down = back + ((station == 0x13) ? 0x00 : 0x03);
-        int move = back + ((station == 0x13) ? 0x0C : 0x0F);
-        down = tmpSet.value(down).toString().toInt(NULL, 16);
-        move = tmpSet.value(move).toString().toInt(NULL, 16);
-        sendUdpStr(tr("6036 %1").arg(down + move).toUtf8());
     }
     return Qt::Key_Away;
 }
@@ -729,10 +734,15 @@ int AppWindow::taskStartTest()
 }
 
 int AppWindow::taskClearCtrl()
-{
+{  // 测试完成,清理输出状态
     int ret = Qt::Key_Meta;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    if (mode == 2) {
+        if (ioSave != 0) {
+            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
+        }
+    }
     if (mode == 3) {
         if (timeTst % 100 == 0) {
             sendUdpStr(tr("6077 %1").arg(YY14 | YY08).toUtf8());
@@ -746,9 +756,6 @@ int AppWindow::taskClearCtrl()
         }
     } else {
         ret = Qt::Key_Away;
-    }
-    if (ioSave != 0) {
-        sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
     }
     return ret;
 }
@@ -802,7 +809,7 @@ int AppWindow::taskStartBeep()
         int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x40;
         int down = back + ((station == 0x13) ? 0x12 : 0x13);
         down = tmpSet.value(down).toString().toInt(NULL, 16);
-        sendUdpStr(tr("6036 %1").arg(down).toUtf8());
+        sendUdpStr(tr("6036 %1").arg(down | ioSave).toUtf8());  // 松开夹紧气缸
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
     tmpMsg.insert(Qt::Key_1, isok == DATAOK ? "LEDG" : "LEDR");
@@ -826,7 +833,7 @@ int AppWindow::taskClearBeep()
     int tt = tmpSet.value(syst + (isok == DATAOK ? SystTime : SystWarn)).toDouble()*1000;
     if (t.elapsed() - timeOut >= tt) {
         if (mode == 2) { // 无刷模式
-            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
+            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());  // 松开上移气缸
         }
         timeOut = t.elapsed();
         ret = Qt::Key_Away;
@@ -914,12 +921,15 @@ int AppWindow::testClearData()
 
 int AppWindow::testToolIocan()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (ioSave != 0 && driv == 0) {
-        if (currItem == nSetINR || currItem == nSetACW) {
-            quint16 cmd = (station == WORKL) ? Y04 : Y05;  // 耐压
-            sendUdpStr(tr("6036 %1").arg(cmd | ioSave | Y06).toUtf8());
+    if (mode == 2) {  // 无刷模式
+        bool isDriv = (currItem == nSetINR || currItem == nSetACW);
+        if (ioSave != 0 && driv == 0 && isDriv) {  // 内置驱动绝缘耐压切换
+            int agnd = ((station == WORKL) ? Y04 : Y05);  // 耐压
+            sendUdpStr(tr("6036 %1").arg(agnd | ioSave | Y06).toUtf8());
         }
     }
     return Qt::Key_Away;

@@ -478,6 +478,7 @@ void SqlCreate::initConf(QSqlQuery query)
     initINR(query);
     initACW(query);
     initIMP(query);
+    initPWR(query);
     initIND(query);
     initHAL(query);
     initLOD(query);
@@ -771,6 +772,72 @@ void SqlCreate::initIMP(QSqlQuery query)
     for (int i=0; i < parm.size(); i++) {
         query.prepare("insert into T0001_aip_config values(?,?)");
         query.addBindValue(from + i);
+        query.addBindValue(parm.at(i));
+        if (!query.exec())
+            qWarning() << "aip_config" << query.lastError();
+    }
+}
+
+void SqlCreate::initPWR(QSqlQuery query)
+{
+    int addr = tmpSet.value((4000 + Qt::Key_7)).toInt();
+    int numb = 0;
+    QStringList parm;
+    numb++;
+    parm << "1" << "350" << "180" << "0" << "310" << "0" << "35" << "15";
+    for (int i=parm.size(); i < STEP*numb; i++)   // 其他参数
+        parm << "0";
+    numb++;
+    parm << "1" << "1" << "1" << "0" << "0" << "0" << "0" << "0";
+    for (int i=parm.size(); i < STEP*numb; i++)   // 是否测试
+        parm << "0";
+    numb++;
+    parm << "3" << "2" << "1" << "1" << "1" << "1" << "1" << "1";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 电流上限
+        parm << "0";
+    }
+    numb++;
+    parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 电流下限
+        parm << "0";
+    }
+    numb++;
+    parm << "30" << "20" << "10" << "10" << "10" << "10" << "10" << "10";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 功率上限
+        parm << "0";
+    }
+    numb++;
+    parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 功率下限
+        parm << "0";
+    }
+    numb++;
+    parm << "280" << "280" << "280" << "280" << "280" << "280" << "280" << "280";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 容压上限
+        parm << "0";
+    }
+    numb++;
+    parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 容压下限
+        parm << "0";
+    }
+    numb++;
+    parm << "0" << "0" << "0" << "0" << "0" << "0" << "0" << "0";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 转向
+        parm << "0";
+    }
+    numb++;
+    parm << "1" << "1" << "1" << "1" << "1" << "1" << "1" << "1";
+    for (int i=parm.size(); i < STEP*numb; i++) {  // 时间
+        parm << "0";
+    }
+    numb++;
+    for (int i=parm.size(); i < PSIZE; i++) {
+        parm << "0";
+    }
+    for (int i=0; i < parm.size(); i++) {
+        query.prepare("insert into T0001_aip_config values(?,?)");
+        query.addBindValue(addr + i);
         query.addBindValue(parm.at(i));
         if (!query.exec())
             qWarning() << "aip_config" << query.lastError();

@@ -36,6 +36,7 @@
 #include "typsetinr.h"
 #include "typsetacw.h"
 #include "typsetimp.h"
+#include "typsetpwr.h"
 #include "typsetind.h"
 #include "typsethal.h"
 #include "typsetlod.h"
@@ -94,6 +95,7 @@ private slots:
     int initSetInr();
     int initSetAcw();
     int initSetImp();
+    int initSetPwr();
     int initSetInd();
     int initSetHal();
     int initSetLod();
