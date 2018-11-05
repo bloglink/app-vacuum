@@ -207,7 +207,7 @@ void TypConfig::initButtonBar()
     blayout->addLayout(btnLayout, 2, 0, 1, 2);
 
     QRegExp rx1;
-    rx1.setPattern("^[-|0-9|A-Z|a-z|^\s]{1,50}$"); // 限制接受1至50个字符,减号、数字和英文字母
+    rx1.setPattern("^[_|0-9|A-Z|a-z|^\s]{1,50}$"); // 限制接受1至50个字符,减号、数字和英文字母
     QValidator *validator_16c = new QRegExpValidator(rx1, this);
 
     btnLayout->addWidget(new QLabel(tr("选中型号:"), this));

@@ -252,6 +252,8 @@ void AppTester::initWaveAll()
 
 void AppTester::initButtonBar()
 {
+    ms.start();
+    tmpTime = 0;
     blayout = new QVBoxLayout;
 
     btnHome = new QPushButton("开机主页", this);
@@ -392,7 +394,7 @@ void AppTester::initOtherParm()
 
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
-    timer->start(1000);
+    timer->start(100);
 }
 
 void AppTester::initSettings()
@@ -1071,6 +1073,9 @@ void AppTester::updateShow()
 
 void AppTester::updateTime()
 {
+    if (tmpTime != 0) {
+        testText->setText(strSW.arg(tr("测试时间:%1s").arg((ms.elapsed() - tmpTime)/1000.0)));
+    }
     QString strA = tr("当前日期:") + QDate::currentDate().toString("yy-MM-dd");
     dateText->setText(strSW.arg(strA));
     QString strB = tr("当前时间:") + QTime::currentTime().toString("hh:mm:ss");
@@ -1116,8 +1121,8 @@ void AppTester::recvLedMsg(QTmpMap msg)
     int c = msg.value(Qt::Key_2).toInt();
     if (c == DATAON) {
         updateShow();
-        ms.restart();
         tmpNG.clear();
+        tmpTime = ms.elapsed();
         realText->setText(strLY.arg(tr("测试")));
         int work = msg.value(Qt::Key_4).toInt();
         btnL->setChecked((work == WORKL) ? true : false);
@@ -1136,11 +1141,13 @@ void AppTester::recvLedMsg(QTmpMap msg)
         str = (c == DATADC) ? strLR.arg(tr("中断")) : str;
         str = (c == DATANG) ? strLR.arg(tr("NG")) : str;
         realText->setText(str);
-        testText->setText(strSW.arg(tr("测试时间:%1s").arg(ms.elapsed()/1000.0)));
+        int t = ms.elapsed() - tmpTime;
+        testText->setText(strSW.arg(tr("测试时间:%1s").arg(t/1000.0)));
         initQuality();
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);
         btnTest->setEnabled(true);
+        tmpTime = 0;
     }
 }
 

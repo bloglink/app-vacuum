@@ -131,6 +131,7 @@ private:
     quint32 tmpRow;
     quint32 testOK;
     quint32 testQu;
+    quint32 tmpTime;
 
     QTmpMap tmpMsg;
     QTmpMap tmpSet;
