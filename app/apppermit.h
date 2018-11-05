@@ -10,6 +10,7 @@
 #define APPPERMIT_H
 
 #include <QDebug>
+#include <QLabel>
 #include <QLayout>
 #include <QWidget>
 #include <QVariant>

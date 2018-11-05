@@ -94,8 +94,11 @@ private:
     QTableWidget *wView;
     QHBoxLayout *layout;
     QVBoxLayout *blayout;
-    QPushButton *btnTest;
+    QPushButton *btnHome;
+    QPushButton *btnConf;
     QPushButton *btnZero;
+    QPushButton *btnTest;
+    QPushButton *btnStop;
     QRadioButton *btnL;
     QRadioButton *btnR;
     QRadioButton *btnA;
@@ -125,8 +128,6 @@ private:
     quint32 testQu;
     BoxQLabel *rate;
 
-    QPushButton *btnHome;
-    QPushButton *btnConf;
     QTmpMap tmpMsg;
     QTmpMap tmpSet;
     QList<QTmpMap> tmpView;

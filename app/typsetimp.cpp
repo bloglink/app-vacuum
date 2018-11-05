@@ -126,6 +126,9 @@ void TypSetImp::initButtonBar()
     blayout->addWidget(btnWorkR);
     connect(btnWorkR, SIGNAL(clicked(bool)), this, SLOT(swapWave()));
 
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(recvWarn()));
+
     btnWaveS = new QPushButton(this);
     btnWaveS->setText(tr("采集"));
     btnWaveS->setMinimumSize(90, 40);
@@ -223,6 +226,7 @@ void TypSetImp::initSettings()
     earthBox->setVisible(grnd == 1 ? true : false);
     earthBox->setEnabled((grnd == 1 && !issupper) ? false : true);
     powerBox->setVisible(grnd == 1 ? true : false);
+    powerBox->setEnabled((grnd == 1 && !issupper) ? false : true);
     btnWorkL->setVisible(work == 2 ? true : false);
     btnWorkR->setVisible(work == 2 ? true : false);
     if (grnd == 1 && !issupper) {
@@ -451,8 +455,7 @@ void TypSetImp::sample()
 
 void TypSetImp::sampling()
 {
-    isRecv = false;
-    QTimer::singleShot(8000, this, SLOT(recvWarn()));
+    timer->start(8000);
     btnWaveS->setEnabled(false);
     btnWaveA->setEnabled(false);
     btnWaveC->setEnabled(false);
@@ -579,10 +582,8 @@ void TypSetImp::autoInput()
 
 void TypSetImp::recvWarn()
 {
-    if (!isRecv) {
-        QMessageBox::warning(this, tr("警告"), tr("匝间采样失败"), QMessageBox::Ok);
-        recvShowEvent();
-    }
+    QMessageBox::warning(this, tr("警告"), tr("匝间采样失败"), QMessageBox::Ok);
+    recvShowEvent();
 }
 
 void TypSetImp::recvOver()
@@ -612,7 +613,7 @@ void TypSetImp::recvParm(QString dat)
 
 void TypSetImp::recvWave(QStringList ws)
 {
-    isRecv = true;
+    timer->stop();
     if (ws.size() < 2)
         return;
     int addr = tmpSet.value(4000 + Qt::Key_H).toInt();

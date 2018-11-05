@@ -489,6 +489,7 @@ void TypConfig::clickMove()
         item->setCurrentIndex(mView->index(r-1, 1));
     } else {
         int r = item->currentIndex().row();
+        r = (qMax(0, r));
         if (r >= mView->rowCount() - 1)
             return;
         int statNext = mView->data(mView->index(r+1, 0), Qt::CheckStateRole).toInt();

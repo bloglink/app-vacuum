@@ -47,10 +47,14 @@ int SqlExport::selectNumb(QTmpMap msg)
     QString name = msg.value(Qt::Key_4).toString();
     quint64 from = msg.value(Qt::Key_9).toLongLong();
     quint64 stop = msg.value(Qt::Key_A).toLongLong();
+    QString type = msg.value(Qt::Key_B).toString();
 
     QSqlQuery query(QSqlDatabase::database(name));
     QString cmd = tr("select count(*) from aip_record where R_ITEM=65535");
     cmd += tr(" and R_UUID > %1 and R_UUID < %2").arg(from).arg(stop);
+    if (!type.isEmpty()) {
+        cmd += tr(" and R_TYPE = '%1'").arg(type);
+    }
 
     if (!query.exec(cmd)) {
         showText(tr("查询数据失败,%1").arg(query.lastError().text()));
@@ -64,7 +68,7 @@ int SqlExport::selectNumb(QTmpMap msg)
     showText(tr("共找到%1条数据").arg(quan));
     query.clear();
 
-    return Qt::Key_Meta;
+    return (quan == 0) ? Qt::Key_Stop : Qt::Key_Meta;
 }
 
 int SqlExport::selectItem(QTmpMap msg)
@@ -72,10 +76,14 @@ int SqlExport::selectItem(QTmpMap msg)
     QString name = msg.value(Qt::Key_4).toString();
     quint64 from = msg.value(Qt::Key_9).toLongLong();
     quint64 stop = msg.value(Qt::Key_A).toLongLong();
+    QString type = msg.value(Qt::Key_B).toString();
 
     QSqlQuery query(QSqlDatabase::database(name));
     QString cmd = tr("select distinct R_ITEM from aip_record where R_ITEM < %1").arg(0xFFFF);
     cmd += tr(" and R_UUID > %1 and R_UUID < %2").arg(from).arg(stop);
+    if (!type.isEmpty()) {
+        cmd += tr(" and R_TYPE = '%1'").arg(type);
+    }
     if (!query.exec(cmd)) {
         showText(tr("查询数据失败,%1").arg(query.lastError().text()));
         return Qt::Key_Stop;
@@ -199,6 +207,7 @@ int SqlExport::exportData(QTmpMap msg)
     QString name = msg.value(Qt::Key_4).toString();
     quint64 from = msg.value(Qt::Key_9).toLongLong();
     quint64 stop = msg.value(Qt::Key_A).toLongLong();
+    QString type = msg.value(Qt::Key_B).toString();
 
     QSqlQuery query(QSqlDatabase::database(name));
     quint64 numb = 0;
@@ -212,6 +221,9 @@ int SqlExport::exportData(QTmpMap msg)
     while (1) {
         QString cmd = tr("select * from aip_record where ");
         cmd += tr(" R_UUID > %1 and R_UUID < %2").arg(from).arg(stop);
+        if (!type.isEmpty()) {
+            cmd += tr(" and R_TYPE = '%1'").arg(type);
+        }
         if (!query.exec(cmd)) {
             showText(tr("查询数据失败,%1").arg(query.lastError().text()));
             return Qt::Key_Stop;
@@ -263,7 +275,14 @@ void SqlExport::recvAppMsg(QTmpMap msg)
         tmpSet = msg;
         break;
     case Qt::Key_Book:
-        exportFile(msg);
+        if (exportFile(msg) == Qt::Key_Stop) {
+            tmpMsg.insert(Qt::Key_0, Qt::Key_Word);
+            tmpMsg.insert(Qt::Key_2, 100);
+            emit sendAppMsg(tmpMsg);
+            tmpMsg.clear();
+            showText(tr("导出失败"));
+        }
+        file->close();
         break;
     default:
         break;

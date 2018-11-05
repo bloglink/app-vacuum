@@ -111,7 +111,11 @@ void SqlRecord::clickSelect()
     qint64 t2 = stop->dateTime().toMSecsSinceEpoch();
     t1 = (t1 << 20);
     t2 = (t2 << 20);
-    mView->setFilter(QObject::tr("R_UUID >= '%1' and R_UUID <= '%2'").arg(t1).arg(t2));
+    QString filter = QObject::tr("R_UUID >= '%1' and R_UUID <= '%2'").arg(t1).arg(t2);
+    if (!type->currentText().isEmpty()) {
+        filter += QObject::tr(" and R_TYPE = '%1'").arg(type->currentText());
+    }
+    mView->setFilter(filter);
     mView->select();
 }
 
@@ -122,6 +126,7 @@ void SqlRecord::clickExport()
     tmpMsg.insert(Qt::Key_4, "record");
     tmpMsg.insert(Qt::Key_9, (from->dateTime().toMSecsSinceEpoch() << 20));
     tmpMsg.insert(Qt::Key_A, (stop->dateTime().toMSecsSinceEpoch() << 20));
+    tmpMsg.insert(Qt::Key_B, type->currentText());
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
 }

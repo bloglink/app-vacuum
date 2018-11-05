@@ -284,7 +284,7 @@ void AppTester::initButtonBar()
     btnTest->setMinimumSize(97, 72);
     connect(btnTest, SIGNAL(clicked(bool)), this, SLOT(clickTest()));
 
-    QPushButton *btnStop = new QPushButton("停止测试", this);
+    btnStop = new QPushButton("停止测试", this);
     blayout->addWidget(btnStop);
     btnStop->setMinimumSize(97, 72);
     connect(btnStop, SIGNAL(clicked(bool)), this, SLOT(clickStop()));
@@ -292,7 +292,7 @@ void AppTester::initButtonBar()
     btnA = new QRadioButton(this);
     btnA->setChecked(true);
     btnA->setEnabled(false);
-    btnA->setText(tr("标准"));
+    btnA->setText(tr("自动"));
     btnM = new QRadioButton(this);
     btnM->setEnabled(false);
     btnM->setText(tr("手动"));
@@ -1172,36 +1172,29 @@ void AppTester::recvNewMsg(QTmpMap msg)
         QString dat = msg.value(Qt::Key_5).toString();
         quint32 hex = dat.toInt();
         if (!aFrame->isHidden()) {
-            if (hex && XX20) {
-                if (!btnM->isChecked()) {
-                    btnM->setChecked(true);
-                    tmpMap.insert("enum", Qt::Key_View);
-                    tmpMap.insert("text", QString("6086 1"));
-                    emit sendAppMap(tmpMap);
-                    tmpMap.clear();
-                    btnL->setEnabled(false);
-                    btnR->setEnabled(false);
-                    btnHome->setEnabled(false);
-                    btnConf->setEnabled(false);
-                    btnTest->setEnabled(false);
+            clickStop();
+            bool isM = ((hex & XX20) != 0) && !btnM->isChecked();
+            bool isA = ((hex & XX20) == 0) && !btnA->isChecked();
+            if (isM || isA) {
+                btnM->setChecked(isM);
+                btnA->setChecked(isA);
+                btnL->setEnabled(isA);
+                btnR->setEnabled(isA);
+                btnHome->setEnabled(isA);
+                btnConf->setEnabled(isA);
+                btnTest->setEnabled(isA);
+                tmpMap.insert("enum", Qt::Key_View);
+                tmpMap.insert("text", QString("6086 %1").arg(isM ? 1 : 0));
+                emit sendAppMap(tmpMap);
+                if (isM) {
                     updateWave();
                 }
-            } else {
-                if (!btnA->isChecked()) {
-                    btnA->setChecked(true);
-                    tmpMap.insert("enum", Qt::Key_View);
-                    tmpMap.insert("text", QString("6086 0"));
-                    emit sendAppMap(tmpMap);
+                if (isA) {
                     tmpMap.insert("text", QString("6008"));
                     emit sendAppMap(tmpMap);
-                    tmpMap.clear();
-                    btnL->setEnabled(true);
-                    btnR->setEnabled(true);
-                    btnHome->setEnabled(true);
-                    btnConf->setEnabled(true);
-                    btnTest->setEnabled(true);
                     initSettings();
                 }
+                tmpMap.clear();
             }
         }
     }

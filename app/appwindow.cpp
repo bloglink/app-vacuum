@@ -864,10 +864,13 @@ int AppWindow::taskCheckStop()
 {
     int addr = tmpSet.value(3000 + Qt::Key_0).toInt();  // 综合测试结果
     int play = taskMap.values().indexOf(&AppWindow::taskCheckPlay);
-    int save = taskMap.values().indexOf(&AppWindow::taskStartSave);
+    int save = taskMap.values().indexOf(&AppWindow::taskStartTest) + 1;
+    int item = getNextItem();
+    bool isStop = currTask < save && currTask > play;
+    isStop = (testShift == Qt::Key_Away && item == 0) ? false : isStop;
     if (currTask < save)
         sendUdpStr(tr("6022 %1").arg(station).toUtf8());
-    if (currTask < save && currTask > play) {
+    if (isStop) {
         taskShift = Qt::Key_Stop;
         isok = DATANG;
         currTask = taskMap.values().indexOf(&AppWindow::taskStartSave);
@@ -1800,8 +1803,10 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         sendUdpStr("6052 1");
         break;
     case 6060:  // 真空上传启动信号
-        station = dat.toInt();
-        taskShift = Qt::Key_Play;
+        if (recvIoCtrl(Qt::Key_Play, dat.toInt()) == Qt::Key_Away) {
+            taskShift = Qt::Key_Play;
+            station = dat.toInt();
+        }
         break;
     case 6061:  // 真空上传停止信号
         if (currItem == 0x0C || currItem == 0x0D) {

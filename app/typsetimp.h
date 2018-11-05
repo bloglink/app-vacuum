@@ -116,7 +116,7 @@ private:
     QTmpMap tmpMsg;
     QTmpMap wvdata;
     bool isInit;
-    bool isRecv;
+    QTimer *timer;
 };
 
 #endif // TYPSETIMP_H

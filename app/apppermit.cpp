@@ -54,8 +54,12 @@ void AppPermit::initViewBar()
 void AppPermit::initButtonBar()
 {
     QHBoxLayout *blayout = new QHBoxLayout;
-    blayout->addStretch();
     layout->addLayout(blayout);
+
+    QString str = tr("权限等级: 管理员 > 技术员 > 操作员 > 所有人;");
+    blayout->addWidget(new QLabel(str, this));
+
+    blayout->addStretch();
 
     QPushButton *btnSave = new QPushButton(this);
     btnSave->setFixedSize(97, 40);
