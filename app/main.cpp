@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
     AppWindow w;
 #ifdef __linux__
-    w.resize(1440, 900);
+    w.resize(1560, 900);
     w.show();
 #else
     w.showFullScreen();

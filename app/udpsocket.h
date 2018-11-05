@@ -16,6 +16,7 @@
 #include <QMessageBox>
 
 #include "main.h"
+#include "appbackup.h"
 
 #define TIME_OUT 1000
 
@@ -27,7 +28,7 @@ public:
 signals:
     void sendUdpMsg(QByteArray msg);
 public slots:
-    void initSocket();
+    void initSocket(QTmpMap msg);
 private slots:
     void readReady();
     void sendSocket();
@@ -37,8 +38,6 @@ private:
     QHostAddress hostAddr;
     QQueue<QByteArray> recver;
     QQueue<QByteArray> sender;
-
-    QTmpMap tmpSet;
 };
 
 #endif // UDPSOCKET_H

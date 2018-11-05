@@ -11,17 +11,16 @@
 UdpSocket::UdpSocket(QObject *parent) : QUdpSocket(parent)
 {
     hostPort = 6000;
-#ifdef __linux__
-    hostAddr = "192.168.1.134";
-#else
     hostAddr = "192.168.1.56";
-#endif
 }
 
-void UdpSocket::initSocket()
+void UdpSocket::initSocket(QTmpMap msg)
 {
     if (this->state() == QUdpSocket::BoundState)
         return;
+    int back = msg.value(1000 + Qt::Key_0).toInt();
+    QString host = msg.value(back + backHost).toString();
+    hostAddr = (host.startsWith("192.168")) ? host : hostAddr.toString();
 
 #if (QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
     this->bind(QHostAddress::Any, txPort);
@@ -75,9 +74,6 @@ void UdpSocket::recvAppMsg(QTmpMap msg)
 {
     QByteArray dat;
     switch (msg.value(Qt::Key_0).toInt()) {
-    case Qt::Key_Copy:
-        tmpSet = msg;
-        break;
     case Qt::Key_Save:
         if (this->state() == QUdpSocket::BoundState) {
             dat = msg.value(Qt::Key_1).toByteArray();

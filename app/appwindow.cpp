@@ -429,7 +429,7 @@ int AppWindow::initSocket()
     UdpSocket *udp = new UdpSocket;
     connect(udp, SIGNAL(sendUdpMsg(QByteArray)), this, SLOT(recvUdpMsg(QByteArray)));
     connect(this, SIGNAL(sendUdpMsg(QTmpMap)), udp, SLOT(recvAppMsg(QTmpMap)));
-    udp->initSocket();
+    udp->initSocket(tmpSet);
 
     return Qt::Key_Away;
 }
@@ -645,7 +645,9 @@ int AppWindow::taskCheckCode()
     int ret = Qt::Key_Meta;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    if (mode == 3) {  // 产线模式,控石产线专用
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置
+    int rfid = tmpSet.value(syst + SystRFID).toInt();
+    if (mode == 3 && rfid != 0) {  // 产线模式,控石产线专用
         if (timeOut%100 == 0) {
             sendUdpStr("6075");  // 读取RFID
         }
@@ -740,12 +742,12 @@ int AppWindow::taskClearCtrl()
             sendUdpStr(tr("6077 %1").arg(YY14 | YY08).toUtf8());
         }
         timeTst++;
+        ret = (ioHex & XX23) ? Qt::Key_Away : ret;
+        ret = (timeTst > 500) ? Qt::Key_Away : ret;
         if (timeTst > 500) {
             timeTst = 0;
             warnningString(tr("警告:轴移除超时!"));
         }
-        if ((ioHex & XX23))
-            ret = Qt::Key_Away;
     } else {
         ret = Qt::Key_Away;
     }
@@ -774,7 +776,6 @@ int AppWindow::taskStartSave()
     temp = temp.remove(tr("温度:"));
     temp = temp.remove("°C");
     tmpMsg = tmpSave;
-    qDebug() << tmpSave;
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);  // 存储数据
     tmpMsg.insert(Qt::Key_1, "aip_record");
     tmpMsg.insert(addr + TEMPDATE, QDate::currentDate().toString("yyyy-MM-dd"));  // 日期
@@ -964,6 +965,11 @@ int AppWindow::testWaitServo()
     double from = tmpSet.value(addr + 0x09).toDouble();
     double temp = tmpSet.value(addr + 0x13).toDouble();
     double comp = tmpSet.value(addr + 0x23).toDouble();
+    QString str = tmpSet.value(addr + 0x23).toString();
+    QStringList cs = str.split(",");
+    if (cs.size() >= 2) {
+        comp = cs.at((station == WORKL) ? 0 : 1).toDouble();
+    }
     temp = qMax(temp-comp, 0.0);
     tmpMap.insert("mode", 1);  // 转矩模式
     tmpMap.insert("turn", 0);
@@ -1016,7 +1022,6 @@ int AppWindow::testToolInvrt()
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();  // 内外置驱动设置
     if (currItem == 0x0C && mode == 3 && driv == 1) {  // 控石产线模式,外驱
         int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
-        addr += 0x10;
         int time = tmpSet.value(addr + 0x10 + 0x04).toDouble() * 100; // 测试时间
         int freq = tmpSet.value(addr + 0x10 + 0x05).toInt();  // 外驱频率
         int turn = tmpSet.value(addr + 0x20 + 0x05).toInt() - 1; // 外驱转向
@@ -1983,58 +1988,35 @@ void AppWindow::calcHALL(QString msg)
                 fff << qMax(0.0, (tmp2.at(20 + i*4).toDouble()/1000) * kf - bf);
             }
         }
-        for (int numb=0; numb < 4; numb++) {
-            double vmax = tmpSet.value(hall + numb*2 + 0x00).toDouble();
-            double vmin = tmpSet.value(hall + numb*2 + 0x01).toDouble();
-            int r = DATAOK;
+        QStringList units;
+        units << "V" << "V" << "%" << "Hz";
+        for (int item=0; item < 4; item++) {
+            double vmax = tmpSet.value(hall + item*2 + 0x00).toDouble();
+            double vmin = tmpSet.value(hall + item*2 + 0x01).toDouble();
+            int real = DATAOK;
             QStringList reals;
             if (vmax != 0) {
-                if (numb == 0) {
-                    for (int t=0; t < hhh.size(); t++) {
-                        reals << QString::number(hhh.at(t), 'f', 2) +"V";
-                        if (hhh.at(t) >= vmax || hhh.at(t) <= vmin) {
-                            r = DATANG;
-                        }
-                        tmpSave.insert(addr + t*0x10 + numb, hhh.at(t));
-                    }
+                QList<double> tmp = hhh;
+                tmp = (item == 1) ? lll : tmp;
+                tmp = (item == 2) ? ddd : tmp;
+                tmp = (item == 3) ? fff : tmp;
+                for (int numb = 0; numb < tmp.size(); numb++) {
+                    reals << QString::number(tmp.at(numb), 'f', 2) + units.at(numb);
+                    int r = (tmp.at(numb) >= vmax || tmp.at(numb) <= vmin) ? DATANG : DATANG;
+                    real = (r == DATANG) ? DATANG : real;
+                    tmpSave.insert(addr + item*0x10 + numb*3 + 1, tmp.at(numb));
+                    tmpSave.insert(addr + item*0x10 + numb*3 + 2, r);
                 }
-                if (numb == 1) {
-                    for (int t=0; t < lll.size(); t++) {
-                        reals << QString::number(lll.at(t), 'f', 2) +"V";
-                        if (lll.at(t) >= vmax || lll.at(t) <= vmin) {
-                            r = DATANG;
-                        }
-                        tmpSave.insert(addr + t*0x10 + numb, lll.at(t));
-                    }
-                }
-                if (numb == 2) {
-                    for (int t=0; t < ddd.size(); t++) {
-                        reals << QString::number(ddd.at(t), 'f', 2) +"%";
-                        if (ddd.at(t) >= vmax || ddd.at(t) <= vmin) {
-                            r = DATANG;
-                        }
-                        tmpSave.insert(addr + t*0x10 + numb, ddd.at(t));
-                    }
-                }
-                if (numb == 3) {
-                    for (int t=0; t < fff.size(); t++) {
-                        reals << QString::number(fff.at(t), 'f', 2) +"Hz";
-                        if (fff.at(t) >= vmax || fff.at(t) <= vmin) {
-                            r = DATANG;
-                        }
-                        tmpSave.insert(addr + t*0x10 + numb, fff.at(t));
-                    }
-                }
+                isok = (real == DATAOK) ? isok : DATANG;
+                tmpMsg.insert(Qt::Key_0, Qt::Key_News);
+                tmpMsg.insert(Qt::Key_1, currItem);
+                tmpMsg.insert(Qt::Key_2, item);
+                tmpMsg.insert(Qt::Key_3, reals.join(","));
+                tmpMsg.insert(Qt::Key_4, (real == DATAOK) ? "OK" : "NG");
+                tmpMsg.insert(Qt::Key_6, station);
+                emit sendAppMsg(tmpMsg);
+                tmpMsg.clear();
             }
-            isok = (r == DATAOK) ? isok : DATANG;
-            tmpMsg.insert(Qt::Key_0, Qt::Key_News);
-            tmpMsg.insert(Qt::Key_1, currItem);
-            tmpMsg.insert(Qt::Key_2, numb);
-            tmpMsg.insert(Qt::Key_3, reals.join(","));
-            tmpMsg.insert(Qt::Key_4, (r == DATAOK) ? "OK" : "NG");
-            tmpMsg.insert(Qt::Key_6, station);
-            emit sendAppMsg(tmpMsg);
-            tmpMsg.clear();
         }
     }
 }
@@ -2110,40 +2092,31 @@ void AppWindow::calcLOAD(QString msg)
         for (int i=0; i < reals.size(); i++) {
             double imax = tmpSet.value(load + i * 2 + 0x00).toDouble();
             double imin = tmpSet.value(load + i * 2 + 0x01).toDouble();
-            int r = DATAOK;
-            tmpMsg.insert(Qt::Key_0, Qt::Key_News);
-            tmpMsg.insert(Qt::Key_1, currItem);
-            tmpMsg.insert(Qt::Key_2, i);
-            if (i == 0) {
-                QString str = QString::number(vlt, 'f', 2) + "V,";
-                str += QString::number(reals.at(i), 'f', 2) + "mA";
-                tmpMsg.insert(Qt::Key_3, str);
-            }
-            if (i == 1)
-                tmpMsg.insert(Qt::Key_3, QString::number(vlt, 'f', 2) + "V");
-            if (i == 2)
-                tmpMsg.insert(Qt::Key_3, QString::number(reals.at(i), 'f', 0) + "mA");
-            if (i == 3)
-                tmpMsg.insert(Qt::Key_3, QString::number(reals.at(i), 'f', 0) + "rpm");
-            if (i == 4)
-                tmpMsg.insert(Qt::Key_3, turn);
+            int rrrr = DATAOK;
             if (imax != 0) {
-                if (i == 1)
-                    tmpMsg.insert(Qt::Key_3, QString::number(reals.at(i), 'f', 2) + "W");
-                if (i == 4 && reals.at(i) != imax)
-                    r = DATANG;
-                if (i != 4 &&  (reals.at(i) >= imax || reals.at(i) <= imin))
-                    r = DATANG;
+                tmpMsg.insert(Qt::Key_0, Qt::Key_News);
+                tmpMsg.insert(Qt::Key_1, currItem);
+                tmpMsg.insert(Qt::Key_2, i);
+                QString volt = QString::number(vlt, 'f', 2) + "V ";
+                QString real;
+                real = (i == 0) ? (volt + QString::number(reals.at(i), 'f', 2) + "mA") : real;
+                real = (i == 1) ? (QString::number(reals.at(i), 'f', 2) + "W") : real;
+                real = (i == 2) ? (QString::number(reals.at(i), 'f', 0) + "mA") : real;
+                real = (i == 3) ? (QString::number(reals.at(i), 'f', 0) + "rpm") : real;
+                real = (i == 4) ? turn : real;
+                tmpMsg.insert(Qt::Key_3, real);
+                tmpSave.insert(addr + i*0x10 + 1, reals.at(i));
+                if (ext != 0) {
+                    rrrr = (reals.at(i) >= imax || reals.at(i) <= imin) ? DATANG : DATAOK;
+                    rrrr = (i == 4) ? ((reals.at(i) != imax) ? DATANG : DATAOK) : rrrr;
+                    isok = (rrrr == DATAOK) ? isok : DATANG;
+                    tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");
+                    tmpSave.insert(addr + i*0x10 + 2, (rrrr == DATAOK) ? "OK" : "NG");
+                }
+                tmpMsg.insert(Qt::Key_6, station);
+                emit sendAppMsg(tmpMsg);
+                tmpMsg.clear();
             }
-            if (ext != 0) {
-                if (imax != 0)
-                    tmpSave.insert(addr + i, reals.at(i));
-                isok = (r == DATAOK) ? isok : DATANG;
-                tmpMsg.insert(Qt::Key_4, (r == DATAOK) ? "OK" : "NG");
-            }
-            tmpMsg.insert(Qt::Key_6, station);
-            emit sendAppMsg(tmpMsg);
-            tmpMsg.clear();
         }
     }
 }
@@ -2169,81 +2142,85 @@ void AppWindow::calcBEMF(QString msg)
         QList<double> volts;
         QList<double> bemfs;
         QList<double> diffs;
-        for (int numb=0; numb < 5; numb++) {
-            int vr = DATAOK;
+        for (int t=0; t < 3; t++) {
+            volts << qMax(0.0, (tmp2.at(20+7+t).toDouble() * 15.28 / 4095) * ku + bu);
+            bemfs << qMax(0.0, (volts.at(t) * 1000 / stds) * kv + bv);
+            diffs << qMax(0.0, (tmp2.at(12 + t).toDouble() / 100) * kw + bw);
+        }
+        for (int i=0; i < 5; i++) {
+            int rrrr = DATAOK;
             QStringList vrs;
-            double vmax = tmpSet.value(bemf + numb * 2 + 0x00).toDouble();
-            double vmin = tmpSet.value(bemf + numb * 2 + 0x01).toDouble();
+            double vmax = tmpSet.value(bemf + i * 2 + 0x00).toDouble();
+            double vmin = tmpSet.value(bemf + i * 2 + 0x01).toDouble();
             if (vmax != 0) {
-                if (numb == 0) {
-                    for (int t=0; t < 3; t++) {
-                        volts << qMax(0.0, (tmp2.at(20+7+t).toDouble() * 15.28 / 4095) * ku + bu);
-                        vrs << QString::number(volts.at(t), 'f', 2) + "V";
-                        if ((vmax != 0) && (volts.at(t) >= vmax || volts.at(t) < vmin))
-                            vr = DATANG;
-                        tmpSave.insert(addr + t * 0x10 + numb, volts.at(t));
+                if (i < 3) {
+                    QList<double> tmp = volts;
+                    tmp = (i == 1) ? bemfs : tmp;
+                    tmp = (i == 2) ? diffs : tmp;
+                    for (int t=0; t < tmp.size(); t++) {
+                        QString str = QString::number(tmp.at(t), 'f', 2) + "V";
+                        str = (i == 1) ? (QString::number(tmp.at(t), 'f', 2) + "V/krpm") : str;
+                        str = (i == 2) ? (QString::number(tmp.at(t), 'f', 1) + "°") : str;
+                        vrs << str;
+                        if (ext != 0) {
+                            rrrr = (tmp.at(t) >= vmax || tmp.at(t) < vmin) ? DATANG : rrrr;
+                            QString s = (rrrr == DATAOK) ? "OK" : "NG";
+                            isok = (rrrr == DATAOK) ? isok : DATANG;
+                            tmpMsg.insert(Qt::Key_4, s);
+                            tmpSave.insert(addr + i*0x10 + t*3 + 1, tmp.at(t));
+                            tmpSave.insert(addr + i*0x10 + t*3 + 2, s);
+                        }
                     }
                 }
-                if (numb == 1) {
-                    for (int t=0; t < 3; t++) {
-                        bemfs << qMax(0.0, (volts.at(t) * 1000 / stds) * kv + bv);
-                        vrs << QString::number(bemfs.at(t), 'f', 2) + "V/krpm";
-                        if ((vmax != 0) && (bemfs.at(t) >= vmax || bemfs.at(t) < vmin))
-                            vr = DATANG;
-                        tmpSave.insert(addr + t * 0x10 + numb, bemfs.at(t));
+                if (i == 3 && volts.size() >= 3) {
+                    double noun = calcNoun(volts);
+                    vrs << QString::number(noun, 'f', 1) + "%";
+                    if (ext != 0) {
+                        rrrr = (noun >= vmax || noun < vmin) ? DATANG : rrrr;
+                        isok = (rrrr == DATAOK) ? isok : DATANG;
+                        tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");
+                        tmpSave.insert(addr + i*0x10 + 1, noun);
+                        tmpSave.insert(addr + i*0x10 + 2, (rrrr == DATAOK) ? "OK" : "NG");
                     }
                 }
-                if (numb == 2) {
-                    for (int t=0; t < 3; t++) {
-                        diffs << qMax(0.0, (tmp2.at(12 + t).toDouble() / 100) * kw + bw);
-                        vrs << QString::number(diffs.at(t), 'f', 1) + "°";
-                        if ((vmax != 0) && (diffs.at(t) >= vmax || diffs.at(t) < vmin))
-                            vr = DATANG;
-                        tmpSave.insert(addr + t * 0x10 + numb, diffs.at(t));
-                    }
-                }
-                if (numb == 3 && volts.size() >= 3) {
-                    double max = volts.at(0);
-                    double min = volts.at(0);
-                    double avr = 0;
-                    double tmp = 0;
-                    for (int t=0; t < volts.size(); t++) {
-                        avr += volts.at(t);
-                        max = qMax(max, volts.at(t));
-                        min = qMin(min, volts.at(t));
-                    }
-                    avr /= volts.size();
-                    if (avr != 0)
-                        tmp = (max - min) * 100 / avr;
-                    vrs << tr("%1%").arg(tmp, 0, 'g', 3);
-                    if ((vmax != 0) && (tmp >= vmax || tmp < vmin))
-                        vr = DATANG;
-                    tmpSave.insert(addr + numb * 0x10, tmp);
-                }
-                if (numb == 4) {
+                if (i == 4) {
                     int turn = tmp2.at(20 + 6).toInt();
-                    if (turn == 0)
-                        vrs << "NULL";
-                    if (turn == 1)
-                        vrs << "ABC";
-                    if (turn == 2)
-                        vrs << "ACB";
-                    if (turn != vmax)
-                        vr = DATANG;
-                    tmpSave.insert(addr + numb * 0x10, vrs);
+                    QString str = "NULL";
+                    str = (turn == 1) ? "ABC" : str;
+                    str = (turn == 2) ? "ACB" : str;
+                    if (ext != 0) {
+                        rrrr = (turn != vmax) ? DATANG : rrrr;
+                        isok = (rrrr == DATAOK) ? isok : DATANG;
+                        tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");
+                        tmpSave.insert(addr + i*0x10 + 1, str);
+                        tmpSave.insert(addr + i*0x10 + 2, (rrrr == DATAOK) ? "OK" : "NG");
+                    }
                 }
             }
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
             tmpMsg.insert(Qt::Key_6, station);
-            tmpMsg.insert(Qt::Key_2, numb);
+            tmpMsg.insert(Qt::Key_2, i);
             tmpMsg.insert(Qt::Key_3, vrs.join("  "));
-            if (ext != 0) {
-                isok = (vr == DATAOK) ? isok : DATANG;
-                tmpMsg.insert(Qt::Key_4, (vr == DATAOK) ? "OK" : "NG");
-            }
             emit sendAppMsg(tmpMsg);
             tmpMsg.clear();
         }
     }
+}
+
+double AppWindow::calcNoun(QList<double> volts)
+{
+    double max = volts.at(0);
+    double min = volts.at(0);
+    double avr = 0;
+    double tmp = 0;
+    for (int t=0; t < volts.size(); t++) {
+        avr += volts.at(t);
+        max = qMax(max, volts.at(t));
+        min = qMin(min, volts.at(t));
+    }
+    avr /= volts.size();
+    if (avr != 0)
+        tmp = (max - min) * 100 / avr;
+    return tmp;
 }

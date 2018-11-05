@@ -50,7 +50,8 @@ void DevInvert::setFreq()
     int turn = tmpMap.value("turn").toInt();
     msg.append((turn == 0) ? "0001" : "0002");
     int freq = tmpMap.value("freq").toInt();
-    msg.append(QString("%1").arg(freq, 4, 16, QChar('0')));
+    msg.append(QString("%1").arg(freq*100/256, 2, 16, QChar('0')));
+    msg.append(QString("%1").arg(freq*100%256, 2, 16, QChar('0')));
     write(QByteArray::fromHex(msg.toUtf8()));
 }
 
@@ -69,6 +70,7 @@ void DevInvert::ready()
             tmpMap.insert("text", str);
             emit sendAppMap(tmpMap);
             tmpMap.clear();
+            qDebug() << "com recv:" << msg.toHex().toUpper();
         }
     }
 }

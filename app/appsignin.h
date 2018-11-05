@@ -63,7 +63,7 @@ private:
     QLineEdit *password;
     QCheckBox *autosave;
     QCheckBox *autosign;
-    QList<QComboBox*> inputs;
+    QList<QLineEdit*> inputs;
 
     bool isOk;
     bool isAuto;

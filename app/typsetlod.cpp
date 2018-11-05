@@ -192,7 +192,7 @@ void TypSetLod::initItemDelegate()
     pView->setItemDelegateForRow(0, curr);
     pView->setItemDelegateForRow(1, poff);
     pView->setItemDelegateForRow(2, poff);
-    pView->setItemDelegateForRow(3, toff);
+//    pView->setItemDelegateForRow(3, toff);
     pView->setItemDelegateForRow(4, new BoxQItems);
     pView->setItemDelegateForRow(5, new BoxQItems);
 }

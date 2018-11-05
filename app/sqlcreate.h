@@ -58,6 +58,7 @@ private slots:
     void initSyst(QSqlQuery query);
     void initInfo(QSqlQuery query);
     void initLoad(QSqlQuery query);
+    void initSign(QSqlQuery query);
     void initShow(QSqlQuery query);
     void initUser(QSqlQuery query);
     void initType(QSqlQuery query);

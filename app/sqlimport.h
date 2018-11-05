@@ -45,6 +45,7 @@ public:
 signals:
     void sendAppMsg(QTmpMap msg);
 private slots:
+    void initUpload();
     void saveRecord(QTmpMap msg);
     void saveUpload(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
@@ -54,8 +55,10 @@ private:
     QElapsedTimer t;
     QTmpMap tmpMap;
     QTmpMap tmpSet;
+    QTmpMap tmpDat;
     QString prev;
     int loop;
+    QList<int> keys;
 };
 
 #endif // SQLIMPORT_H

@@ -43,9 +43,9 @@ void SqlCreate::initTmpDat()
     tmpSet.insert((2000 + Qt::Key_1), 20000 + 2120);  // 系统设置存放在2120
     tmpSet.insert((2000 + Qt::Key_2), 20000 + 2140);  // 系统网络存放在2140
     tmpSet.insert((2000 + Qt::Key_3), 20000 + 2160);  // 数据上传存放在2160
+    tmpSet.insert((2000 + Qt::Key_4), 20000 + 2180);  // 登录信息存放在2180
     tmpSet.insert((2000 + Qt::Key_6), 20000 + 2200);  // 界面信息存入在2200
     tmpSet.insert((2000 + Qt::Key_5), 20000 + 2300);  // 用户信息存放在2300
-    //    tmpSet.insert((2000 + Qt::Key_4), 20000 + 2500);  // 型号信息存放在2500
 
     tmpSet.insert((3000 + Qt::Key_0), 30000 + 0x0000);  // 综合结果地址
     tmpSet.insert((3000 + Qt::Key_1), 30000 + 0x0100);  // 电阻结果地址
@@ -142,9 +142,9 @@ void SqlCreate::openSystem(bool isExist)
         initSyst(query);
         initInfo(query);
         initLoad(query);
+        initSign(query);
         initShow(query);
         initUser(query);
-        //        initType(query);
         db.commit();
         query.clear();
     }
@@ -223,7 +223,7 @@ void SqlCreate::initBack(QSqlQuery query)
     parm << "5000";         // 最高电压
     parm << "0";            // 自动测试
     parm << "2";            // 测试延时
-    parm << "192.168.1.50";  // 公司网址
+    parm << "192.168.1.56";  // 公司网址
     parm << "6000";         // 连接端口
     parm << "1";         // 测试模式
     for (int i=parm.size(); i < 0x10; i++) {
@@ -370,6 +370,22 @@ void SqlCreate::initLoad(QSqlQuery query)
          << tr("123")
          << tr("aip-server")
          << tr("1433");
+    for (int i=0; i < parm.size(); i++) {
+        query.prepare("insert into aip_system values(?,?)");
+        query.addBindValue(from + i);
+        query.addBindValue(parm.at(i));
+        if (!query.exec())
+            qWarning() << "aip_system" << query.lastError();
+    }
+}
+
+void SqlCreate::initSign(QSqlQuery query)
+{
+    int from = tmpSet.value((2000 + Qt::Key_4)).toInt();
+    QStringList parm;
+    for (int i=0; i < STEP; i++) {
+        parm << "0";
+    }
     for (int i=0; i < parm.size(); i++) {
         query.prepare("insert into aip_system values(?,?)");
         query.addBindValue(from + i);

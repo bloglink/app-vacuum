@@ -42,7 +42,7 @@ void AppSystem::initSystem()
     QStringList names;
     names << tr("语言设置") << tr("测试模式") << tr("启动方式") << tr("亮度设定")
           << tr("音量设定") << tr("条码起始") << tr("条码长度") << tr("合格报警")
-          << tr("报警提示") << tr("测试延时") << tr("产品检测");
+          << tr("报警提示") << tr("测试延时") << tr("产品检测") << tr("条码检测");
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
         boxLayout->addLayout(box);
@@ -119,9 +119,6 @@ void AppSystem::initDelegate()
     tmp0 << tr("中文");
     texts.at(0)->addItems(tmp0);
 
-    //    QStringList tmp1;
-    //    tmp1 << tr("常规模式") << tr("真空模式") << tr("无刷模式") << tr("产线模式");
-    //    texts.at(1)->addItems(tmp1);
     texts.at(1)->addItem(tr("常规模式"));
 
     QStringList tmp2;
@@ -136,7 +133,7 @@ void AppSystem::initDelegate()
 
 void AppSystem::initSettings()
 {
-    int r = tmpSet[(2000 + Qt::Key_1)].toInt();
+    int r = tmpSet.value(2000 + Qt::Key_1).toInt();
     for (int i=0; i < texts.size(); i++) {  // 系统配置存放在0x0020
         if (i < 5) {
             texts.at(i)->setCurrentIndex(tmpSet[r + i].toInt());

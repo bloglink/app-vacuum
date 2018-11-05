@@ -164,6 +164,7 @@ private slots:
     void calcHALL(QString msg);
     void calcLOAD(QString msg);
     void calcBEMF(QString msg);
+    double calcNoun(QList<double> tmp);
 private:
     QStackedWidget *stack;
     QVBoxLayout *btnLayout;

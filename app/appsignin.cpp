@@ -152,10 +152,10 @@ void AppSignin::initInputBar()
         << tr("备用") << tr("备用") << tr("备用") << tr("备用");
 
     for (int i=0; i < tmp.size()/2; i++) {
-        QComboBox *box1 = new QComboBox(this);
+        QLineEdit *box1 = new QLineEdit(this);
         box1->setFixedSize(148, 35);
         inputs.append(box1);
-        QComboBox *box2 = new QComboBox(this);
+        QLineEdit *box2 = new QLineEdit(this);
         box2->setFixedSize(148, 35);
         inputs.append(box2);
         QHBoxLayout *boxLayout = new QHBoxLayout;
@@ -231,6 +231,10 @@ void AppSignin::initApplyBar()
 
 void AppSignin::initSettings()
 {
+    int conf = tmpSet.value(2000 + Qt::Key_4).toInt();  // 登录信息地址
+    for (int i=0; i < inputs.size(); i++) {
+        inputs.at(i)->setText(tmpSet.value(conf + i).toString());
+    }
     QStringList users;
     int addr = tmpSet.value(2000 + Qt::Key_5).toInt();  // 用户存储地址
     int real = tmpSet.value(DataUser).toInt();  // 当前用户地址
@@ -259,6 +263,11 @@ void AppSignin::initSettings()
 
 void AppSignin::saveSettings()
 {
+    int conf = tmpSet.value(2000 + Qt::Key_4).toInt();  // 登录信息地址
+    for (int i=0; i < inputs.size(); i++) {
+        tmpMsg.insert(conf + i, inputs.at(i)->text());
+    }
+
     int addr = tmpSet.value(3000 + Qt::Key_0).toInt();  // 临时数据区
     tmpMsg.insert(addr + TEMPSIGN, 1);
 
