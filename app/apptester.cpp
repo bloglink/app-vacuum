@@ -104,8 +104,6 @@ void AppTester::initLogoBar()
     wView->setSpan(0, 4, 1, 2);
     wView->verticalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
     wView->setRowHeight(0, 42);
-    wView->verticalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
-    wView->setRowHeight(1, 60);
 }
 
 void AppTester::initWorkBar()
@@ -221,8 +219,22 @@ void AppTester::initWaveHAL()
 
 void AppTester::initTypeBar()
 {
-    typeText = new QLabel(strMY.arg(tr("当前型号:X123456789ABCDEF")), this);
-    wView->setCellWidget(3, 4, typeText);
+    isInit = false;
+    typeText = new QComboBox(this);
+    typeText->setEditable(true);
+    typeText->setView(new QListView);
+    typeText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    connect(typeText, SIGNAL(currentIndexChanged(int)), this, SLOT(clickType()));
+    typeText->setStyleSheet("font:18pt;color:yellow");
+
+    QHBoxLayout *lay = new QHBoxLayout;
+    lay->setMargin(0);
+    lay->addWidget(new QLabel(strMY.arg(tr("当前型号:")), this));
+    lay->addWidget(typeText);
+
+    QFrame *frm = new QFrame(this);
+    frm->setLayout(lay);
+    wView->setCellWidget(3, 4, frm);
     wView->setSpan(3, 4, 1, 2);
 
     codeText = new QLabel(this);
@@ -401,6 +413,7 @@ void AppTester::initOtherParm()
 
 void AppTester::initSettings()
 {
+    isInit = false;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int work = tmpSet.value(back + backWork).toInt();
     int grnd = tmpSet.value(back + backGrnd).toInt();
@@ -416,7 +429,6 @@ void AppTester::initSettings()
         int setuser = tmpSet.value(DataUser).toInt();
         QString strSign = (sign == 0) ? tr("未登录") : tmpSet.value(setuser).toString();
         userText->setText(strSW.arg(tr("当前用户:") + strSign));
-        typeText->setText(strMY.arg(tr("当前型号:") + tmpSet.value(DataType).toString()));
     }
     if (Qt::Key_0) {
         tmpRow = 0;
@@ -443,6 +455,9 @@ void AppTester::initSettings()
             }
             if (str.toInt() == 0x06) {
                 initSetIMP();
+            }
+            if (str.toInt() == 0x08) {
+                initSetIND();
             }
             if (str.toInt() == 0x0B) {
                 initSetHAL();
@@ -490,6 +505,7 @@ void AppTester::initSettings()
     tmpSave.insert(Qt::Key_1, "aip_tester");
     emit sendAppMsg(tmpSave);
     tmpSave.clear();
+    isInit = true;
 }
 
 void AppTester:: initSetDCR()
@@ -497,7 +513,7 @@ void AppTester:: initSetDCR()
     int row = 0;
     int save = tmpSet.value(3000 + Qt::Key_1).toInt();  // 电阻结果地址
     int addr = tmpSet.value(4000 + Qt::Key_1).toInt();  // 电阻配置地址
-    int noun = tmpSet.value(addr + 2).toInt();  // 不平衡度
+    double noun = tmpSet.value(addr + 2).toDouble();  // 不平衡度
     int temp = tmpSet.value(addr + 3).toInt();  // 温度折算
     for (int numb=0; numb < 8; numb++) {
         double test = tmpSet.value(addr + CACHEDCR + CACHEDCR*CHECKDCR + numb).toDouble();
@@ -628,11 +644,11 @@ void AppTester::initSetACW()
 
 void AppTester::initSetIMP()
 {
-    int save = tmpSet.value(3000 + Qt::Key_6).toInt();  // 交耐结果地址
+    int save = tmpSet.value(3000 + Qt::Key_6).toInt();  // 匝间结果地址
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合配置地址
     QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
     bool isTest = testItems.contains(QString::number(nSetIMP));
-    int addr = tmpSet.value(4000 + Qt::Key_6).toInt();  // 反嵌配置地址
+    int addr = tmpSet.value(4000 + Qt::Key_6).toInt();  // 匝间配置地址
     for (int i=0; i < 6; i++) {
         int check = tmpSet.value(addr + CACHEIMP + CACHEIMP*CHECKIMP + i).toInt();
         double portf = tmpSet.value(addr + CACHEIMP + CACHEIMP*PORTIMP1 + i).toDouble();
@@ -661,8 +677,9 @@ void AppTester::initSetIMP()
         tmp.insert("lenth", 85);
         tmp.insert("title", tr("%1V").arg(volts));
         impWave.at(i)->setTexts(tmp);
-        allWave->setTexts(tmp);
         impWave.at(i)->update();
+        tmp.insert("title", tr("%1V").arg(btnM->isChecked() ? 500 : volts));
+        allWave->setTexts(tmp);
         allWave->update();
         if (check != 0) {
             tmpSave.insert(save + i*0x10 + 0x00, item);  // 项目
@@ -689,6 +706,38 @@ void AppTester::initSetIMP()
                 insertItem(nSetIMP, 0x00);
             }
         }
+    }
+}
+
+void AppTester::initSetIND()
+{
+    int row = 0;
+    int save = tmpSet.value(3000 + Qt::Key_8).toInt();  // 电感结果地址
+    int addr = tmpSet.value(4000 + Qt::Key_8).toInt();  // 电感配置地址
+    double noun = tmpSet.value(addr + 0).toDouble();  // 不平衡度
+    for (int numb=0; numb < 8; numb++) {
+        double test = tmpSet.value(addr + CACHEIND + CACHEIND*CHECKIND + numb).toDouble();
+        double from = tmpSet.value(addr + CACHEIND + CACHEIND*PORTIND1 + numb).toDouble();
+        double stop = tmpSet.value(addr + CACHEIND + CACHEIND*PORTIND2 + numb).toDouble();
+        double unit = tmpSet.value(addr + CACHEIND + CACHEIND*UNITIND1 + numb).toDouble();
+        double rmax = tmpSet.value(addr + CACHEIND + CACHEIND*UPPERIND + numb).toDouble();
+        double rmin = tmpSet.value(addr + CACHEIND + CACHEIND*LOWERIND + numb).toDouble();
+        if (test != 0) {
+            QString ustr = (unit > 0) ? "mH" : "uH";
+            QString item = tr("电感%1-%2").arg(from).arg(stop);
+            QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetIND, numb);
+            row++;
+            tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
+            tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
+        }
+    }
+    if (noun != 0) {  // 不平衡度
+        tmpItem.insert(tmpRow, tr("电感平衡"));
+        tmpParm.insert(tmpRow, tr("<%1%").arg(noun));
+        insertItem(nSetIND, 0x08);
     }
 }
 
@@ -825,6 +874,26 @@ void AppTester::initQuality()
     bodys->update();
 }
 
+void AppTester::clickType()
+{
+    if (isInit) {
+        this->setFocus();
+        btnTest->setEnabled(false);
+        QString name = typeText->currentText();
+        QString numb = tmpTyp.value(name).toString();
+        if (tmpSet.value(DataType).toString() != name) {
+            tmpMsg.insert(DataFile, numb);
+            tmpMsg.insert(DataType, name);
+            tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+            tmpMsg.insert(Qt::Key_1, "aip_reload");
+            emit sendAppMsg(tmpMsg);
+            tmpMsg.clear();
+            QTimer::singleShot(2000, this, SLOT(updateTest()));
+            initSettings();
+        }
+    }
+}
+
 void AppTester::clickTest()
 {
     tmpMsg.insert(Qt::Key_0, Qt::Key_Play);
@@ -868,6 +937,24 @@ void AppTester::clickButton()
     tmpMsg.insert(Qt::Key_1, sender()->objectName());
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
+}
+
+void AppTester::updateType()
+{
+    isInit = false;
+    QSqlQuery query(QSqlDatabase::database("config"));
+    query.exec("select name from sqlite_master where type='table' order by name");
+    typeText->clear();
+    tmpTyp.clear();
+    while (query.next()) {
+        QString t = query.value(0).toString();
+        QString numb = t.mid(1, 4);
+        QString name = t.mid(6, 50);
+        tmpTyp.insert(name, numb);
+        typeText->addItem(name);
+    }
+    typeText->setCurrentText(tmpSet.value(DataType).toString());
+    isInit = true;
 }
 
 void AppTester::updateWave()
@@ -941,6 +1028,7 @@ void AppTester::updateTime()
 void AppTester::updateTest()
 {
     btnTest->setEnabled(true);
+    typeText->setEnabled(true);
 }
 
 void AppTester::recvIMPMsg(QTmpMap msg)
@@ -1175,7 +1263,6 @@ void AppTester::recvNewMsg(QTmpMap msg)
             bool isM = ((hex & XX20) != 0) && !btnM->isChecked();
             bool isA = ((hex & XX20) == 0) && !btnA->isChecked();
             if (isM || isA) {
-                clickStop();
                 btnM->setChecked(isM);
                 btnA->setChecked(isA);
                 btnL->setEnabled(isA);
@@ -1192,8 +1279,8 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 if (isA) {
                     tmpMap.insert("text", QString("6008"));
                     emit sendAppMap(tmpMap);
-                    initSettings();
                 }
+                initSettings();
                 tmpMap.clear();
             }
         }
@@ -1271,6 +1358,7 @@ void AppTester::showEvent(QShowEvent *e)
     btnTest->setEnabled(false);
     this->setFocus();
     initSettings();
+    updateType();
     updateShow();
     e->accept();
 }

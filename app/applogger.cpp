@@ -17,27 +17,18 @@ AppLogger *AppLogger::_instance = 0;  // 初始化静态变量
 
 AppLogger *AppLogger::instance()  // 构建单实例日志对象
 {
-    if (!AppLogger::_instance)
-        AppLogger::_instance = new AppLogger;
+    AppLogger::_instance = (!AppLogger::_instance) ? new AppLogger : AppLogger::_instance;
     return AppLogger::_instance;
 }
 #if (QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
 void outputHandle(QtMsgType type, const char* msg) {
-    if (!logger) {
-        logger = AppLogger::instance();
-    }
-    if (logger) {
-        logger->output(type, QString(msg));
-    }
+    logger = (!logger) ? AppLogger::instance() : logger;
+    logger->output(type, QString(msg));
 }
 #else
 void outputHandle(QtMsgType type, const QMessageLogContext &, const QString &msg) {
-    if (!logger) {
-        logger = AppLogger::instance();
-    }
-    if (logger) {
-        logger->output(type, msg);
-    }
+    logger = (!logger) ? AppLogger::instance() : logger;
+    logger->output(type, msg);
 }
 #endif
 AppLogger::AppLogger(QWidget *parent) : QWidget(parent)

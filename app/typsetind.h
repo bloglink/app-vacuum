@@ -4,10 +4,10 @@
  *
  * version:     0.1
  * author:      zhaonanlin
- * brief:       电阻配置界面
+ * brief:       电感配置界面
 *******************************************************************************/
-#ifndef TYPSETDCR_H
-#define TYPSETDCR_H
+#ifndef TYPSETIND_H
+#define TYPSETIND_H
 
 #include <QLabel>
 #include <QDebug>
@@ -30,26 +30,27 @@
 #include "boxdouble.h"
 #include "boxqitems.h"
 
-#define DCR_SIZE 8
+#define IND_SIZE 8
 
-#define CHECKDCR 0x00  // 电阻测试
-#define PORTDCR1 0x01  // 端口一
-#define PORTDCR2 0x02  // 端口二
-#define WIREDCR1 0x03  // 线圈材料
-#define UNITDCR1 0x04  // 电阻单位
-#define UPPERDCR 0x05  // 电阻上限
-#define LOWERDCR 0x06  // 电阻下限
-#define SSTDDCR1 0x07  // 标准电阻
-#define COMPDCR1 0x08  // 线路补偿1
-#define COMPDCR2 0x09  // 线路补偿2
+#define CHECKIND 0x00  // 电感测试
+#define PORTIND1 0x01  // 端口一
+#define PORTIND2 0x02  // 端口二
+#define UNITIND1 0x03  // 电感单位
+#define UPPERIND 0x04  // 电感上限
+#define LOWERIND 0x05  // 电感下限
+#define QMAXIND1 0x06  // Q值上限
+#define QMININD1 0x07  // Q值下限
+#define STDDIND1 0x08  // 标准电感
+#define COMPIND1 0x09  // 线路补偿1
+#define COMPIND2 0x0A  // 线路补偿2
 
-#define CACHEDCR 0x10  // 离散数据长度
+#define CACHEIND 0x10  // 离散数据长度
 
-class TypSetDcr : public QWidget
+class TypSetInd : public QWidget
 {
     Q_OBJECT
 public:
-    explicit TypSetDcr(QWidget *parent = 0);
+    explicit TypSetInd(QWidget *parent = 0);
 signals:
     void sendAppMsg(QTmpMap msg);
     void sendAppMap(QVariantMap msg);
@@ -74,16 +75,16 @@ private:
     QVBoxLayout *layout;
     QTableView *view;
     BoxQModel *mView;
-    QDoubleSpinBox *timeBox;
-    QSpinBox *modeBox;
+    QSpinBox *timeBox;
     QDoubleSpinBox *nounBox;
-    QComboBox *cnvtBox;
-    QDoubleSpinBox *compBox;
-    QDoubleSpinBox *tempBox;
+    QComboBox *freqBox;
+    QComboBox *modeBox;
+    QComboBox *tempBox;
     QDoubleSpinBox *sminBox;
     QDoubleSpinBox *smaxBox;
-
-    QStringList wires;
+    QStringList freqs;
+    QStringList modes;
+    QStringList speed;
     QStringList units;
     QVariantMap config;
     QVariantMap tmpMap;
@@ -92,4 +93,4 @@ private:
     bool isInit;
 };
 
-#endif // TYPSETDCR_H
+#endif // TYPSETIND_H

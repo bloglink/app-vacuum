@@ -34,6 +34,7 @@
 #include "typsetinr.h"
 #include "typsetacw.h"
 #include "typsetimp.h"
+#include "typsetind.h"
 
 class AppTester : public QWidget
 {
@@ -68,16 +69,19 @@ private slots:
     void initSetINR();
     void initSetACW();
     void initSetIMP();
+    void initSetIND();
     void initSetHAL();
     void initSetLOD();
     void initSetBMF();
     void insertItem(int item, int numb);
     void initQuality();
+    void clickType();
     void clickTest();
     void clickStop();
     void clickWave();
     void clickReset();
     void clickButton();
+    void updateType();
     void updateWave();
     void updateShow();
     void updateTime();
@@ -113,7 +117,7 @@ private:
     QList<QLabel*> colors;
     QLabel *workText;
     QLabel *realText;
-    QLabel *typeText;
+    QComboBox *typeText;
     QLabel *userText;
     QLabel *signText;
     QLabel *codeText;
@@ -126,7 +130,6 @@ private:
     quint32 tmpRow;
     quint32 testOK;
     quint32 testQu;
-    BoxQLabel *rate;
 
     QTmpMap tmpMsg;
     QTmpMap tmpSet;
@@ -143,6 +146,8 @@ private:
     QTmpMap tmpItem;
     QTmpMap tmpParm;
     QVariantMap tmpMap;
+    QVariantMap tmpTyp;
+    bool isInit;
 };
 
 #endif // APPTESTER_H

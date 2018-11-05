@@ -10,6 +10,7 @@
 #define APPSYSTEM_H
 
 #include <QLabel>
+#include <QDebug>
 #include <QLayout>
 #include <QWidget>
 #include <QVariant>
@@ -55,6 +56,7 @@ private slots:
     void initDelegate();
     void initSettings();
     void saveSettings();
+    void recvWarnning();
     void recvAppMsg(QTmpMap msg);
     virtual void showEvent(QShowEvent *e);
 private:

@@ -316,6 +316,9 @@ void AppBackup::saveSettings()
 
 void AppBackup::recovery()
 {
+    QSqlDatabase::database("system").close();
+    QSqlDatabase::database("config").close();
+    QSqlDatabase::database("record").close();
     QDir dir;
     dir.setPath("nandflash");
     dir.remove("system.db");
@@ -329,8 +332,6 @@ void AppBackup::recvAppMsg(QTmpMap msg)
     switch (msg.value(Qt::Key_0).toInt()) {
     case Qt::Key_Copy:
         tmpSet = msg;
-        break;
-    case Qt::Key_News:
         break;
     default:
         break;

@@ -123,7 +123,6 @@ void TypConfig::initItemBar()
     item->setSelectionMode(QAbstractItemView::SingleSelection);
     item->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-
     QPushButton *btnUpper = new QPushButton(tr("上移"), this);
     layout->addWidget(btnUpper);
     btnUpper->setFixedHeight(44);
@@ -249,7 +248,6 @@ void TypConfig::initSettings()
         view->item(i, 0)->setText(QString("%1").arg(t+1, 4, 10, QChar('0')));
         view->item(i, 1)->setText(tmpTyp.value(t+1).toString());
     }
-
     type->setText(QString("%1").arg(tmpSet.value(DataType).toString()));
 
     int r = tmpSet.value(4000 + Qt::Key_0).toInt();

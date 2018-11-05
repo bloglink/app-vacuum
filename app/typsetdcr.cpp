@@ -33,10 +33,6 @@ void TypSetDcr::initViewBar()
     headers << tr("电阻") << tr("端一") << tr("端二") << tr("线圈材料")
             << tr("电阻单位") << tr("电阻上限") << tr("电阻下限") << tr("标准电阻")
             << tr("线路补偿1") << tr("线路补偿2");
-    titles << "test" << "port1" << "port2" << "wire" << "unit" << "max" << "min"
-           << "std" << "wire_comp1" << "wire_comp2"
-           << "std_temp" << "temp_comp" << "comp_temp" << "noun"
-           << "time" << "std_min" << "std_max";
     mView = new BoxQModel;
     mView->setRowCount(DCR_SIZE);
     mView->setColumnCount(headers.size());

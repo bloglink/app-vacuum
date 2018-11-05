@@ -55,7 +55,8 @@ HEADERS += \
     app/devplctrl.h \
     app/devinvert.h \
     app/devdriver.h \
-    app/apppermit.h
+    app/apppermit.h \
+    app/typsetind.h
 
 SOURCES += \
     app/appauthor.cpp \
@@ -94,6 +95,7 @@ SOURCES += \
     app/devplctrl.cpp \
     app/devinvert.cpp \
     app/devdriver.cpp \
-    app/apppermit.cpp
+    app/apppermit.cpp \
+    app/typsetind.cpp
 
 

@@ -38,5 +38,6 @@
         <file>icon_circle_6.png</file>
         <file>logo_aip_back.png</file>
         <file>logo_aip.bmp</file>
+        <file>author.png</file>
     </qresource>
 </RCC>

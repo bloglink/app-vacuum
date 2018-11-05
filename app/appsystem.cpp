@@ -40,7 +40,7 @@ void AppSystem::initSystem()
     group->setLayout(boxLayout);
 
     QStringList names;
-    names << tr("语言设置") << tr("测试模式") << tr("启动方式") << tr("亮度设定")
+    names << tr("语言设置") << tr("维护提示") << tr("启动方式") << tr("亮度设定")
           << tr("音量设定") << tr("条码起始") << tr("条码长度") << tr("合格报警")
           << tr("报警提示") << tr("测试延时") << tr("产品检测") << tr("条码检测")
           << tr("匝间报警");
@@ -120,7 +120,9 @@ void AppSystem::initDelegate()
     tmp0 << tr("中文");
     texts.at(0)->addItems(tmp0);
 
-    texts.at(1)->addItem(tr("常规模式"));
+    QStringList tmp1;
+    tmp1 << tr("未维护") << tr("已维护");
+    texts.at(1)->addItems(tmp1);
 
     QStringList tmp2;
     tmp2 << tr("按钮启动") << tr("滑罩启动") << tr("脚踏启动") << tr("网络启动");
@@ -134,17 +136,18 @@ void AppSystem::initDelegate()
 
 void AppSystem::initSettings()
 {
-    int r = tmpSet.value(2000 + Qt::Key_1).toInt();
+    int addr = tmpSet.value(2000 + Qt::Key_1).toInt();
     for (int i=0; i < texts.size(); i++) {  // 系统配置存放在0x0020
-        if (i < 5) {
-            texts.at(i)->setCurrentIndex(tmpSet[r + i].toInt());
-        } else {
-            texts.at(i)->lineEdit()->setText(tmpSet[r + i].toString());
+        if (i < 5 && i != 1) {
+            texts.at(i)->setCurrentIndex(tmpSet.value(addr + i).toInt());
+        }
+        if (i >= 5) {
+            texts.at(i)->lineEdit()->setText(tmpSet.value(addr + i).toString());
         }
     }
-    int s = tmpSet[(2000 + Qt::Key_2)].toInt();
+    int ctrl = tmpSet.value(2000 + Qt::Key_2).toInt();
     for (int i=0; i < ctrls.size(); i++) {  // 本机设置存放在0x0030
-        ctrls.at(i)->setText(tmpSet[s + i].toString());
+        ctrls.at(i)->setText(tmpSet.value(ctrl + i).toString());
     }
 #ifdef __arm__
     time->setDateTime(QDateTime::currentDateTime());
@@ -153,21 +156,28 @@ void AppSystem::initSettings()
 
 void AppSystem::saveSettings()
 {
-    int r = tmpSet[(2000 + Qt::Key_1)].toInt();
+    int addr = tmpSet.value(2000 + Qt::Key_1).toInt();
     for (int i=0; i < texts.size(); i++) {  // 系统配置存放在0x0020
-        if (i < 5) {
-            tmpSet[r + i] = QString::number(texts.at(i)->currentIndex());
-        } else {
-            tmpSet[r + i] = texts.at(i)->currentText();
+        if (i == 1) {
+            if (texts.at(i)->currentIndex() != 0) {
+                tmpMsg.insert(addr + i, "0");
+            }
+        }
+        if (i < 5 && i != 1) {
+            tmpMsg.insert(addr + i, QString::number(texts.at(i)->currentIndex()));
+        }
+        if (i >= 5) {
+            tmpMsg.insert(addr + i, texts.at(i)->currentText());
         }
     }
-    int s = tmpSet[(2000 + Qt::Key_2)].toInt();
+    int ctrl = tmpSet.value(2000 + Qt::Key_2).toInt();
     for (int i=0; i < ctrls.size(); i++) {  // 本机设置存放在0x0030
-        tmpSet[s + i] = ctrls.at(i)->text();
+        tmpMsg.insert(ctrl + i, ctrls.at(i)->text());
     }
-    tmpSet.insert(Qt::Key_0, Qt::Key_Save);
-    tmpSet.insert(Qt::Key_1, "aip_system");
-    emit sendAppMsg(tmpSet);
+    tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+    tmpMsg.insert(Qt::Key_1, "aip_system");
+    emit sendAppMsg(tmpMsg);
+    tmpMsg.clear();
 
     QSettings *set = new QSettings("./nandflash/userinfo.txt", QSettings::IniFormat);
     set->beginGroup("LOCAL_MACHINE");
@@ -186,11 +196,42 @@ void AppSystem::saveSettings()
     set->endGroup();
 }
 
+void AppSystem::recvWarnning()
+{
+    quint64 addr = tmpSet.value(2000 + Qt::Key_1).toInt();
+    quint64 curr = QDate::currentDate().toJulianDay();
+    quint64 save = tmpSet.value(addr + 0x01).toInt();
+    quint64 last = (save / 100);
+    quint64 time = (save % 100);
+    qDebug() << curr << save << last << time;
+    if (time > 60) {
+        QString sty = "<p style='font:11pt;color:#FFFFFF;' align='left'>%1</p>";
+        QString str;
+        str += tr("真空测试设备中真空泵的油雾过滤器、油过滤器、粉尘过滤器、气镇滤芯到维护时间，");
+        str += tr("请及时清洁或更换");
+        str += tr("维护方法请参考<真空泵维护保养方法>");
+        str += tr("如果备件不足，请及时与青岛艾普智能仪器有限公司销售人员联系购买");
+        str += tr("或直接拨打购买热线：0532-87973318");
+        QMessageBox::warning(this, tr("重要提示"), sty.arg(str), QMessageBox::Close);
+    } else {
+        time += (curr == last) ? 0 : 1;
+        save = (curr * 100) + time;
+        tmpMsg.insert(addr + 1, QString::number(save));
+        tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+        tmpMsg.insert(Qt::Key_1, "aip_system");
+        emit sendAppMsg(tmpMsg);
+        tmpMsg.clear();
+    }
+}
+
 void AppSystem::recvAppMsg(QTmpMap msg)
 {
     switch (msg.value(Qt::Key_0).toInt()) {
     case Qt::Key_Copy:
         tmpSet = msg;
+        break;
+    case Qt::Key_Game:
+        recvWarnning();
         break;
     default:
         break;

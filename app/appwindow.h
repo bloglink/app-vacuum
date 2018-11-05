@@ -35,6 +35,7 @@
 #include "typsetinr.h"
 #include "typsetacw.h"
 #include "typsetimp.h"
+#include "typsetind.h"
 #include "typsethal.h"
 #include "typsetlod.h"
 #include "typsetbmf.h"
@@ -91,6 +92,7 @@ private slots:
     int initSetInr();
     int initSetAcw();
     int initSetImp();
+    int initSetInd();
     int initSetHal();
     int initSetLod();
     int initSetBmf();
@@ -106,7 +108,6 @@ private slots:
     int initSocket();
     int initSerial();
     int initThread();
-    int initButton(QString title, QString name);
     int initWidget(int numb, int form, QString name, QString mark, QWidget *app);
     int taskThread();
     int taskLoopSignin();

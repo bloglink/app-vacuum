@@ -63,16 +63,6 @@ void AppSignin::initTitleBar()
     QLabel *text = new QLabel(tr("电机综合测试系统登录"));
     layout->addWidget(text);
     layout->addStretch();
-
-#ifndef __linux__
-    QToolButton *exit = new QToolButton(this);
-    exit->setIcon(QIcon(":/icon_ext.png"));
-    exit->setFocusPolicy(Qt::NoFocus);
-    exit->setIconSize(QSize(25, 25));
-    exit->resize(25, 25);
-    connect(exit, SIGNAL(clicked(bool)), this, SLOT(animationHide()));
-    layout->addWidget(exit);
-#endif
 }
 
 void AppSignin::initLoginBar()

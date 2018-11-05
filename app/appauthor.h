@@ -9,13 +9,16 @@
 #ifndef APPAUTHOR_H
 #define APPAUTHOR_H
 
+#include <QDebug>
 #include <QLabel>
+#include <QTimer>
 #include <QLayout>
 #include <QWidget>
 #include <QVariant>
 #include <QShowEvent>
 #include <QPushButton>
 #include <QApplication>
+#include <QDesktopWidget>
 
 #include "main.h"
 

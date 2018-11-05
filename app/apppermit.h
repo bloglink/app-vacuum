@@ -23,6 +23,7 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 
+#include "appsignin.h"
 #include "boxqitems.h"
 #include "main.h"
 

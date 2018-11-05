@@ -22,8 +22,9 @@ void AppAuthor::initUI()
 
 void AppAuthor::initLayout()
 {
-    QString sty = ".QFrame{border-image:url(:/logo_aip_back.png)}.QWidget{background:transparent;}";
-    this->setStyleSheet(sty);
+    QString str = ".QFrame{border-image:url(:/author.png)}";
+    this->setStyleSheet(str);
+
     QVBoxLayout *mLayout = new QVBoxLayout(this);
     QFrame *frm = new QFrame(this);
     layout = new QVBoxLayout;
@@ -54,13 +55,17 @@ void AppAuthor::initButtonBar()
     QHBoxLayout *blayout = new QHBoxLayout;
     blayout->addStretch();
     QStringList marks, names;
-    marks << tr("退出程序") << tr("系统设置") << tr("型号管理") << tr("数据管理") << tr("进入测试");
-    names << "" << "system" << "config" << "record" << "tester";
+    if (QApplication::desktop()->width() > 800) {
+        marks << tr("退出程序");
+        names << "";
+    }
+    marks << tr("系统设置") << tr("型号管理") << tr("数据管理") << tr("进入测试");
+    names << "system" << "config" << "record" << "tester";
     for (int i=0; i < marks.size(); i++) {
         QPushButton *btn = new QPushButton(marks.at(i), this);
         btn->setObjectName(names.at(i));
-        btn->setMinimumHeight(90);
         connect(btn, SIGNAL(clicked(bool)), this, SLOT(clickButton()));
+        btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         blayout->addWidget(btn);
     }
     blayout->addStretch();
@@ -68,9 +73,11 @@ void AppAuthor::initButtonBar()
         blayout->setStretch(i, 1);
     bframe = new QWidget(this);
     bframe->setLayout(blayout);
+    bframe->setVisible(false);
     layout->addStretch();
     layout->addWidget(bframe);
-    bframe->hide();
+    layout->setStretch(1, 6);
+    layout->setStretch(2, 1);
 }
 
 void AppAuthor::clickButton()
@@ -95,7 +102,7 @@ void AppAuthor::recvAppMsg(QTmpMap msg)
         tcpStat->show();
         break;
     case Qt::Key_Game:
-        bframe->show();
+        QTimer::singleShot(800, bframe, SLOT(show()));
         break;
     default:
         break;

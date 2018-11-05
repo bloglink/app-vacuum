@@ -148,8 +148,11 @@ int SqlExport::exportHead(QTmpMap msg)
             }
             continue;
         }
-        if (names.at(i) == tr("电感"))
-            tmpMsg.insert(addr + 0x10, tr("电感平衡"));
+        if (names.at(i) == tr("电感")) {
+            int addr = tmpSet.value(3000 + Qt::Key_8).toInt();
+            tmpMsg.insert(addr + 0x80 + 0x02, tr("电感平衡结果"));
+            tmpMsg.insert(addr + 0x80 + 0x03, tr("电感平衡判定"));
+        }
         if (names.at(i) == tr("霍尔")) {
             QStringList names;
             names << tr("霍尔高电平") << tr("霍尔低电平") << tr("霍尔占空比") << tr("霍尔频率");

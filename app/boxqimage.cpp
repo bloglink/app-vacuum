@@ -137,6 +137,9 @@ void BoxQImage::drawTexts(QPainter *painter)
         QVariantMap tmp = texts.at(i);
         int x = tmp.value("width").toInt();
         int y = tmp.value("lenth").toInt();
+        QFont font = painter->font();
+        font.setPixelSize(this->height() > 200 ? 36 : 15);
+        painter->setFont(font);
 
         int lineColor = tmp.value("color").toInt();
         painter->setPen(QPen(Qt::GlobalColor(lineColor)));

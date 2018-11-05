@@ -71,12 +71,17 @@ void AppPermit::initButtonBar()
 void AppPermit::initItemDelegate()
 {
     isInit = false;
-    gRole << tr("管理员") << tr("技术员") << tr("操作员") << tr("所有人");
+    gRole << tr("超级管理员") << tr("管理员") << tr("技术员") << tr("操作员") << tr("所有人");
     view->setItemDelegate(new BoxQItems);
 }
 
 void AppPermit::initSettings()
 {
+    isInit = false;
+    int temp = tmpSet.value(3000 + Qt::Key_0).toInt();  // 临时数据地址
+    int sign = tmpSet.value(temp + TEMPSIGN).toInt();  // 是否已登录
+    int real = tmpSet.value(DataUser).toInt();  // 当前用户地址
+    int gear = (sign == 1) ? tmpSet.value(real + mRole).toInt() : 4;  // 当前权限等级
     int addr = tmpSet.value(2000 + Qt::Key_6).toInt();  // 权限管理地址
     view->setRowCount(screen.keys().size());
     for (int i=0; i < screen.keys().size(); i++) {
@@ -90,13 +95,15 @@ void AppPermit::initSettings()
             view->setItem(i, t, item);
             if (t == 0)
                 item->setText(tmp.value("mark").toString());  // 界面名称
-            if (t == 1 && role > 0)
-                item->setText(gRole.at((role - 1) % gRole.size()));  // 界面权限
+            if (t == 1)
+                item->setText(gRole.at(role % gRole.size()));  // 界面权限
             if (t == 2)
                 item->setText(QString::number(form));  // 界面分组
         }
-        if (role == 0)
+        if (role < gear)
             view->hideRow(i);  // 隐藏后台界面
+        else
+            view->showRow(i);
     }
     isInit = true;
 }
@@ -109,7 +116,7 @@ void AppPermit::saveSettings()
         QVariantMap tmp = screen.value(i).toMap();
         int form = tmp.value("form").toInt();
         int numb = tmp.value("numb").toInt();
-        int role = gRole.indexOf(str) + 1;
+        int role = gRole.indexOf(str);
         tmpMsg.insert(addr + form*pSize + numb, role);
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
@@ -123,8 +130,13 @@ void AppPermit::autoChange()
     int row = view->currentRow();
     int col = view->currentColumn();
     if (col == pRole && isInit) {
+        int temp = tmpSet.value(3000 + Qt::Key_0).toInt();  // 临时数据地址
+        int sign = tmpSet.value(temp + TEMPSIGN).toInt();  // 是否已登录
+        int real = tmpSet.value(DataUser).toInt();  // 当前用户地址
+        int gear = (sign == 1) ? tmpSet.value(real + mRole).toInt() : 4;  // 当前权限等级
         QString str = view->item(row, col)->text();
-        str = (gRole.at((gRole.indexOf(str) + 1) % gRole.size()) );
+        int role = qMax(gear, (gRole.indexOf(str) + 1) % gRole.size());
+        str = (gRole.at(role % gRole.size()) );
         view->item(row, col)->setText(str);
         change();
     }

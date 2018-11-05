@@ -50,6 +50,7 @@ private slots:
     void initViewBar();
     void initTextBar();
     void initSettings();
+    void clickDelete();
     void clickSelect();
     void clickExport();
     QString getSaveFileName();

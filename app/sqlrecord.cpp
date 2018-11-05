@@ -77,6 +77,12 @@ void SqlRecord::initTextBar()
 
     blayout->addStretch();
 
+    QPushButton *btnDelete = new QPushButton(this);
+    btnDelete->setText(tr("删除数据"));
+    btnDelete->setFixedSize(97, 44);
+    blayout->addWidget(btnDelete);
+    connect(btnDelete, SIGNAL(clicked(bool)), this, SLOT(clickDelete()));
+
     QPushButton *btnSelect = new QPushButton(this);
     btnSelect->setText(tr("查询数据"));
     btnSelect->setFixedSize(97, 44);
@@ -102,6 +108,28 @@ void SqlRecord::initSettings()
         QString numb = t.mid(1, 4);
         tmpTyp.insert(numb.toInt(), t.mid(6, 50));
         type->addItem(t.mid(6, 50));
+    }
+}
+
+void SqlRecord::clickDelete()
+{
+    QString w = tr("数据删除后无法恢复,确定删除吗?");
+    int ret = QMessageBox::warning(this, tr("警告"), w, QMessageBox::Cancel | QMessageBox::Ok);
+    if (ret == QMessageBox::Ok) {
+        QSqlQuery query(QSqlDatabase::database("record"));
+        qint64 t1 = from->dateTime().toMSecsSinceEpoch();
+        qint64 t2 = stop->dateTime().toMSecsSinceEpoch();
+        t1 = (t1 << 20);
+        t2 = (t2 << 20);
+        QString filter = "delete from aip_sqlite where ";
+        filter += QObject::tr("R_UUID >= '%1' and R_UUID <= '%2'").arg(t1).arg(t2);
+        if (!type->currentText().isEmpty()) {
+            filter += QObject::tr(" and R_TYPE = '%1'").arg(type->currentText());
+        }
+        if (query.exec(filter))
+            clickSelect();
+        filter.replace("aip_sqlite", "aip_record");
+        query.exec(filter);
     }
 }
 

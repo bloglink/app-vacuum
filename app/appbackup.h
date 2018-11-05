@@ -26,6 +26,7 @@
 #include <QHeaderView>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QSqlDatabase>
 #include <QTableWidget>
 #include <QHostAddress>
 #include <QTextBrowser>

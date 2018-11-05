@@ -49,12 +49,12 @@ int AppWindow::initTitle()
     sscanf((__DATE__), "%s %d %d", s_month, &day, &year);
     month = (strstr(month_names, s_month)-month_names)/3+1;
 
-    QDate dt;
-    dt.setDate(year, month, day);
-    static const QTime tt = QTime::fromString(__TIME__, "hh:mm:ss");
+    QDate makeDate;
+    makeDate.setDate(year, month, day);
+    static const QTime makeTime = QTime::fromString(__TIME__, "hh:mm:ss");
 
-    QDateTime t(dt, tt);
-    verNumb = QString("V-2.3.%1").arg(t.toString("yyMMdd-hhmm"));
+    QDateTime mDateTime(makeDate, makeTime);
+    verNumb = QString("V-2.3.%1").arg(mDateTime.toString("yyMMdd-hhmm"));
     QString ttt = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     qWarning() << "app vern:" << verNumb << ttt;
     this->setWindowTitle(tr("电机综合测试仪%1").arg(verNumb));
@@ -138,6 +138,8 @@ int AppWindow::initScreen()
     names << tr("正在初始化高压配置");
     initMap[names.size()] = &AppWindow::initSetImp;
     names << tr("正在初始化匝间配置");
+    initMap[names.size()] = &AppWindow::initSetInd;
+    names << tr("正在初始化电感配置");
     initMap[names.size()] = &AppWindow::initSetHal;
     names << tr("正在初始化霍尔配置");
     initMap[names.size()] = &AppWindow::initSetLod;
@@ -279,6 +281,13 @@ int AppWindow::initSetImp()
 {
     TypSetImp *app = new TypSetImp(this);
     initWidget(nSetIMP, 2, "setimp", tr("匝间配置"), app);
+    return Qt::Key_Away;
+}
+
+int AppWindow::initSetInd()
+{
+    TypSetInd *app = new TypSetInd(this);
+    initWidget(nSetIND, 2, "setind", tr("电感配置"), app);
     return Qt::Key_Away;
 }
 
@@ -514,20 +523,6 @@ int AppWindow::initThread()
     loading = new QTimer(this);
     connect(loading, SIGNAL(timeout()), this, SLOT(testWaitServo()));
 
-    return Qt::Key_Away;
-}
-
-int AppWindow::initButton(QString title, QString name)
-{
-    QPushButton *btnTester = new QPushButton(title, this);
-    btnTester->setFlat(true);
-    btnTester->setCheckable(true);
-    btnTester->setFixedSize(BTN_WIDTH, BTN_LENTH);
-    btnTester->setFocusPolicy(Qt::NoFocus);
-    buttons.append(btnTester);
-    btnLayout->addWidget(btnTester);
-    btnTester->setObjectName(name);
-    connect(btnTester, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
     return Qt::Key_Away;
 }
 
@@ -868,7 +863,7 @@ int AppWindow::taskCheckStop()
     int item = getNextItem();
     bool isStop = currTask < save && currTask > play;
     isStop = (testShift == Qt::Key_Away && item == 0) ? false : isStop;
-    if (currTask < save)
+    if (currTask <= play || isStop)
         sendUdpStr(tr("6022 %1").arg(station).toUtf8());
     if (isStop) {
         taskShift = Qt::Key_Stop;
@@ -1140,10 +1135,10 @@ int AppWindow::recvIoCtrl(int key, int work)
         QString str;
         bool sl = (key == Qt::Key_Play && work == 0x13) || ((ioHex & X03) && ((ioHex & X11) == 0));
         bool sr = (key == Qt::Key_Play && work == 0x14) || ((ioHex & X00) && ((ioHex & X08) == 0));
-        if (sl && (ioHex & X05)) {
+        if (sl && (ioHex & X05) && ((ioHex & X11) == 0)) {
             str = tr("警告:左光幕遮挡!");
         }
-        if (sr && (ioHex & X02)) {
+        if (sr && (ioHex & X02) && ((ioHex & X08) == 0)) {
             str = tr("警告:右光幕遮挡!");
         }
         if (!str.isEmpty()) {
@@ -1166,10 +1161,12 @@ void AppWindow::showBarCode()
     int pSize = tmpSet.value(pAddr + SystSize).toInt();
     int tAddr = tmpSet.value(3000 + Qt::Key_0).toInt();  // 临时参数地址
     tmpcode = tmpcode.mid(pCode, pSize);
-    barcode = tmpcode;
-    tmpSet.insert(tAddr + TEMPCODE, tmpcode);
-    sendSqlite();
-    scanner->stop();
+    if (tmpcode.size() >= pSize) {
+        barcode = tmpcode;
+        tmpSet.insert(tAddr + TEMPCODE, tmpcode);
+        sendSqlite();
+        scanner->stop();
+    }
     tmpcode.clear();
 }
 
@@ -1317,19 +1314,10 @@ bool AppWindow::checkAction(QString msg)
             gs.append(tmp.value("name").toString());
     }
     for (int i=0; i < buttons.size(); i++) {
-        if (gs.contains(buttons.at(i)->objectName()))
-            buttons.at(i)->show();
-        else
-            buttons.at(i)->hide();
-        if (buttons.at(i)->objectName() == msg)
-            buttons.at(i)->setChecked(true);
-        else
-            buttons.at(i)->setChecked(false);
+        buttons.at(i)->setVisible(gs.contains(buttons.at(i)->objectName()));
+        buttons.at(i)->setChecked(buttons.at(i)->objectName() == msg);
     }
-    if (win.value("form").toInt() > 0)
-        btnFrame->show();
-    else
-        btnFrame->hide();
+    btnFrame->setVisible(win.value("form").toInt() > 0);
     if (gear > role)
         return false;
     emit sendAppMsg(tmpMsg);
@@ -1879,6 +1867,7 @@ void AppWindow::recvNewMsg(QString dat)
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
+            timeRsl = ((currItem == nSetIND) && (temp.contains(tr("%")))) ? 0x08 : timeRsl;
 
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
