@@ -154,6 +154,7 @@ int DevPlctrl::setData()
         int mode = tmpMap.value("mode").toInt();
         int s = (mode == 0) ? tmpMap.value("data").toDouble()*2.006 : 0;
         int t = (mode == 1) ? tmpMap.value("data").toDouble()*1.000 : 0;
+        s = qMin(4000, s);
         QByteArray msg = "%01#WDD0010000101";
         msg.append(QString("%1").arg(s%256, 2, 16, QChar('0')).toUpper().toUtf8());
         msg.append(QString("%1").arg(s/256, 2, 16, QChar('0')).toUpper().toUtf8());

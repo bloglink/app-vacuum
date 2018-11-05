@@ -59,6 +59,13 @@ void AppRepair::initButtonBar()
     blayout->addWidget(boxAuto);
     connect(boxAuto, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
 
+    boxSpeed = new QSpinBox(this);
+    boxSpeed->setFixedSize(97, 44);
+    boxSpeed->setMinimum(500);
+    boxSpeed->setMaximum(2000);
+    boxSpeed->setValue(1500);
+    blayout->addWidget(boxSpeed);
+
     blayout->addStretch();
 
     QPushButton *btnTest = new QPushButton(tr("设备预热"), this);
@@ -99,7 +106,7 @@ void AppRepair::testRepair()
     tmpMap.insert("enum", Qt::Key_Shop);
     tmpMap.insert("mode", 0);  // 转速模式
     tmpMap.insert("turn", 0);
-    tmpMap.insert("data", 1000);
+    tmpMap.insert("data", boxSpeed->value());
     emit sendAppMap(tmpMap);
     tmpMap.clear();
     QString strLR = "<p style='font:48pt;color:#FF0000;'><b>%1</b></p>";  // 大号红,NG,中断

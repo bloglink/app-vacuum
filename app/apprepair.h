@@ -15,6 +15,7 @@
 #include <QDebug>
 #include <QWidget>
 #include <QLayout>
+#include <QSpinBox>
 #include <QCheckBox>
 #include <QShowEvent>
 #include <QLCDNumber>
@@ -50,6 +51,7 @@ private:
     QLabel *warn;
     QLCDNumber *timeLess;
     QCheckBox *boxAuto;
+    QSpinBox *boxSpeed;
     QVariantMap tmpMap;
     QTime time;
     QTimer *timer;

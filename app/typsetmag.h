@@ -41,7 +41,6 @@
 #define FREQMAG1 0x05
 #define AREAMAG2 0x06
 #define FREQMAG2 0x07
-#define WAVEMAG1 0x08
 
 class TypSetMag : public QWidget
 {
@@ -81,7 +80,6 @@ private:
     QRadioButton *btnWorkL;
     QRadioButton *btnWorkR;
     QComboBox *turnBox;
-    QStringList titles;
 
     QTmpMap areasL;
     QTmpMap freqsL;
@@ -92,7 +90,6 @@ private:
 
     QTmpMap tmpSet;
     QTmpMap tmpMsg;
-    QTmpMap wvdata;
     bool isInit;
     bool isSave;
 };

@@ -144,14 +144,12 @@ void TypSetDcr::initButtonBar()
     btnLayout->addWidget(new QLabel(tr("标准下限")), row, 2);
     btnLayout->addWidget(sminBox, row, 3);
 
-    QPushButton *btnAuto = new QPushButton(this);
-    btnAuto->setText(tr("自动计算"));
+    QPushButton *btnAuto = new QPushButton(tr("自动计算"), this);
     btnAuto->setFixedHeight(40);
     connect(btnAuto, SIGNAL(clicked(bool)), this, SLOT(autoCal()));
     btnLayout->addWidget(btnAuto, row, 4, 1, 2);
 
-    QPushButton *btnSave = new QPushButton(this);
-    btnSave->setText(tr("保存"));
+    QPushButton *btnSave = new QPushButton(tr("保存"), this);
     btnSave->setFixedSize(125, 40);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
     btnLayout->addWidget(btnSave, row, 7);

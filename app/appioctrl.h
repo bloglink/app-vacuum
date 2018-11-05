@@ -57,6 +57,8 @@
 #define X07 0x000080
 #define X08 0x000100  // 右到位
 #define X11 0x000800  // 左到位
+#define X14 0x004000
+
 class AppIoCtrl : public QWidget
 {
     Q_OBJECT

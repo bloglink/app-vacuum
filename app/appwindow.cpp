@@ -38,22 +38,15 @@ int AppWindow::initUI()
 
 int AppWindow::initTitle()
 {
-#ifndef __linux__
-    this->setWindowFlags(Qt::FramelessWindowHint);
-#endif
-
     char s_month[5];
     static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
     int month, day, year;
-
     sscanf((__DATE__), "%s %d %d", s_month, &day, &year);
     month = (strstr(month_names, s_month)-month_names)/3+1;
 
-    QDate makeDate;
-    makeDate.setDate(year, month, day);
+    static const QDate makeDate(year, month, day);
     static const QTime makeTime = QTime::fromString(__TIME__, "hh:mm:ss");
-
-    QDateTime mDateTime(makeDate, makeTime);
+    static const QDateTime mDateTime(makeDate, makeTime);
     verNumb = QString("V-2.3.%1").arg(mDateTime.toString("yyMMdd-hhmm"));
     QString ttt = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     qWarning() << "app vern:" << verNumb << ttt;
@@ -91,8 +84,7 @@ int AppWindow::initLayout()
 int AppWindow::initAuthor()
 {
     AppAuthor *app = new AppAuthor(this);
-    initWidget(nAuthor, 0, "author", tr("返回主页"), app);
-    return Qt::Key_Away;
+    return initWidget(nAuthor, 0, "author", tr("返回主页"), app);
 }
 
 int AppWindow::initDevice()
@@ -146,6 +138,8 @@ int AppWindow::initScreen()
     names << tr("正在初始化霍尔配置");
     initMap[names.size()] = &AppWindow::initSetLod;
     names << tr("正在初始化负载配置");
+    initMap[names.size()] = &AppWindow::initSetNld;
+    names << tr("正在初始化空载配置");
     initMap[names.size()] = &AppWindow::initSetBmf;
     names << tr("正在初始化BEMF配置");
     initMap[names.size()] = &AppWindow::initImport;
@@ -191,64 +185,55 @@ int AppWindow:: initSqlDir()
 int AppWindow::initTester()
 {
     AppTester *app = new AppTester(this);
-    initWidget(nTester, 0, "tester", tr("测试界面"), app);
-    return Qt::Key_Away;
+    return initWidget(nTester, 0, "tester", tr("测试界面"), app);
 }
 
 int AppWindow::initSignin()
 {
     AppSignin *app = new AppSignin(this);
-    initWidget(nSignin, 1, "signin", tr("用户登录"), app);
-    return Qt::Key_Away;
+    return initWidget(nSignin, 1, "signin", tr("用户登录"), app);
 }
 
 int AppWindow::initSystem()
 {
     AppSystem *app = new AppSystem(this);
-    initWidget(nSystem, 1, "system", tr("系统设置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSystem, 1, "system", tr("系统设置"), app);
 }
 
 int AppWindow::initIoCtrl()
 {
     AppIoCtrl *app = new AppIoCtrl(this);
-    initWidget(nIoctrl, 1, "ioctrl", tr("动作设置"), app);
-    return Qt::Key_Away;
+    return initWidget(nIoctrl, 1, "ioctrl", tr("动作设置"), app);
 }
 
 int AppWindow::initMaster()
 {
     AppMaster *app = new AppMaster(this);
-    initWidget(nMaster, 1, "master", tr("用户管理"), app);
-    return Qt::Key_Away;
+    return initWidget(nMaster, 1, "master", tr("用户管理"), app);
 }
 
 int AppWindow::initPermit()
 {
     AppPermit *app = new AppPermit(this);
-    initWidget(nPermit, 1, "permit", tr("权限管理"), app);
-    return Qt::Key_Away;
+    return initWidget(nPermit, 1, "permit", tr("权限管理"), app);
 }
 
 int AppWindow::initBackup()
 {
     AppBackup *app = new AppBackup(this);
-    initWidget(nBackup, 1, "backup", tr("后台管理"), app);
-    return Qt::Key_Away;
+    return initWidget(nBackup, 1, "backup", tr("后台管理"), app);
 }
 
 int AppWindow::initLogger()
 {
     AppLogger *app = AppLogger::instance();
-    initWidget(nLogger, 1, "logger", tr("调试信息"), app);
-    return Qt::Key_Away;
+    return initWidget(nLogger, 1, "logger", tr("调试信息"), app);
 }
 
 int AppWindow::initRepair()
 {
     AppRepair *app = new AppRepair(this);
-    initWidget(nRepair, 1, "repair", tr("日常保养"), app);
-    return Qt::Key_Away;
+    return initWidget(nRepair, 1, "repair", tr("日常保养"), app);
 }
 
 int AppWindow::initConfig()
@@ -261,64 +246,61 @@ int AppWindow::initConfig()
 int AppWindow::initSetDcr()
 {
     TypSetDcr *app = new TypSetDcr(this);
-    initWidget(nSetDCR, 2, "setdcr", tr("电阻配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetDCR, 2, "setdcr", tr("电阻配置"), app);
 }
 
 int AppWindow::initSetMag()
 {
     TypSetMag *app = new TypSetMag(this);
-    initWidget(nSetMAG, 2, "setmag", tr("反嵌配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetMAG, 2, "setmag", tr("反嵌配置"), app);
 }
 
 int AppWindow::initSetInr()
 {
     TypSetInr *app = new TypSetInr(this);
-    initWidget(nSetINR, 2, "setinr", tr("绝缘配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetINR, 2, "setinr", tr("绝缘配置"), app);
 }
 
 int AppWindow::initSetAcw()
 {
     TypSetAcw *app = new TypSetAcw(this);
-    initWidget(nSetACW, 2, "setacw", tr("耐压配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetACW, 2, "setacw", tr("耐压配置"), app);
 }
 
 int AppWindow::initSetImp()
 {
     TypSetImp *app = new TypSetImp(this);
-    initWidget(nSetIMP, 2, "setimp", tr("匝间配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetIMP, 2, "setimp", tr("匝间配置"), app);
 }
 
 int AppWindow::initSetInd()
 {
     TypSetInd *app = new TypSetInd(this);
-    initWidget(nSetIND, 2, "setind", tr("电感配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetIND, 2, "setind", tr("电感配置"), app);
 }
 
 int AppWindow::initSetHal()
 {
     TypSetHal *app = new TypSetHal(this);
-    initWidget(nSetHAL, 2, "sethal", tr("霍尔配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetHAL, 2, "sethal", tr("霍尔配置"), app);
 }
 
 int AppWindow::initSetLod()
 {
     TypSetLod *app = new TypSetLod(this);
-    initWidget(nSetLOD, 2, "setlod", tr("负载配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetLOD, 2, "setlod", tr("负载配置"), app);
+}
+
+int AppWindow::initSetNld()
+{
+    TypSetPwr *app = new TypSetPwr(this);
+    return initWidget(nSetNLD, 2, "setnld", tr("空载配置"), app);
 }
 
 int AppWindow::initSetBmf()
 {
     TypSetBmf *app = new TypSetBmf(this);
-    initWidget(nSetEMF, 2, "setbmf", tr("BEMF配置"), app);
-    return Qt::Key_Away;
+    return initWidget(nSetEMF, 2, "setbmf", tr("BEMF配置"), app);
 }
 
 int AppWindow::initImport()
@@ -346,15 +328,13 @@ int AppWindow::initExport()
 int AppWindow::initRecord()
 {
     SqlRecord *app = new SqlRecord(this);
-    initWidget(nRecord, 3, "record", tr("数据管理"), app);
-    return Qt::Key_Away;
+    return initWidget(nRecord, 3, "record", tr("数据管理"), app);
 }
 
 int AppWindow::initUpload()
 {
     SqlUpload *app = new SqlUpload(this);
-    initWidget(nUpload, 3, "upload", tr("数据上传"), app);
-    return Qt::Key_Away;
+    return initWidget(nUpload, 3, "upload", tr("数据上传"), app);
 }
 
 int AppWindow::readBackup()
@@ -583,22 +563,17 @@ int AppWindow::taskThread()
 
 int AppWindow::taskLoopSignin()
 {  // 每2.5秒发一次登录或心跳，无回应报警
-    timeUdp++;
-    if (timeUdp == TIME_OUT) {
-        timeUdp = 0;
-        isudp = 0;
-    }
+    timeUdp = (timeUdp == TIME_OUT) ? 0 : timeUdp;
+    isudp = (timeUdp == TIME_OUT) ? 0 : isudp;
     if (timeUdp%(TIME_OUT/4) == 0) {
-        if (isudp == 0)
-            sendUdpStr("6000");
-        else
-            sendUdpStr("6030");
+        sendUdpStr((isudp == 0) ? "6000" : "6030");
         tmpMsg.insert(Qt::Key_0, Qt::Key_WLAN);
         tmpMsg.insert(Qt::Key_1, isudp);
         tmpMsg.insert(Qt::Key_2, timeUdp * 100 / TIME_OUT);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
     }
+    timeUdp++;
     return Qt::Key_Away;
 }
 
@@ -1003,19 +978,12 @@ int AppWindow::testWaitServo()
 int AppWindow::testStopServo()
 {
     int ret = Qt::Key_Away;
-    if (currItem == 0x0C) { // 负载
+    if (currItem == 0x0C || 0x0E) {  // 负载/反电动势
         if (station == 0x13) {
             ret = mbdktL.test(tmpMap);
         } else {
             ret = mbdktR.test(tmpMap);
         }
-        tmpMap.clear();
-    }
-    if (currItem == 0x0E) {  // 反电动势
-        if (station == 0x13)
-            ret = mbdktL.test(tmpMap);
-        else
-            ret = mbdktR.test(tmpMap);
         tmpMap.clear();
     }
     return ret;
@@ -1112,8 +1080,8 @@ int AppWindow::taskConfig()
 {
     QStringList names;
     names << "setdcr" << "setmag" << "setinr" << "setacw" << "setdcw"
-          << "setimp" << "setpwr" << "setind" << "setlvs" << "setlck" << "sethal"
-          << "setlod" << "setnld" << "setbmf" << "setlvs";
+          << "setimp" << "setpwr" << "setind" << "setlvs" << "setlck"
+          << "sethal" << "setlod" << "setnld" << "setbmf" << "setlvs";
 
     QProgressDialog dialog(tr("配置下发进度"), tr("隐藏"), 0, names.size()*3, this);
     dialog.setWindowTitle(tr("进度对话框"));
@@ -1136,9 +1104,8 @@ int AppWindow::taskConfig()
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
     wait(500);
-    if (stack->currentWidget()->objectName() == "author")
-        QTimer::singleShot(1000, this, SLOT(showTester()));
-    if (stack->currentWidget()->objectName() == "tester")
+    QString name = stack->currentWidget()->objectName();
+    if ((name == "author") || (name == "tester"))  // 自动跳转
         QTimer::singleShot(1000, this, SLOT(showTester()));
     return Qt::Key_Away;
 }
@@ -1147,6 +1114,8 @@ int AppWindow::recvIoCtrl(int key, int work)
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int addr = tmpSet.value(2000 + Qt::Key_1).toInt();
+    int have = tmpSet.value(addr + SystHave).toInt();  // 产品检测
     if (mode == 1) {  // 真空模式
         QString str;
         bool sl = (key == Qt::Key_Play && work == 0x13) || ((ioHex & X03) && ((ioHex & X11) == 0));
@@ -1156,6 +1125,9 @@ int AppWindow::recvIoCtrl(int key, int work)
         }
         if (sr && (ioHex & X02) && ((ioHex & X08) == 0)) {
             str = tr("警告:右光幕遮挡!");
+        }
+        if ((have == 1) && sl && ((ioHex & X14) == 0)) {
+            str = tr("警告:产品未放置!");
         }
         if (!str.isEmpty()) {
             warnningString(str);
@@ -1194,94 +1166,62 @@ void AppWindow::showBoxPop(QString text, int t)
     boxbar->setValue((t+1)*100/initMap.size());
 }
 
-void AppWindow::saveBackup(QTmpMap msg)
-{
-    boxbar->setLabelText(tr("正在保存后台数据"));
-    boxbar->show();
-    wait(10);
-    QString name = "backup";
-    QSqlQuery query(QSqlDatabase::database(name));
-    QList<int> uuids = msg.keys();
-    QSqlDatabase::database(name).transaction();
-    for (int i=0; i < uuids.size(); i++) {
-        int uuid = uuids.at(i);
-        tmpSet.insert(uuid, msg.value(uuid));
-        if (uuid >= 10000 && uuid < 20000) {
-            query.prepare("replace into aip_backup values(?,?)");
-            query.addBindValue(uuid);
-            query.addBindValue(tmpSet[uuid]);
-            query.exec();
-        }
-        boxbar->setValue(i*50/uuids.size());
-    }
-    QSqlDatabase::database(name).commit();
-    boxbar->setValue(99);
-    wait(500);
-    query.clear();
-    boxbar->setValue(100);
-}
-
-void AppWindow::saveSqlite(QTmpMap msg)
-{
-    boxbar->setLabelText(tr("正在保存系统数据"));
-    boxbar->show();
-    wait(10);
-    QString name = "system";
-    QSqlQuery query(QSqlDatabase::database(name));
-    QList<int> uuids = msg.keys();
-    QSqlDatabase::database(name).transaction();
-    for (int i=0; i < uuids.size(); i++) {
-        int uuid = uuids.at(i);
-        tmpSet.insert(uuid, msg.value(uuid));
-        if (uuid >= 20000 && uuid < 30000) {
-            query.prepare("replace into aip_system values(?,?)");
-            query.addBindValue(uuid);
-            query.addBindValue(msg[uuid]);
-            query.exec();
-        }
-        boxbar->setValue(i*50/uuids.size());
-    }
-    QSqlDatabase::database(name).commit();
-    boxbar->setValue(99);
-    wait(500);
-    query.clear();
-    boxbar->setValue(100);
-}
-
 void AppWindow::saveConfig(QTmpMap msg)
 {
-    QElapsedTimer tt;
-    tt.start();
-    boxbar->setLabelText(tr("正在保存配置数据"));
+    QString name = msg.value(Qt::Key_1).toString();
+    if (name == "aip_tester") {
+        tmpSave = msg;
+        return;
+    }
+    QString tabName = (name == "aip_reload") ? "aip_system" : name;  // 重新加载
+    QString sqlName = tabName.mid(4, 6);
+    QString numb = tr("%1").arg(tmpSet.value(DataFile).toInt(), 4, 10, QChar('0'));
+    QString file = tmpSet.value(DataType).toString();
+    tabName = (sqlName == "config") ? tr("T%1_%2").arg(numb).arg(file) : tabName;
+    QString cmd = QString("replace into %1 values(?,?)").arg(tabName);
+    int max = 60000;
+    int min = 40000;
+    max = (sqlName == "backup") ? 20000 : max;  // 后台参数
+    min = (sqlName == "backup") ? 10000 : min;
+    max = (sqlName == "system") ? 30000 : max;  // 系统参数
+    min = (sqlName == "system") ? 20000 : min;
+
+    isChange = false;
+    boxbar->setLabelText(tr("正在保存数据"));
     boxbar->show();
     wait(10);
-    QString name = "config";
-    QSqlQuery query(QSqlDatabase::database(name));
+
+    QSqlQuery query(QSqlDatabase::database(sqlName));
+    QSqlDatabase::database(sqlName).transaction();
     QList<int> uuids = msg.keys();
-    QSqlDatabase::database(name).transaction();
-    QString c_numb = tr("%1").arg(tmpSet.value(DataFile).toInt(), 4, 10, QChar('0'));
-    QString c_name = tmpSet.value(DataType).toString();
-    c_name = tr("T%1_%2").arg(c_numb).arg(c_name);
     for (int i=0; i < uuids.size(); i++) {
         int uuid = uuids.at(i);
-        if (uuid >= 40000) {
-            tmpSet.insert(uuid, msg.value(uuid));
-            query.prepare(QString("replace into '%1' values(?,?)").arg(c_name));
+        tmpSet.insert(uuid, msg.value(uuid));
+        if (uuid >= min && uuid < max) {
+            query.prepare(cmd);
             query.addBindValue(uuid);
-            query.addBindValue(msg.value(uuid));
+            query.addBindValue(tmpSet.value(uuid));
             if (!query.exec()) {
                 qDebug() << query.lastError();
             }
         }
-        boxbar->setValue(i*99/uuids.size());
+        boxbar->setValue(i*50/uuids.size());
     }
-    QSqlDatabase::database(name).commit();
+    QSqlDatabase::database(sqlName).commit();
     boxbar->setValue(99);
     wait(500);
     query.clear();
     boxbar->setValue(100);
-    testShift = Qt::Key_Away;
-    qDebug() << "app save:" << tr("%1ms").arg(tt.elapsed(), 4, 10, QChar('0')) << c_name;
+
+    if (name == "aip_reload") {  // 重新加载参数
+        readConfig();
+        sendSqlite();
+        taskConfig();
+    } else {
+        sendSqlite();
+    }
+    isChange = false;
+    qDebug() << "app save:" << name << sqlName << tabName;
 }
 
 void AppWindow::clickButtons()
@@ -1568,28 +1508,7 @@ void AppWindow::recvAppMsg(QTmpMap msg)
         recvSqlMsg(msg);
         break;
     case Qt::Key_Save:
-        if (msg.value(Qt::Key_1).toString() == "aip_backup") {  // 后台参数保存
-            saveBackup(msg);
-            sendSqlite();
-        }
-        if (msg.value(Qt::Key_1).toString() == "aip_system") {  // 系统参数保存
-            saveSqlite(msg);
-            sendSqlite();
-        }
-        if (msg.value(Qt::Key_1).toString() == "aip_config") {  // 配置参数保存
-            saveConfig(msg);
-            sendSqlite();
-        }
-        if (msg.value(Qt::Key_1).toString() == "aip_reload") {  // 重新加载参数
-            saveSqlite(msg);
-            readConfig();
-            sendSqlite();
-            taskConfig();
-        }
-        if (msg.value(Qt::Key_1).toString() == "aip_tester") {  // 配置保存数据
-            tmpSave = msg;
-        }
-        isChange = false;
+        saveConfig(msg);
         break;
     case Qt::Key_Play:
         tmp = (msg.value(Qt::Key_1).toString() == "R") ? 0x14 : 0x13;
@@ -1791,6 +1710,7 @@ void AppWindow::recvUdpMsg(QByteArray msg)
     case 6037:  // IO板输入状态
         ioHex = hex;
         recvIoCtrl(Qt::Key_Meta, station);
+    case 6086:  // 上传采样转向
     case 6059:  // IO板输出状态
     case 6035:  // 反嵌采样结果
     case 6039:  // 反嵌采样波形

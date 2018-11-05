@@ -454,23 +454,6 @@ void SqlCreate::initUser(QSqlQuery query)
     }
 }
 
-void SqlCreate::initType(QSqlQuery query)
-{  // 型号管理
-    int from = tmpSet.value((2000 + Qt::Key_4)).toInt();
-    QStringList parm;
-    parm << tr("aip_config");
-    for (int i=parm.size(); i < STEP; i++) {
-        parm << "";
-    }
-    for (int i=0; i < STEP; i++) {
-        query.prepare("insert into aip_system values(?,?)");
-        query.addBindValue(from + i);
-        query.addBindValue(parm.at(i));
-        if (!query.exec())
-            qWarning() << "aip_system" << query.lastError();
-    }
-}
-
 void SqlCreate::initConf(QSqlQuery query)
 {
     int addr = tmpSet.value((4000 + Qt::Key_0)).toInt();
@@ -496,6 +479,7 @@ void SqlCreate::initConf(QSqlQuery query)
     initIND(query);
     initHAL(query);
     initLOD(query);
+    initNLD(query);
     initBMF(query);
 }
 
@@ -893,6 +877,40 @@ void SqlCreate::initLOD(QSqlQuery query)
 {
     int row = 0;
     int from = tmpSet.value((4000 + Qt::Key_C)).toInt();
+    QStringList parm;
+    parm << "500" << "0" << "500" << "0" << "500" << "0" << "3000" << "0" << "0" << "0";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    parm << "310" << "15" << "3.3" << "0" << "5" << "50";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    parm << "0" << "0" << "0" << "0" << "0" << "1";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    parm << "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2"<< "0.2";
+    row++;
+    for (int i=parm.size(); i < CACHELOD*row; i++) {
+        parm << "";
+    }
+    for (int i=0; i < parm.size(); i++) {
+        query.prepare("insert into T0001_aip_config values(?,?)");
+        query.addBindValue(from + i);
+        query.addBindValue(parm.at(i));
+        if (!query.exec())
+            qWarning() << "aip_config" << query.lastError();
+    }
+}
+
+void SqlCreate::initNLD(QSqlQuery query)
+{
+    int row = 0;
+    int from = tmpSet.value((4000 + Qt::Key_D)).toInt();
     QStringList parm;
     parm << "500" << "0" << "500" << "0" << "500" << "0" << "3000" << "0" << "0" << "0";
     row++;

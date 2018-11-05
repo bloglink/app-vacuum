@@ -24,8 +24,7 @@ void TypSetMag::initUI()
 
 void TypSetMag::initLayout()
 {
-    layout = new QVBoxLayout;
-    this->setLayout(layout);
+    layout = new QVBoxLayout(this);
 }
 
 void TypSetMag::initViewBar()
@@ -109,25 +108,21 @@ void TypSetMag::initButtonBar()
     btnLayout->addWidget(turnBox);
     btnLayout->addStretch();
 
-    btnWorkL = new QRadioButton(this);
+    btnWorkL = new QRadioButton(tr("左工位"), this);
     btnWorkL->setChecked(true);
-    btnWorkL->setText(tr("左工位"));
     btnWorkL->setMinimumSize(97, 44);
     btnLayout->addWidget(btnWorkL);
 
-    btnWorkR = new QRadioButton(this);
-    btnWorkR->setText(tr("右工位"));
+    btnWorkR = new QRadioButton(tr("右工位"), this);
     btnWorkR->setMinimumSize(97, 44);
     btnLayout->addWidget(btnWorkR);
 
-    QPushButton *btnWaveL = new QPushButton(this);
-    btnWaveL->setText(tr("采集"));
+    QPushButton *btnWaveL = new QPushButton(tr("采集"), this);
     btnWaveL->setMinimumSize(97, 44);
     connect(btnWaveL, SIGNAL(clicked(bool)), this, SLOT(sample()));
     btnLayout->addWidget(btnWaveL);
 
-    QPushButton *btnSave = new QPushButton(this);
-    btnSave->setText(tr("保存"));
+    QPushButton *btnSave = new QPushButton(tr("保存"), this);
     btnSave->setMinimumSize(97, 44);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
     btnLayout->addWidget(btnSave);
@@ -147,13 +142,8 @@ void TypSetMag::initSettings()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int works = tmpSet.value(back + 0x05).toInt();
-    if (works != 2) {
-        btnWorkL->hide();
-        btnWorkR->hide();
-    } else {
-        btnWorkL->show();
-        btnWorkR->show();
-    }
+    btnWorkL->setVisible((works == 2) ? true : false);
+    btnWorkR->setVisible((works == 2) ? true : false);
     int addr = tmpSet.value(4000 + Qt::Key_2).toInt();  // 反嵌配置地址
     int wmag = tmpSet.value(4000 + Qt::Key_G).toInt();  // 波形存储地址
     turnBox->setCurrentIndex(tmpSet.value(addr + 0).toInt());
@@ -335,14 +325,9 @@ void TypSetMag::confSettings()
 void TypSetMag::autoInput()
 {
     if (isInit) {
-        int s = 0;
-        for (int i=0; i < uppers.size(); i++) {
-            if (i == 0) {
-                s = uppers.at(i)->value();
-            } else {
-                uppers.at(i)->setValue(s);
-            }
-        }
+        int s = uppers.at(0)->value();
+        for (int i=1; i < uppers.size(); i++)
+            uppers.at(i)->setValue(s);
     }
 }
 
@@ -413,6 +398,12 @@ void TypSetMag::recvNewMsg(QTmpMap msg)
         tmp.insert("point", mPoint);
         waves.at(row)->setLines(tmp);
         waves.at(row)->update();
+    }
+    if (cmd == 6086 && dat.toInt() < 3 && turnBox->currentIndex() != 2) {  // 上传转向0不转1反转2正转
+        int index = dat.toInt();
+        index = (index == 0) ? 2 : index;
+        index = (index == 2) ? 0 : index;
+        turnBox->setCurrentIndex(index);
     }
 }
 

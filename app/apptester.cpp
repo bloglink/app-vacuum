@@ -447,6 +447,9 @@ void AppTester::initSettings()
             if (str.toInt() == 0x0C) {  // 负载
                 initSetLOD();
             }
+            if (str.toInt() == 0x0D) {
+                initSetNLD();
+            }
             if (str.toInt() == 0x0E) {
                 initSetBMF();
             }
@@ -750,6 +753,30 @@ void AppTester::initSetLOD()
     int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
     QStringList items;
     items << tr("负载电流") << tr("负载功率") << tr("Icc电流") << tr("负载转速") << tr("负载转向");
+    QStringList units;
+    units << "mA" << "W" << "mA" << "rpm";
+
+    for (int numb=0; numb < 5; numb++) {
+        double max = tmpSet.value(addr + numb*2 + 0).toDouble();
+        double min = tmpSet.value(addr + numb*2 + 1).toDouble();
+        if (max != 0) {
+            QString item = items.at(numb);
+            QString parm = tr("%1").arg(max == 1 ? "CCW" : "CW");
+            parm = (numb < units.size() ? tr("%1-%2").arg(min).arg(max) + units.at(numb) : parm);
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetLOD, numb);
+            tmpSave.insert(real + numb*0x10, parm);
+        }
+    }
+}
+
+void AppTester::initSetNLD()
+{
+    int real = tmpSet.value(3000 + Qt::Key_D).toInt();  // 负载结果地址
+    int addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 负载配置地址
+    QStringList items;
+    items << tr("空载电流") << tr("空载功率") << tr("Icc电流") << tr("空载转速") << tr("空载转向");
     QStringList units;
     units << "mA" << "W" << "mA" << "rpm";
 
@@ -1073,6 +1100,73 @@ void AppTester::recvLedMsg(QTmpMap msg)
     }
 }
 
+void AppTester::recvFGWave(QTmpMap msg)
+{
+    QString w = msg.value(Qt::Key_2).toString();
+    QStringList ws = w.split(" ");
+    if (ws.size() < 200)
+        return;
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int wbmf = tmpSet.value(back + backWave).toInt();
+    wbmf = (wbmf == 0) ? 1 : wbmf;
+    int index = ws.at(0).toInt();
+    ws.removeFirst();
+    QList<int> cc;
+    cc << int(Qt::cyan) << int(Qt::yellow) << int(Qt::green);
+    QStringList mPoint;
+    for (int t=0; t < ws.size(); t++) {
+        double p1 = ((ws.at(t).toInt() - 128) * wbmf + 128) / 2.56;  // 反电动势波形
+        double p2 = ws.at(t).toInt() * 30 / 256 + 16 * ((5 - index) * 2 + 1) - 10;  // 空载/负载波形
+        mPoint.append(QString::number((index < 3) ? p1 : p2));
+    }
+    tmpMap.insert("index", index);
+    tmpMap.insert("frame", 0);
+    tmpMap.insert("color", cc.at(index));
+    tmpMap.insert("point", mPoint);
+    BoxQImage *ww = (index < 3) ? bWave : hWave;
+    ww->setLines(tmpMap);
+    ww->update();
+    tmpMap.clear();
+}
+
+void AppTester::recvManual(QTmpMap msg)
+{  // 手动状态下匝间波形
+    QString str = msg.value(Qt::Key_5).toString();
+    QStringList ws = str.split(" ");
+    if (ws.size() > 200) {
+        int numb = ws.at(0).toInt();
+        ws.removeFirst();
+        int addr = tmpSet.value(4000 + Qt::Key_6).toInt() + CACHEIMP;  // 匝间配置地址
+        int from = tmpSet.value(addr + CACHEIMP*FROMIMP1 + numb).toInt();
+        int stop = tmpSet.value(addr + CACHEIMP*STOPIMP1 + numb).toInt();
+        QStringList mPoint;
+        for (int i=from; i < qMin(stop, ws.size()); i++) {
+            double p = ws.at(i).toInt() * 100 / 1024;
+            mPoint.append(QString::number(p));
+        }
+        tmpMap.insert("index", 1);  // 清测试波形
+        tmpMap.insert("color", int(Qt::green));
+        impWave.at(numb)->setLines(tmpMap);
+        allWave->setLines(tmpMap);
+
+        tmpMap.insert("index", 0);  // 显示波形
+        tmpMap.insert("point", mPoint);
+        impWave.at(numb)->setLines(tmpMap);
+        allWave->setLines(tmpMap);
+
+        tmpMap.insert("index", 0);  // 显示电压
+        tmpMap.insert("color", int(Qt::white));
+        tmpMap.insert("width", 85);
+        tmpMap.insert("lenth", 85);
+        tmpMap.insert("title", tr("%1V").arg(strv));
+        impWave.at(0)->setTexts(tmpMap);
+        allWave->setTexts(tmpMap);
+
+        impWave.at(0)->update();
+        allWave->update();
+    }
+}
+
 void AppTester::recvNewMsg(QTmpMap msg)
 {
     tmpMap.insert("width", 2);
@@ -1192,74 +1286,10 @@ void AppTester::recvNewMsg(QTmpMap msg)
         }
     }
     if (item == 6021) {  // 空载/负载/反电势波形
-        QString w = msg.value(Qt::Key_2).toString();
-        QStringList ws = w.split(" ");
-        if (ws.size() < 200)
-            return;
-        int index = ws.at(0).toInt();
-        ws.removeFirst();
-        tmpMap.insert("index", index);
-        tmpMap.insert("frame", 0);
-        QList<int> cc;
-        cc << int(Qt::cyan) << int(Qt::yellow) << int(Qt::green);
-        if (index < 3) {  // 反电动势波形
-            int wbmf = tmpSet.value(back + backWave).toInt();
-            wbmf = (wbmf == 0) ? 1 : wbmf;
-            QStringList mPoint;
-            for (int t=0; t < ws.size(); t++) {
-                mPoint.append(QString::number(((ws.at(t).toInt() - 128) * wbmf + 128) / 2.56));
-            }
-            tmpMap.insert("color", cc.at(index));
-            tmpMap.insert("point", mPoint);
-            bWave->setLines(tmpMap);
-            bWave->update();
-        } else {  // 空载/负载波形
-            QStringList mPoint;
-            for (int t=0; t < ws.size(); t++) {
-                int p = ws.at(t).toInt() * 30 / 256 + 16 * ((5 - index) * 2 + 1) - 10;
-                mPoint.append(QString::number(p));
-            }
-            tmpMap.insert("color", cc.at(index%3));
-            tmpMap.insert("point", mPoint);
-            hWave->setLines(tmpMap);
-            hWave->update();
-        }
+        recvFGWave(msg);
     }
     if (item == 6042) {  // 手动波形
-        QString str = msg.value(Qt::Key_5).toString();
-        QStringList ws = str.split(" ");
-        if (ws.size() > 200) {
-            int numb = ws.at(0).toInt();
-            ws.removeFirst();
-            int addr = tmpSet.value(4000 + Qt::Key_6).toInt() + CACHEIMP;  // 匝间配置地址
-            int from = tmpSet.value(addr + CACHEIMP*FROMIMP1 + numb).toInt();
-            int stop = tmpSet.value(addr + CACHEIMP*STOPIMP1 + numb).toInt();
-            QStringList mPoint;
-            for (int i=from; i < qMin(stop, ws.size()); i++) {
-                double p = ws.at(i).toInt() * 100 / 1024;
-                mPoint.append(QString::number(p));
-            }
-            tmpMap.insert("index", 1);  // 清测试波形
-            tmpMap.insert("color", int(Qt::green));
-            impWave.at(numb)->setLines(tmpMap);
-            allWave->setLines(tmpMap);
-
-            tmpMap.insert("index", 0);  // 显示波形
-            tmpMap.insert("point", mPoint);
-            impWave.at(numb)->setLines(tmpMap);
-            allWave->setLines(tmpMap);
-
-            tmpMap.insert("index", 0);  // 显示电压
-            tmpMap.insert("color", int(Qt::white));
-            tmpMap.insert("width", 85);
-            tmpMap.insert("lenth", 85);
-            tmpMap.insert("title", tr("%1V").arg(strv));
-            impWave.at(0)->setTexts(tmpMap);
-            allWave->setTexts(tmpMap);
-
-            impWave.at(0)->update();
-            allWave->update();
-        }
+        recvManual(msg);
     }
     if (item == 6087) {  // 匝间电压
         strv = msg.value(Qt::Key_5).toString();

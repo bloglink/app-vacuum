@@ -72,6 +72,7 @@ private slots:
     void initSetIND();
     void initSetHAL();
     void initSetLOD();
+    void initSetNLD();
     void initSetBMF();
     void insertItem(int item, int numb);
     void initQuality();
@@ -89,6 +90,8 @@ private slots:
     void recvErrMsg(QTmpMap msg);
     void recvTmpMsg(QTmpMap msg);
     void recvLedMsg(QTmpMap msg);
+    void recvFGWave(QTmpMap msg);
+    void recvManual(QTmpMap msg);
     void recvNewMsg(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
     virtual void showEvent(QShowEvent *e);

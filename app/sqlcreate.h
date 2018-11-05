@@ -61,7 +61,6 @@ private slots:
     void initSign(QSqlQuery query);
     void initShow(QSqlQuery query);
     void initUser(QSqlQuery query);
-    void initType(QSqlQuery query);
     void initConf(QSqlQuery query);
     void initDCR(QSqlQuery query);
     void initMAG(QSqlQuery query);
@@ -71,6 +70,7 @@ private slots:
     void initIND(QSqlQuery query);
     void initHAL(QSqlQuery query);
     void initLOD(QSqlQuery query);
+    void initNLD(QSqlQuery query);
     void initBMF(QSqlQuery query);
 private:
     QTmpMap tmpSet;

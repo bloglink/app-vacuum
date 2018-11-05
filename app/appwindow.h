@@ -39,6 +39,7 @@
 #include "typsetind.h"
 #include "typsethal.h"
 #include "typsetlod.h"
+#include "typsetpwr.h"
 #include "typsetbmf.h"
 #include "sqlcreate.h"
 #include "sqlimport.h"
@@ -97,6 +98,7 @@ private slots:
     int initSetInd();
     int initSetHal();
     int initSetLod();
+    int initSetNld();
     int initSetBmf();
     int initImport();
     int initExport();
@@ -141,8 +143,6 @@ private slots:
     void showTester();
     void showBarCode();
     void showBoxPop(QString text, int t);
-    void saveBackup(QTmpMap msg);
-    void saveSqlite(QTmpMap msg);
     void saveConfig(QTmpMap msg);
     void clickButtons();
     bool checkAction(QString msg);
