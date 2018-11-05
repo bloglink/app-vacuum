@@ -1172,10 +1172,10 @@ void AppTester::recvNewMsg(QTmpMap msg)
         QString dat = msg.value(Qt::Key_5).toString();
         quint32 hex = dat.toInt();
         if (!aFrame->isHidden()) {
-            clickStop();
             bool isM = ((hex & XX20) != 0) && !btnM->isChecked();
             bool isA = ((hex & XX20) == 0) && !btnA->isChecked();
             if (isM || isA) {
+                clickStop();
                 btnM->setChecked(isM);
                 btnA->setChecked(isA);
                 btnL->setEnabled(isA);

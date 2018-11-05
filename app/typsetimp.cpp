@@ -256,6 +256,7 @@ void TypSetImp::initSettings()
         }
     }
     isInit = (this->isHidden()) ? false : true;
+    timer->stop();
 }
 
 void TypSetImp::saveSettings()
@@ -455,7 +456,10 @@ void TypSetImp::sample()
 
 void TypSetImp::sampling()
 {
-    timer->start(8000);
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int time = tmpSet.value(syst + SystIMPS).toInt() * 1000;
+    time = (time == 0) ? 12000 : time;
+    timer->start(time);
     btnWaveS->setEnabled(false);
     btnWaveA->setEnabled(false);
     btnWaveC->setEnabled(false);
