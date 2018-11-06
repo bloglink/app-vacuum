@@ -40,6 +40,7 @@ const int SystWait = 0x09;
 const int SystHave = 0x0A;
 const int SystRFID = 0x0B;
 const int SystIMPS = 0x0C;
+const int SystItem = 0x0D;
 
 class AppSystem : public QWidget
 {

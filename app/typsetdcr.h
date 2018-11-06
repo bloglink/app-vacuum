@@ -58,6 +58,7 @@ private slots:
     void initLayout();
     void initViewBar();
     void initButtonBar();
+    void initInputBar(QString text, QString name, int row, int col);
     void initItemDelegate();
     void initSettings();
     void saveSettings();
@@ -72,16 +73,11 @@ private slots:
     virtual void hideEvent(QHideEvent *e);
 private:
     QVBoxLayout *layout;
+    QGridLayout *btnLayout;
     QTableView *view;
     BoxQModel *mView;
-    QDoubleSpinBox *timeBox;
-    QSpinBox *modeBox;
-    QDoubleSpinBox *nounBox;
     QComboBox *cnvtBox;
-    QDoubleSpinBox *compBox;
-    QDoubleSpinBox *tempBox;
-    QDoubleSpinBox *sminBox;
-    QDoubleSpinBox *smaxBox;
+    QMap<QString, QDoubleSpinBox*> inputs;
 
     QStringList wires;
     QStringList units;

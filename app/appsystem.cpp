@@ -43,7 +43,7 @@ void AppSystem::initSystem()
     names << tr("语言设置") << tr("维护提示") << tr("启动方式") << tr("亮度设定")
           << tr("音量设定") << tr("条码起始") << tr("条码长度") << tr("合格报警")
           << tr("报警提示") << tr("测试延时") << tr("产品检测") << tr("条码检测")
-          << tr("匝间报警");
+          << tr("匝间报警") << tr("启用防呆");
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
         boxLayout->addLayout(box);

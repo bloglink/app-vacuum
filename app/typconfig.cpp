@@ -101,23 +101,34 @@ void TypConfig::initItemBar()
     blayout->addLayout(layout, 0, 0);
 
     itemNams << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
-             << "匝间" << "电参" << "电感" << "堵转" << "低启0"
-             << "霍尔" << "负载" << "空载" << "BEMF"  << "低启";
+             << "匝间" << "电参" << "电感" << "堵转" << "低启"
+             << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相";
 
     QStringList headers;
-    headers << tr("选中") << tr("测试项目");
+    headers << tr("选中") << tr("测试项目") << tr("防呆");
 
     mView = new BoxQModel(this);
+    mView->setRowCount(itemNams.size());
     mView->setColumnCount(headers.size());
     mView->setHorizontalHeaderLabels(headers);
+    for (int i=0; i< itemNams.size(); i++) {
+        mView->setData(mView->index(i, 0), "", Qt::DisplayRole);
+        mView->item(i, 0)->setCheckable(true);
+        mView->setData(mView->index(i, 2), "", Qt::DisplayRole);
+        mView->item(i, 2)->setCheckable(true);
+    }
 
     item = new QTableView(this);
     item->setModel(mView);
     layout->addWidget(item);
     item->verticalHeader()->hide();
+
+    item->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    item->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+    item->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     item->horizontalHeader()->setFixedHeight(30);
-    item->horizontalHeader()->setDefaultSectionSize(52);
-    item->horizontalHeader()->setStretchLastSection(true);
+    item->setColumnWidth(0, 52);
+    item->setColumnWidth(2, 52);
     item->setEditTriggers(QAbstractItemView::NoEditTriggers);
     item->setSelectionBehavior(QAbstractItemView::SelectRows);
     item->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -233,6 +244,15 @@ void TypConfig::initButtonBar()
 
 void TypConfig::initSettings()
 {
+    initModelBar();
+    initItemsBar();
+    initOtherBar();
+    isRemove = false;
+    isInit = true;
+}
+
+void TypConfig::initModelBar()
+{
     QSqlQuery query(QSqlDatabase::database("config"));
     query.exec("select name from sqlite_master where type='table' order by name");
     tmpTyp.clear();
@@ -249,69 +269,93 @@ void TypConfig::initSettings()
         view->item(i, 1)->setText(tmpTyp.value(t+1).toString());
     }
     type->setText(QString("%1").arg(tmpSet.value(DataType).toString()));
+}
 
-    int r = tmpSet.value(4000 + Qt::Key_0).toInt();
-    QStringList testItems = tmpSet.value(r + ADDRITEM).toString().split(",");
-    testTypeBox->setCurrentText(tmpSet.value(r + ADDRTYPE).toString());
-    autoPixmap(tmpSet.value(r + ADDRTYPE).toString());
-    QStringList wireColor = tmpSet.value(r + ADDRWIRE).toString().split(",");
-    for (int t=0; t < wireColor.size(); t++)
-        colors.at(t)->setStyleSheet(QString("background-color:%1").arg(wireColor.at(t)));
-
-    testAutoBox->setChecked((tmpSet.value(r + ADDRAUTO).toInt() == 0) ? false : true);
-    testDrivBox->setChecked((tmpSet.value(r + ADDRDRIV).toInt() == 0) ? false : true);
-
-    r = tmpSet.value(1000 + Qt::Key_0).toInt();
-    r += 0x10;
-    QStringList userItems;
-    for (int i=0; i < itemNams.size(); i++) {   // 可用项目
-        int stat = tmpSet.value(r + i).toInt();
-        if (stat != 0) {
-            userItems.append(QString::number(i + 1));
+void TypConfig::initItemsBar()
+{
+    QMap<int, QVariantMap> tmpbuf;
+    int rows = 0;
+    int less = 0;
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x10;
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+    QStringList testItem = tmpSet.value(conf + ADDRITEM).toString().split(",");
+    QStringList tmpPupop = tmpSet.value(conf + 0x05).toString().split(",");
+    for (int i=0; i < itemNams.size(); i++) {
+        QVariantMap tmp = tmpbuf.value(i);
+        int show = tmpSet.value(back + i).toInt();
+        tmp.insert("show", show);
+        int numb = testItem.indexOf(QString::number(i+1));
+        int test = (numb >= 0) ? 1 : 0;
+        tmp.insert("test", test);
+        less = (show != 0 && numb == -1) ? less + 1 : less;
+        numb = (show != 0 && numb == -1) ? less + testItem.size() - 1 : numb;
+        tmp.insert("numb", numb);
+        int warn = tmpPupop.indexOf(QString::number(i+1));
+        warn = (warn < 0) ? 0 : 1;
+        tmp.insert("warn", warn);
+        tmpbuf.insert(i, tmp);
+        rows = (show != 0) ? rows + 1 : rows;
+    }
+    mView->setRowCount(rows);
+    for (int i=0; i < itemNams.size(); i++) {
+        QVariantMap tmp = tmpbuf.value(i);
+        int show = tmp.value("show").toInt();
+        int numb = tmp.value("numb").toInt();
+        if (show != 0) {
+            Qt::CheckState test = (tmp.value("test").toInt() > 0) ? Qt::Checked : Qt::Unchecked;
+            Qt::CheckState warn = (tmp.value("warn").toInt() > 0) ? Qt::Checked : Qt::Unchecked;
+            mView->setData(mView->index(numb, 0), test, Qt::CheckStateRole);
+            mView->setData(mView->index(numb, 1), itemNams.at(i), Qt::DisplayRole);
+            mView->setData(mView->index(numb, 2), warn, Qt::CheckStateRole);
         }
     }
-    for (int i=0; i < testItems.size(); i++) {  // 按测试顺序排序
-        int t = userItems.indexOf(testItems.at(i));
-        if (t >= 0) {
-            userItems.removeAt(t);
-            userItems.insert(i, testItems.at(i));
-        }
-    }
-    mView->setRowCount(userItems.size());
-    for (int i=0; i < userItems.size(); i++) {
-        int t = userItems.at(i).toInt();
-        mView->setData(mView->index(i, 0), "", Qt::DisplayRole);
-        mView->setData(mView->index(i, 1), itemNams.at(t-1), Qt::DisplayRole);
-        mView->item(i, 0)->setCheckable(true);
-        if (i < testItems.size())
-            mView->item(i, 0)->setData(Qt::Checked, Qt::CheckStateRole);
-        else
-            mView->item(i, 0)->setData(Qt::Unchecked, Qt::CheckStateRole);
-    }
-    item->setFixedHeight(userItems.size() * 40 + 20);
+    item->setFixedHeight(rows * 40 + 20);
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();
+    int warn = tmpSet.value(syst + SystItem).toInt();
+    if (warn == 0)
+        item->hideColumn(2);
+    else
+        item->showColumn(2);
+}
 
+void TypConfig::initOtherBar()
+{
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int mode = tmpSet.value(back + backMode).toInt();
     int test = tmpSet.value(back + backTest).toInt();
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+
+    testTypeBox->setCurrentText(tmpSet.value(conf + ADDRTYPE).toString());
+    autoPixmap(tmpSet.value(conf + ADDRTYPE).toString());
+    QStringList wireColor = tmpSet.value(conf + ADDRWIRE).toString().split(",");
+    for (int t=0; t < wireColor.size(); t++)
+        colors.at(t)->setStyleSheet(QString("background-color:%1").arg(wireColor.at(t)));
+
+    testAutoBox->setChecked((tmpSet.value(conf + ADDRAUTO).toInt() == 0) ? false : true);
+    testDrivBox->setChecked((tmpSet.value(conf + ADDRDRIV).toInt() == 0) ? false : true);
     testAutoBox->setVisible((mode == 1 && test >= 1) ? true : false);
     testDrivBox->setVisible((mode >= 2) ? true : false);
-    isRemove = false;
-    isInit = true;
 }
 
 void TypConfig::saveSettings()
 {
     confSettings();
     int r = tmpSet.value(4000 + Qt::Key_0).toInt();
-    QStringList testItems;
+    QStringList testItems,warnItems;
     for (int i=0; i < mView->rowCount(); i++) {
-        int c = mView->index(i, 0).data(Qt::CheckStateRole).toInt();
-        if (c != 0) {
+        int test = mView->index(i, 0).data(Qt::CheckStateRole).toInt();
+        if (test != 0) {
             QString name = mView->index(i, 1).data().toString();
             testItems.append(QString::number(itemNams.indexOf(name) + 1));
         }
+        int warn = mView->index(i, 2).data(Qt::CheckStateRole).toInt();
+        if (warn != 0) {
+            QString name = mView->index(i, 1).data().toString();
+            warnItems.append(QString::number(itemNams.indexOf(name) + 1));
+        }
     }
     tmpMsg.insert(r + ADDRITEM, testItems.join(","));
+    tmpMsg.insert(r + 0x05, warnItems.join(","));
     tmpMsg.insert(r + ADDRTYPE, testTypeBox->currentText());
 
     QStringList wireColor;
@@ -476,28 +520,36 @@ void TypConfig::clickMove()
         int r = item->currentIndex().row();
         if (r <= 0)
             return;
-        int statPrev = mView->data(mView->index(r-1, 0), Qt::CheckStateRole).toInt();
+        int testPrev = mView->data(mView->index(r-1, 0), Qt::CheckStateRole).toInt();
+        int warnPrev = mView->data(mView->index(r-1, 2), Qt::CheckStateRole).toInt();
         QString namePrev = mView->data(mView->index(r-1, 1), Qt::DisplayRole).toString();
-        int statCurr = mView->data(mView->index(r-0, 0), Qt::CheckStateRole).toInt();
+        int testCurr = mView->data(mView->index(r-0, 0), Qt::CheckStateRole).toInt();
+        int warnCurr = mView->data(mView->index(r-0, 2), Qt::CheckStateRole).toInt();
         QString nameCurr = mView->data(mView->index(r-0, 1), Qt::DisplayRole).toString();
-        mView->setData(mView->index(r-1, 0), statCurr, Qt::CheckStateRole);
+        mView->setData(mView->index(r-1, 0), testCurr, Qt::CheckStateRole);
         mView->setData(mView->index(r-1, 1), nameCurr, Qt::DisplayRole);
-        mView->setData(mView->index(r-0, 0), statPrev, Qt::CheckStateRole);
+        mView->setData(mView->index(r-1, 2), warnCurr, Qt::CheckStateRole);
+        mView->setData(mView->index(r-0, 0), testPrev, Qt::CheckStateRole);
         mView->setData(mView->index(r-0, 1), namePrev, Qt::DisplayRole);
+        mView->setData(mView->index(r-0, 2), warnPrev, Qt::CheckStateRole);
         item->setCurrentIndex(mView->index(r-1, 1));
     } else {
         int r = item->currentIndex().row();
         r = (qMax(0, r));
         if (r >= mView->rowCount() - 1)
             return;
-        int statNext = mView->data(mView->index(r+1, 0), Qt::CheckStateRole).toInt();
+        int testNext = mView->data(mView->index(r+1, 0), Qt::CheckStateRole).toInt();
+        int warnNext = mView->data(mView->index(r+1, 2), Qt::CheckStateRole).toInt();
         QString nameNext = mView->data(mView->index(r+1, 1), Qt::DisplayRole).toString();
-        int statCurr = mView->data(mView->index(r+0, 0), Qt::CheckStateRole).toInt();
+        int testCurr = mView->data(mView->index(r+0, 0), Qt::CheckStateRole).toInt();
+        int warnCurr = mView->data(mView->index(r+0, 2), Qt::CheckStateRole).toInt();
         QString nameCurr = mView->data(mView->index(r+0, 1), Qt::DisplayRole).toString();
-        mView->setData(mView->index(r+1, 0), statCurr, Qt::CheckStateRole);
+        mView->setData(mView->index(r+1, 0), testCurr, Qt::CheckStateRole);
         mView->setData(mView->index(r+1, 1), nameCurr, Qt::DisplayRole);
-        mView->setData(mView->index(r+0, 0), statNext, Qt::CheckStateRole);
+        mView->setData(mView->index(r+1, 2), warnCurr, Qt::CheckStateRole);
+        mView->setData(mView->index(r+0, 0), testNext, Qt::CheckStateRole);
         mView->setData(mView->index(r+0, 1), nameNext, Qt::DisplayRole);
+        mView->setData(mView->index(r+0, 2), warnNext, Qt::CheckStateRole);
         item->setCurrentIndex(mView->index(r+1, 1));
     }
 }

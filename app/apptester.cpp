@@ -536,10 +536,10 @@ void AppTester:: initSetDCR()
             QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            insertItem(nSetDCR, numb);
+            insertItem(nSetDCR, row);
             row++;
-            tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
-            tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
+            tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
+            tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
         }
     }
     if (noun != 0) {  // 不平衡度
@@ -601,7 +601,7 @@ void AppTester::initSetCCW()
     int turn = tmpSet.value(addr + 0).toInt();
     if (turn != 2) {
         tmpItem.insert(tmpRow, tr("转向"));
-        tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("正转") : tr("反转")));
+        tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW")));
         insertItem(nSetMAG, 0x08);
     }
 }
@@ -733,10 +733,10 @@ void AppTester::initSetIND()
             QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
-            insertItem(nSetIND, numb);
+            insertItem(nSetIND, row);
             row++;
-            tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
-            tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
+            tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
+            tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
         }
     }
     if (noun != 0) {  // 不平衡度
@@ -1314,10 +1314,11 @@ void AppTester::recvNewMsg(QTmpMap msg)
             QTmpMap tmp = tmpView.at(i);
             int pn = tmp.value(Qt::Key_1).toInt();
             int pc = tmp.value(Qt::Key_2).toInt();
+            int pt = (((item == nSetMAG) || (item == nSetIMP)) && (numb < 0x08)) ? 1 : 0;
             numb = (item == nSetMAG && numb < 0x03) ? 0 : numb;
             numb = (item == nSetIMP && numb < 0x06) ? 0 : numb;
             if (pn == item && pc == numb) {
-                if (!msg.value(Qt::Key_3).isNull()) {  // 测试结果
+                if (!msg.value(Qt::Key_3).isNull() && pt == 0) {
                     int row = tmp.value(Qt::Key_0).toInt();
                     QString str = msg.value(Qt::Key_3).toString();
                     mView->item(row, 2)->setText(str);
@@ -1328,7 +1329,12 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 if (!msg.value(Qt::Key_4).isNull()) {  // 测试判定
                     int row = tmp.value(Qt::Key_0).toInt();
                     QString str = msg.value(Qt::Key_4).toString();
+                    QString txt = mView->item(row, 2)->text();
                     QString pre = mView->item(row, 3)->text();
+                    if (pt == 1) {
+                        int pk = txt.count(":");
+                        mView->item(row, 2)->setText(txt + tr(" %1:").arg(pk+1) + str);
+                    }
                     str = (pre == "NG") ? pre : str;
                     QColor brush = QColor((str == "OK") ? Qt::green : Qt::red);
                     mView->item(row, 3)->setText(str);

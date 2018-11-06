@@ -13,6 +13,7 @@
 #include <QThread>
 #include <QDateTime>
 #include <QMainWindow>
+#include <QInputDialog>
 #include <QStackedWidget>
 #include <QProgressDialog>
 #include <QPropertyAnimation>
@@ -125,6 +126,7 @@ private slots:
     int taskStartWait();
     int taskStartTest();
     int taskClearCtrl();
+    int taskClearWarn();
     int taskStartSave();
     int taskStartBeep();
     int taskClearBeep();
@@ -232,6 +234,7 @@ private:
     quint16 ioSave;
     QTimer *loading;
     bool isSetnvt;
+    bool isWarn;
 };
 
 #endif // APPWINDOW_H

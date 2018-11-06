@@ -489,7 +489,8 @@ int AppWindow::initThread()
             << &AppWindow::taskCheckCode << &AppWindow::taskStartView
             << &AppWindow::taskToolIobrd << &AppWindow::taskStartWait
             << &AppWindow::taskStartTest << &AppWindow::taskClearCtrl
-            << &AppWindow::taskStartSave << &AppWindow::taskStartBeep
+            << &AppWindow::taskStartSave << &AppWindow::taskClearWarn
+            << &AppWindow::taskStartBeep
             << &AppWindow::taskClearBeep << &AppWindow::taskResetTest;
     taskMap.clear();
     for (int i=0; i < taskBuf.size(); i++) {
@@ -613,6 +614,7 @@ int AppWindow::taskClearData()
     testShift = Qt::Key_Meta;
     tempShift = Qt::Key_Meta;
     isSetnvt = false;
+    isWarn = false;
     return Qt::Key_Away;
 }
 
@@ -800,6 +802,35 @@ int AppWindow::taskStartSave()
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
     qDebug() <<"app save:" << tr("%1ms").arg(t.elapsed(), 4, 10, QChar('0'));
+    return Qt::Key_Away;
+}
+
+int AppWindow::taskClearWarn()
+{
+    //    isWarn = true;
+    if (isWarn) {
+        bool ok = false;
+        QString user = QInputDialog::getText(this, tr(""), tr("请输入用户"),
+                                             QLineEdit::Normal, "admin", &ok);
+        if (!ok || user.isEmpty()) {
+            return Qt::Key_Meta;
+        }
+        QString text = QInputDialog::getText(this, tr(""), tr("请输入密码"),
+                                             QLineEdit::Normal, "", &ok);
+        if (!ok) {
+            return Qt::Key_Meta;
+        }
+        for (int i=0; i < 20; i++) {
+            int addr = tmpSet.value(2000 + Qt::Key_5).toInt() + (i + 1) * 5;  // 隐藏超级用户
+            QString name = tmpSet.value(addr + mName).toString();
+            QString pass = tmpSet.value(addr + mPass).toString();
+            QString role = tmpSet.value(addr + mRole).toString();
+            if (user == name && role.toInt() < 3 && text == pass) {
+                return Qt::Key_Away;
+            }
+        }
+        return Qt::Key_Meta;
+    }
     return Qt::Key_Away;
 }
 
@@ -1886,6 +1917,7 @@ void AppWindow::recvNewMsg(QString dat)
 {
     if (currItem >= 0x0B)  // BLDC不显示
         return;
+    int testisok = DATAOK;
     QString err;
     QString xml;
     QDomDocument docs;
@@ -1912,6 +1944,9 @@ void AppWindow::recvNewMsg(QString dat)
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == nSetIND) && (temp.contains(tr("%")))) ? 0x08 : timeRsl;
+            temp = temp.contains(tr("正转")) ? "CW" : temp;
+            temp = temp.contains(tr("反转")) ? "CCW" : temp;
+            temp = temp.contains(tr("不转")) ? "NULL" : temp;
 
             tmpMsg.insert(Qt::Key_0, Qt::Key_News);
             tmpMsg.insert(Qt::Key_1, currItem);
@@ -1927,6 +1962,7 @@ void AppWindow::recvNewMsg(QString dat)
                 if (currItem != 0x06)
                     tmpSave.insert(addr + 0x03, temp);
                 isok = (temp == "OK") ? isok : DATANG;
+                testisok = (temp == "OK") ? testisok : DATANG;
                 timeRsl++;
             } else {
                 if (currItem == 0x03 || currItem == 0x04) {  // 绝缘,交耐
@@ -1956,6 +1992,12 @@ void AppWindow::recvNewMsg(QString dat)
                 tmpSave.insert(addr + 0x02, temp);
             }
         }
+    }
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+    QStringList tmpPupop = tmpSet.value(conf + 0x05).toString().split(",");
+    if (tmpPupop.contains(QString::number(currItem)) && testisok == DATANG) {
+        taskCheckStop();
+        isWarn = true;
     }
 }
 

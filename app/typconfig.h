@@ -62,6 +62,9 @@ private slots:
     void initConfigBar();
     void initButtonBar();
     void initSettings();
+    void initModelBar();
+    void initItemsBar();
+    void initOtherBar();
     void saveSettings();
     void confSettings();
     void createModel();
@@ -88,7 +91,6 @@ private:
     QLabel *type;
     QLineEdit *name;
 
-    QPushButton *btnMove;
     QPushButton *btnSave;
 
     QComboBox *testTypeBox;

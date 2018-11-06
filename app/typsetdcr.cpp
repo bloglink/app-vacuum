@@ -61,41 +61,24 @@ void TypSetDcr::initViewBar()
 
 void TypSetDcr::initButtonBar()
 {
-    QGridLayout *btnLayout = new QGridLayout;
+    btnLayout = new QGridLayout;
+    initInputBar(tr("测试时间"), "time", 0, 0);
+    initInputBar(tr("平衡模式"), "mode", 1, 0);
+    initInputBar(tr("不平衡度"), "noun", 1, 2);
+    initInputBar(tr("标准温度"), "tstd", 2, 2);
+    initInputBar(tr("补偿温度"), "comp", 2, 4);
+    initInputBar(tr("标准上限"), "rmax", 3, 0);
+    initInputBar(tr("标准下限"), "rmin", 3, 2);
 
-    int row = 0;
-    timeBox = new QDoubleSpinBox(this);
-    timeBox->setFixedSize(125, 40);
-    timeBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    timeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(timeBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("测试时间")), row, 0);
-    btnLayout->addWidget(timeBox, row, 1);
+    inputs.value("time")->setDecimals(2);
+    inputs.value("mode")->setDecimals(0);
 
-    row++;
-    modeBox = new QSpinBox(this);
-    modeBox->setMaximum(3);
-    modeBox->setFixedSize(125, 40);
-    modeBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    modeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    btnLayout->addWidget(new QLabel(tr("平衡模式")), row, 0);
-    btnLayout->addWidget(modeBox, row, 1);
     QString str;
     str += "0: 与平均值求差/平均值;abs(R1-Ravr)/Ravr,abs(R2-Ravr)/Ravr,abs(R3-Ravr)/Ravr\n";
     str += "1: 两两之间求差/标准值;abs(R1-R2)/Rstd,abs(R1-R3)/Rstd,abs(R2-R3)/Rstd\n";
     str += "2: 两两之间求差;abs(R1-R2),abs(R1-R3),abs(R2-R3)";
-    modeBox->setToolTip(str);
+    inputs.value("mode")->setToolTip(str);
 
-    nounBox = new QDoubleSpinBox(this);
-    nounBox->setDecimals(1);
-    nounBox->setFixedSize(125, 40);
-    nounBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    nounBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(nounBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("不平衡度")), row, 2);
-    btnLayout->addWidget(nounBox, row, 3);
-
-    row++;
     cnvtBox = new QComboBox(this);
     cnvtBox->addItem(tr("是"));
     cnvtBox->addItem(tr("否"));
@@ -103,56 +86,19 @@ void TypSetDcr::initButtonBar()
     cnvtBox->setView(new QListView);
     cnvtBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(cnvtBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("温度折算")), row, 0);
-    btnLayout->addWidget(cnvtBox, row, 1);
+    btnLayout->addWidget(new QLabel(tr("温度折算")), 2, 0);
+    btnLayout->addWidget(cnvtBox, 2, 1);
 
-    tempBox = new QDoubleSpinBox(this);
-    tempBox->setDecimals(1);
-    tempBox->setFixedSize(125, 40);
-    tempBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    timeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(tempBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("标准温度")), row, 2);
-    btnLayout->addWidget(tempBox, row, 3);
-
-    compBox = new QDoubleSpinBox(this);
-    compBox->setDecimals(1);
-    compBox->setMinimum(-99.9);
-    compBox->setFixedSize(125, 40);
-    compBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    compBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(compBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("补偿温度")), row, 4);
-    btnLayout->addWidget(compBox, row, 5);
-
-    row++;
-    smaxBox = new QDoubleSpinBox(this);
-    smaxBox->setDecimals(1);
-    smaxBox->setFixedSize(125, 40);
-    smaxBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    smaxBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(smaxBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("标准上限")), row, 0);
-    btnLayout->addWidget(smaxBox, row, 1);
-
-    sminBox = new QDoubleSpinBox(this);
-    sminBox->setDecimals(1);
-    sminBox->setFixedSize(125, 40);
-    sminBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    sminBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(sminBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("标准下限")), row, 2);
-    btnLayout->addWidget(sminBox, row, 3);
 
     QPushButton *btnAuto = new QPushButton(tr("自动计算"), this);
     btnAuto->setFixedHeight(40);
     connect(btnAuto, SIGNAL(clicked(bool)), this, SLOT(autoCal()));
-    btnLayout->addWidget(btnAuto, row, 4, 1, 2);
+    btnLayout->addWidget(btnAuto, 3, 4, 1, 2);
 
     QPushButton *btnSave = new QPushButton(tr("保存"), this);
     btnSave->setFixedSize(125, 40);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
-    btnLayout->addWidget(btnSave, row, 7);
+    btnLayout->addWidget(btnSave, 3, 7);
 
     btnLayout->setColumnStretch(6, 1);
 
@@ -160,6 +106,19 @@ void TypSetDcr::initButtonBar()
     box->setLayout(btnLayout);
     layout->addWidget(box);
     layout->addStretch();
+}
+
+void TypSetDcr::initInputBar(QString text, QString name, int row, int col)
+{
+    QDoubleSpinBox *box = new QDoubleSpinBox(this);
+    box->setDecimals(1);
+    box->setFixedSize(125, 40);
+    box->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    box->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    connect(box, SIGNAL(valueChanged(double)), this, SLOT(change()));
+    btnLayout->addWidget(new QLabel(text), row, col);
+    btnLayout->addWidget(box, row, col + 1);
+    inputs.insert(name, box);
 }
 
 void TypSetDcr::initItemDelegate()
@@ -194,14 +153,14 @@ void TypSetDcr::initItemDelegate()
 void TypSetDcr::initSettings()
 {
     int addr = tmpSet.value((4000 + Qt::Key_1)).toInt();
-    timeBox->setValue(tmpSet.value(addr + 0).toDouble());
-    modeBox->setValue(tmpSet.value(addr + 1).toDouble());
-    nounBox->setValue(tmpSet.value(addr + 2).toDouble());
+    inputs.value("time")->setValue(tmpSet.value(addr + 0).toDouble());
+    inputs.value("mode")->setValue(tmpSet.value(addr + 1).toDouble());
+    inputs.value("noun")->setValue(tmpSet.value(addr + 2).toDouble());
     cnvtBox->setCurrentIndex(tmpSet.value(addr + 3).toInt());
-    tempBox->setValue(tmpSet.value(addr + 4).toDouble());
-    compBox->setValue(tmpSet.value(addr + 5).toDouble());
-    smaxBox->setValue(tmpSet.value(addr + 6).toDouble());
-    sminBox->setValue(tmpSet.value(addr + 7).toDouble());
+    inputs.value("tstd")->setValue(tmpSet.value(addr + 4).toDouble());
+    inputs.value("comp")->setValue(tmpSet.value(addr + 5).toDouble());
+    inputs.value("rmax")->setValue(tmpSet.value(addr + 6).toDouble());
+    inputs.value("rmin")->setValue(tmpSet.value(addr + 7).toDouble());
 
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_1)).toInt() + CACHEDCR;
@@ -226,14 +185,14 @@ void TypSetDcr::saveSettings()
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_1)).toInt();
 
-    tmpMsg.insert(addr + 0, QString::number(timeBox->value()));
-    tmpMsg.insert(addr + 1, QString::number(modeBox->value()));
-    tmpMsg.insert(addr + 2, QString::number(nounBox->value()));
+    tmpMsg.insert(addr + 0, QString::number(inputs.value("time")->value()));
+    tmpMsg.insert(addr + 1, QString::number(inputs.value("mode")->value()));
+    tmpMsg.insert(addr + 2, QString::number(inputs.value("noun")->value()));
     tmpMsg.insert(addr + 3, QString::number(cnvtBox->currentIndex()));
-    tmpMsg.insert(addr + 4, QString::number(tempBox->value()));
-    tmpMsg.insert(addr + 5, QString::number(compBox->value()));
-    tmpMsg.insert(addr + 6, QString::number(smaxBox->value()));
-    tmpMsg.insert(addr + 7, QString::number(sminBox->value()));
+    tmpMsg.insert(addr + 4, QString::number(inputs.value("tstd")->value()));
+    tmpMsg.insert(addr + 5, QString::number(inputs.value("comp")->value()));
+    tmpMsg.insert(addr + 6, QString::number(inputs.value("rmax")->value()));
+    tmpMsg.insert(addr + 7, QString::number(inputs.value("rmin")->value()));
 
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_1)).toInt() + CACHEDCR;
@@ -261,14 +220,14 @@ void TypSetDcr::saveSettings()
 
 void TypSetDcr::confSettings()
 {
-    tmpMap.insert("time", QString::number(timeBox->value()));
-    tmpMap.insert("mode", QString::number(modeBox->value()));
-    tmpMap.insert("noun", QString::number(nounBox->value()));
+    tmpMap.insert("time", QString::number(inputs.value("time")->value()));
+    tmpMap.insert("mode", QString::number(inputs.value("mode")->value()));
+    tmpMap.insert("noun", QString::number(inputs.value("noun")->value()));
     tmpMap.insert("temp_comp", QString::number(cnvtBox->currentIndex()));
-    tmpMap.insert("std_temp", QString::number(tempBox->value()));
-    tmpMap.insert("comp_temp", QString::number(compBox->value()));
-    tmpMap.insert("std_max", QString::number(smaxBox->value()));
-    tmpMap.insert("std_min", QString::number(sminBox->value()));
+    tmpMap.insert("std_temp", QString::number(inputs.value("tstd")->value()));
+    tmpMap.insert("comp_temp", QString::number(inputs.value("comp")->value()));
+    tmpMap.insert("std_max", QString::number(inputs.value("rmax")->value()));
+    tmpMap.insert("std_min", QString::number(inputs.value("rmin")->value()));
 
     QStringList names;
     names << "test" << "port1" << "port2" << "wire" << "unit"
@@ -369,8 +328,8 @@ void TypSetDcr::autoCal()
 {
     for (int i=0; i < mView->rowCount(); i++) {
         double rstd = mView->item(i, SSTDDCR1)->text().toDouble();
-        double rmin = rstd*(100-sminBox->value())/100;
-        double rmax = rstd*(100+smaxBox->value())/100;
+        double rmin = rstd*(100-inputs.value("rmin")->value())/100;
+        double rmax = rstd*(100+inputs.value("rmax")->value())/100;
         if (mView->item(i, UNITDCR1)->text() == "kΩ") {
             rmin = qMin(20.0, rmin);
             rmax = qMin(20.0, rmax);
