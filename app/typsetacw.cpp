@@ -8,6 +8,8 @@
 *******************************************************************************/
 #include "typsetacw.h"
 
+#define ACW_ROW 6
+
 TypSetAcw::TypSetAcw(QWidget *parent) : QWidget(parent)
 {
     initUI();
@@ -30,12 +32,12 @@ void TypSetAcw::initViewBar()
     QStringList headers;
     headers << tr("交耐") << tr("高端") << tr("低端") << tr("电压(V)")
             << tr("电流上限(mA)") << tr("电流下限(mA)") << tr("时间(s)") << tr("频率(Hz)")
-            << tr("ARC");
+            << tr("ARC") << tr("真空");
     mView = new BoxQModel();
-    mView->setRowCount(5);
+    mView->setRowCount(ACW_ROW);
     mView->setColumnCount(headers.size());
     mView->setHorizontalHeaderLabels(headers);
-    for (int i=0; i < 5; i++) {
+    for (int i=0; i < ACW_ROW; i++) {
         for (int j=0; j < headers.size(); j++) {
             mView->setData(mView->index(i, j), "", Qt::DisplayRole);
         }
@@ -66,12 +68,13 @@ void TypSetAcw::initButtonBar()
     QHBoxLayout *blayout = new QHBoxLayout;
     layout->addLayout(blayout);
     layout->addStretch();
-
-    vacuoBox = new QCheckBox(tr("真空测试"), this);
-    connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(change()));
-    blayout->addWidget(vacuoBox);
     blayout->addStretch();
-    vacuoBox->setToolTip(tr("选中后请将交耐测试移动到匝间之前"));
+
+//    vacuoBox = new QCheckBox(tr("真空测试"), this);
+//    connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(change()));
+//    blayout->addWidget(vacuoBox);
+//    blayout->addStretch();
+//    vacuoBox->setToolTip(tr("选中后请将交耐测试移动到匝间之前"));
 
     QPushButton *btnSave = new QPushButton(this);
     btnSave->setText(tr("保存"));
@@ -103,12 +106,17 @@ void TypSetAcw::initItemDelegate()
     darc->setMaxinum(9);
     darc->setDecimals(0);
     view->setItemDelegateForColumn(ADDRACWA, darc);
+
+    BoxDouble *vacu = new BoxDouble;
+    vacu->setMaxinum(1);
+    vacu->setDecimals(0);
+    view->setItemDelegateForColumn(0x09, vacu);
 }
 
 void TypSetAcw::initSettings()
 {
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
-    vacuoBox->setChecked(tmpSet.value(addr).toInt() == 0 ? false : true);
+//    vacuoBox->setChecked(tmpSet.value(addr).toInt() == 0 ? false : true);
     addr += CACHEACW;
     for (int t=1; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
@@ -127,7 +135,20 @@ void TypSetAcw::initSettings()
     volt->setMininum(300);
     volt->setDecimals(0);
     view->setItemDelegateForColumn(VOLTACW1, volt);
-    vacuoBox->setVisible((mode == 1 && show == 1) ? true : false);
+    if (mode == 1 && show == 1) {
+        view->hideColumn(0x0A);
+    } else {
+        view->showColumn(0x0A);
+    }
+//    vacuoBox->setVisible((mode == 1 && show == 1) ? true : false);
+    int acw2 = tmpSet.value(back + 0x10 + 0x0F).toInt();
+    if (acw2 == 0) {
+        view->hideRow(5);
+        view->hideColumn(9);
+    } else {
+        view->showRow(5);
+        view->showColumn(9);
+    }
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -135,7 +156,7 @@ void TypSetAcw::saveSettings()
 {
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
-    tmpMsg.insert(addr + 0, QString::number(vacuoBox->isChecked() ? 1 : 0));
+//    tmpMsg.insert(addr + 0, QString::number(vacuoBox->isChecked() ? 1 : 0));
     addr += CACHEACW;
     for (int t=1; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
@@ -154,7 +175,7 @@ void TypSetAcw::confSettings()
 {
     QStringList names;
     names << "test" << "port1" << "port2" << "volt" << "max" << "min"
-          << "time" << "freq" << "arc";
+          << "time" << "freq" << "arc" << "isvacuo";
     QStringList tmp;
     tmpMap.insert("vacuo", tmp.join(","));
     tmp.clear();

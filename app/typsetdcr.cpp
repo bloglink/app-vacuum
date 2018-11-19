@@ -72,6 +72,7 @@ void TypSetDcr::initButtonBar()
 
     inputs.value("time")->setDecimals(2);
     inputs.value("mode")->setDecimals(0);
+    inputs.value("comp")->setMinimum(-99.9);
 
     QString str;
     str += "0: 与平均值求差/平均值;abs(R1-Ravr)/Ravr,abs(R2-Ravr)/Ravr,abs(R3-Ravr)/Ravr\n";

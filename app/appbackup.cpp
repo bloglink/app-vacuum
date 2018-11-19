@@ -70,7 +70,8 @@ void AppBackup::initBoxItem()
     QStringList names;
     names << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
           << "匝间" << "电参" << "电感" << "堵转" << "低启"
-          << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相";
+          << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相"
+          << "交耐2";
 
     mView = new BoxQModel(this);
     mView->setColumnCount(1);

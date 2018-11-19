@@ -512,7 +512,7 @@ int AppWindow::initThread()
     QStringList items;
     items << "Conf" << "DCR" << "MAG" << "IR" << "ACW" << "DCW" << "IMP"
           << "PWR" << "IND" << "LCK" << "LVS" << "HALL" << "LOAD"
-          << "NOLOAD" << "BEMF" << "LPH";
+          << "NOLOAD" << "BEMF" << "LPH" << "ACW";
     for (int i=0; i < items.size(); i++) {
         tstMap.insert(i, items.at(i));
     }
@@ -677,7 +677,7 @@ int AppWindow::taskStartView()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    QString s = (mode == 1 || mode == 0) ? "6020" : "6066";
+    QString s = (mode == 1) ? "6020" : "6066";
     sendUdpStr(QString("%1 %2").arg(s).arg(station).toUtf8());
     tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
     tmpMsg.insert(Qt::Key_2, DATAON);
@@ -1429,6 +1429,7 @@ void AppWindow::recvAppPrep()
     double back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     double mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     double syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    double snap = tmpSet.value(syst + SystMode).toInt();  // 弹线配置
     double tmOK = tmpSet.value(syst + SystTime).toDouble();
     double tmNG = tmpSet.value(syst + SystWarn).toDouble();
     double conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
@@ -1471,8 +1472,8 @@ void AppWindow::recvAppPrep()
         }
         if (testItems.contains(QString::number(0x04))) {  // 测试交耐
             int addr = tmpSet.value(4000 + Qt::Key_4).toInt();
-            QString str = QString::number(tmpSet.value(addr + 0x00).toInt());
-            sendUdpStr(tr("6068 %1").arg(str).toUtf8());
+            sendUdpStr(tr("6068 %1").arg(tmpSet.value(addr + CACHEACW*0x0A + 4).toInt()).toUtf8());
+            sendUdpStr(tr("6093 %1").arg(tmpSet.value(addr + CACHEACW*0x0A + 5).toInt()).toUtf8());
             wait(200);
         }
         if (1) {
@@ -1480,6 +1481,9 @@ void AppWindow::recvAppPrep()
             QString str = QString::number(tmpSet.value(addr + ADDRAUTO).toInt());
             sendUdpStr(tr("6067 %1").arg(str).toUtf8());
             wait(200);
+        }
+        if (1) {
+            sendUdpStr(tr("6091 %1").arg(snap).toUtf8());
         }
     }
     sendUdpStr(tr("6071 %1 %2").arg(tmOK).arg(tmNG).toUtf8());  // 报警时间
@@ -1915,7 +1919,7 @@ void AppWindow::sendUdpStr(QByteArray msg)
 
 void AppWindow::recvNewMsg(QString dat)
 {
-    if (currItem >= 0x0B)  // BLDC不显示
+    if (currItem >= 0x0B && currItem != 0x10)  // BLDC不显示
         return;
     int testisok = DATAOK;
     QString err;
@@ -1958,6 +1962,9 @@ void AppWindow::recvNewMsg(QString dat)
 
             int addr = tmpSet.value(3000 + Qt::Key_0 + currItem).toInt() + timeRsl*0x10;
             int conf = tmpSet.value(4000 + Qt::Key_0 + currItem).toInt();
+            if (currItem == 0x10) {
+                addr = tmpSet.value(3000 + Qt::Key_4).toInt() + 0x10;
+            }
             if (xml == "Test_Data_Judge") {
                 if (currItem != 0x06)
                     tmpSave.insert(addr + 0x03, temp);
@@ -1965,7 +1972,7 @@ void AppWindow::recvNewMsg(QString dat)
                 testisok = (temp == "OK") ? testisok : DATANG;
                 timeRsl++;
             } else {
-                if (currItem == 0x03 || currItem == 0x04) {  // 绝缘,交耐
+                if (currItem == 0x03 || currItem == 0x04 || currItem == 0x10) {  // 绝缘,交耐
                     QStringList reals = temp.split(",");
                     temp = reals.last();  // 结果在最后
                 }
@@ -1993,11 +2000,17 @@ void AppWindow::recvNewMsg(QString dat)
             }
         }
     }
-    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
-    QStringList tmpPupop = tmpSet.value(conf + 0x05).toString().split(",");
-    if (tmpPupop.contains(QString::number(currItem)) && testisok == DATANG) {
-        taskCheckStop();
-        isWarn = true;
+    if (currItem != 0) {
+        int syst = tmpSet.value(2000 + Qt::Key_1).toInt();
+        int warn = tmpSet.value(syst + SystItem).toInt();
+        if (warn != 0) {
+            int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+            QStringList tmpPupop = tmpSet.value(conf + 0x05).toString().split(",");
+            if (tmpPupop.contains(QString::number(currItem)) && testisok == DATANG) {
+                taskCheckStop();
+                isWarn = true;
+            }
+        }
     }
 }
 

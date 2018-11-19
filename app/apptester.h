@@ -61,6 +61,7 @@ private slots:
     void initWaveAll();
     void initButtonBar();
     void initHistogram();
+    void initWorkState();
     void initWireColor();
     void initOtherParm();
     void initSettings();
@@ -69,6 +70,7 @@ private slots:
     void initSetCCW();
     void initSetINR();
     void initSetACW();
+    void initSetACW2();
     void initSetIMP();
     void initSetIND();
     void initSetHAL();
@@ -102,6 +104,8 @@ private:
     QTableWidget *wView;
     QHBoxLayout *layout;
     QVBoxLayout *blayout;
+    QMap<QString, QPushButton*> btns;
+    QMap<QString, QLabel*> labels;
     QPushButton *btnHome;
     QPushButton *btnConf;
     QPushButton *btnZero;

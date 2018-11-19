@@ -102,7 +102,8 @@ void TypConfig::initItemBar()
 
     itemNams << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
              << "匝间" << "电参" << "电感" << "堵转" << "低启"
-             << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相";
+             << "霍尔" << "负载" << "空载" << "BEMF"  << "缺相"
+             << "交耐2";
 
     QStringList headers;
     headers << tr("选中") << tr("测试项目") << tr("防呆");
@@ -380,6 +381,7 @@ void TypConfig::confSettings()
         int c = mView->index(i, 0).data(Qt::CheckStateRole).toInt();
         if (c != 0) {
             QString name = mView->index(i, 1).data().toString();
+            name = (name == tr("交耐2")) ? tr("交耐") : name;
             sendItems.append(QString::number(itemNams.indexOf(name) + 1));
         }
     }

@@ -40,6 +40,7 @@ void AppTester::initUI()
     initWaveAll();
     initButtonBar();
     initHistogram();
+    initWorkState();
     initWireColor();
     initOtherParm();
 }
@@ -306,7 +307,6 @@ void AppTester::initButtonBar()
     blayout->addStretch();
 
     warnText = new QLabel(this);
-    warnText->setMinimumHeight(80);
     blayout->addWidget(warnText);
 
     blayout->addStretch();
@@ -344,6 +344,23 @@ void AppTester::initHistogram()
     tmp.insert("point", testOK);
     bodys->setBodys(tmp);
     tmpQua.append(tmp);
+}
+
+void AppTester::initWorkState()
+{
+    QGridLayout *wlayout = new QGridLayout;
+    blayout->addLayout(wlayout);
+
+    QStringList names,texts;
+    names << tr("光幕") << tr("产品");
+    texts << "stop" << "prod";
+    for (int i=0; i < names.size(); i++) {
+        QLabel *text = new QLabel(names.at(i), this);
+        text->setFixedHeight(25);
+        text->setStyleSheet("background:#121919");
+        wlayout->addWidget(text, i/2, i%2);
+        labels.insert(texts.at(i), text);
+    }
 }
 
 void AppTester::initWireColor()
@@ -401,9 +418,13 @@ void AppTester::initSettings()
 {
     isInit = false;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int mode = tmpSet.value(back + backMode).toInt();
+    int test = tmpSet.value(back + backTest).toInt();
     int work = tmpSet.value(back + backWork).toInt();
     wFrame->setVisible((work == 2) ? true : false);
     workText->setText(strLY.arg((work == 0) ? "右" : "左"));
+    labels.value("stop")->setVisible((mode == 1 && test >= 1) ? true : false);
+    labels.value("prod")->setVisible((mode == 1 && test >= 1) ? true : false);
 
     tmpNG.clear();
     initQuality();
@@ -457,6 +478,9 @@ void AppTester::initSettings()
             }
             if (str.toInt() == 0x0F) {
                 initSetLVS();
+            }
+            if (str.toInt() == 0x10) {
+                initSetACW2();
             }
         }
         mView->setRowCount(qMax(tmpItem.keys().size(), 11));
@@ -643,6 +667,28 @@ void AppTester::initSetACW()
         tmpItem.insert(tmpRow, item);
         tmpParm.insert(tmpRow, parm);
         insertItem(nSetACW, 0x00);
+        tmpSave.insert(save + 0x00, item);  // 项目
+        tmpSave.insert(save + 0x01, parm);  // 参数
+    }
+}
+
+void AppTester::initSetACW2()
+{
+    int save = tmpSet.value(3000 + Qt::Key_4).toInt() + 0x10;  // 交耐结果地址
+    int addr = tmpSet.value(4000 + Qt::Key_4).toInt();  // 交耐配置地址
+    int numb = 5;
+    double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
+    double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
+    double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
+    double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
+    double last = tmpSet.value(addr + CACHEACW + CACHEACW*ADDRACWA + numb).toDouble();
+    if (1) {
+        QString item = tr("交耐2");
+        QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
+        parm.append(last == 0 ? "" : tr(" ARC:%1").arg(last));
+        tmpItem.insert(tmpRow, item);
+        tmpParm.insert(tmpRow, parm);
+        insertItem(0x10, 0x00);
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
     }
@@ -1309,7 +1355,8 @@ void AppTester::recvNewMsg(QTmpMap msg)
             tmpStr = msg.value(Qt::Key_5).toString();
         }
     }
-    if (item <= 0x0F) {
+    if (item <= 0x10) {
+        qDebug() << item << numb;
         for (int i=0; i < tmpView.size(); i++) {
             QTmpMap tmp = tmpView.at(i);
             int pn = tmp.value(Qt::Key_1).toInt();
@@ -1347,6 +1394,19 @@ void AppTester::recvNewMsg(QTmpMap msg)
     }
     if (item == 6021) {  // 空载/负载/反电势波形
         recvFGWave(msg);
+    }
+    if (item == 6037) {
+        quint32 hex = msg.value(Qt::Key_5).toString().toInt();
+        if (hex & X05) {  // 左光幕
+            labels.value("stop")->setStyleSheet("color:black;background:#00FF00");
+        } else {
+            labels.value("stop")->setStyleSheet("color:white;background:#121919");
+        }
+        if (hex & X14) {  // 左产品
+            labels.value("prod")->setStyleSheet("color:black;background:#00FF00");
+        } else {
+            labels.value("prod")->setStyleSheet("color:white;background:#121919");
+        }
     }
     if (item == 6042) {  // 手动波形
         recvManual(msg);
@@ -1388,7 +1448,7 @@ void AppTester::recvAppMsg(QTmpMap msg)
         }
         break;
     case Qt::Key_Word:
-        recvErrMsg(msg);
+        //        recvErrMsg(msg);
         break;
     default:
         break;

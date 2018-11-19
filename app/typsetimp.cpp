@@ -307,6 +307,10 @@ void TypSetImp::confSettings()
     if (vacuoBox->isChecked()) {
         sampleOver();
     }
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int mode = tmpSet.value(back + backMode).toInt();
+    int test = tmpSet.value(back + backTest).toInt();
+
     btns.value("btnappend")->setEnabled((waveCopys.size() == 0) ? false : true);
     wView->setEnabled(false);
     QStringList names;
@@ -343,7 +347,9 @@ void TypSetImp::confSettings()
             str = (t == STOPIMP1) ? QString::number(waves.at(i)->getStop()) : str;
             tmp.append(str);
         }
-        tmpMap.insert(names.at(t), tmp.join(","));
+        QString map = tmp.join(",");
+        map = (t == TIMEIMP1 && mode == 1 && test >= 1) ? "1,1,1,1,1,1,1,1" : map;
+        tmpMap.insert(names.at(t), map);
         tmp.clear();
     }
     tmpMap.insert("wave", wl.join(","));
