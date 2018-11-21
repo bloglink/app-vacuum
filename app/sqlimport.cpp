@@ -104,7 +104,7 @@ void SqlImport::saveUpload(QTmpMap msg)
                 if (ckey.contains(key + quan*3 + 1)) {
                     QString str = msg.value(key + quan*3 + 2).toString();
                     query.prepare(cmd);
-                    query.addBindValue("10101");
+                    query.addBindValue("100101");
                     query.addBindValue(uuid);
                     query.addBindValue(QString::number(loop + 1));
                     query.addBindValue(code.toUpper());

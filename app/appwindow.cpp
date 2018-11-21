@@ -807,8 +807,9 @@ int AppWindow::taskStartSave()
 
 int AppWindow::taskClearWarn()
 {
-    //    isWarn = true;
+//    isWarn = true;
     if (isWarn) {
+        sendUdpStr("6094 1");  // 启用防呆
         bool ok = false;
         QString user = QInputDialog::getText(this, tr(""), tr("请输入用户"),
                                              QLineEdit::Normal, "admin", &ok);
@@ -826,6 +827,7 @@ int AppWindow::taskClearWarn()
             QString pass = tmpSet.value(addr + mPass).toString();
             QString role = tmpSet.value(addr + mRole).toString();
             if (user == name && role.toInt() < 3 && text == pass) {
+                sendUdpStr("6094 0");  // 启用防呆
                 return Qt::Key_Away;
             }
         }
@@ -1424,8 +1426,6 @@ void AppWindow::recvAppShow(QString msg)
 
 void AppWindow::recvAppPrep()
 {
-    sendUdpStr("6008");  // 进入测试界面
-    wait(200);
     double back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     double mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     double syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
@@ -1461,21 +1461,26 @@ void AppWindow::recvAppPrep()
         // 开关 工位 Vm 电源 电压
         sendUdpStr(tr("6074 %1 %2 3 %3 %4").arg(stop).arg(work).arg(powr).arg(volt).toUtf8());
         wait(100);
+        sendUdpStr("6008");  // 进入测试界面
+        wait(500);
     }
     if (mode == 1) {  // 真空模式
+        sendUdpStr("6008");  // 进入测试界面
+        wait(200);
         QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
-        if (testItems.contains(QString::number(0x06))) {  // 测试匝间
-            int addr = tmpSet.value(4000 + Qt::Key_6).toInt();
-            QString str = QString::number(tmpSet.value(addr + 0x00).toInt());
-            sendUdpStr(tr("6052 %1").arg(str).toUtf8());
-            wait(200);
-        }
-        if (testItems.contains(QString::number(0x04))) {  // 测试交耐
-            int addr = tmpSet.value(4000 + Qt::Key_4).toInt();
-            sendUdpStr(tr("6068 %1").arg(tmpSet.value(addr + CACHEACW*0x0A + 4).toInt()).toUtf8());
-            sendUdpStr(tr("6093 %1").arg(tmpSet.value(addr + CACHEACW*0x0A + 5).toInt()).toUtf8());
-            wait(200);
-        }
+        int imp = tmpSet.value(4000 + Qt::Key_6).toInt();
+        int vac = tmpSet.value(imp + 0x00).toInt();
+        vac = (testItems.contains(QString::number(0x06))) ? vac : 2;
+        sendUdpStr(tr("6052 %1").arg(vac).toUtf8());
+        wait(200);
+        int acw = tmpSet.value(4000 + Qt::Key_4).toInt();
+        vac = tmpSet.value(acw + CACHEACW*0x0A + 5).toInt();
+        vac = (testItems.contains(QString::number(0x10))) ? vac : 2;
+        sendUdpStr(tr("6093 %1").arg(vac).toUtf8());
+
+        vac = tmpSet.value(acw + CACHEACW*0x0A + 4).toInt();
+        vac = (testItems.contains(QString::number(0x04))) ? vac : 2;
+        sendUdpStr(tr("6068 %1").arg(vac).toUtf8());
         if (1) {
             int addr = tmpSet.value(4000 + Qt::Key_0).toInt();  // 自动启动
             QString str = QString::number(tmpSet.value(addr + ADDRAUTO).toInt());
@@ -1488,8 +1493,7 @@ void AppWindow::recvAppPrep()
     }
     sendUdpStr(tr("6071 %1 %2").arg(tmOK).arg(tmNG).toUtf8());  // 报警时间
     wait(200);
-    sendUdpStr("6008");  // 进入测试界面
-    wait(500);
+
     isVacuum = true;
 }
 

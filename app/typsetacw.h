@@ -56,7 +56,7 @@ private slots:
     void initSettings();
     void saveSettings();
     void confSettings();
-    void autoChange();
+    void autoChange(QModelIndex index);
     void autoInput();
     void change();
     void recvShowEvent();
@@ -70,6 +70,8 @@ private:
     QCheckBox *vacuoBox;
 
     QStringList freqs;
+    QStringList ports;
+
     QVariantMap config;
     QVariantMap tmpMap;
     QTmpMap tmpSet;

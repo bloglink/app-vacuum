@@ -46,17 +46,14 @@ void TypSetInr::initViewBar()
 
     view = new QTableView(this);
     view->setModel(mView);
-    view->setFixedHeight(120);
     view->verticalHeader()->setVisible(false);
     view->horizontalHeader()->setFixedHeight(30);
     view->setEditTriggers(QAbstractItemView::AllEditTriggers);
     view->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoInput()));
-    for (int i=0; i < 3; i++)
-        view->hideColumn(i);
-    for (int i=0; i < 4; i++)
-        view->hideRow(i);
+    view->horizontalHeader()->setSectionResizeMode(CHECKINR, QHeaderView::Fixed);
+    view->setColumnWidth(CHECKINR, 54);
+    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoInput(QModelIndex)));
     layout->addStretch();
     layout->addWidget(view);
 }
@@ -79,6 +76,14 @@ void TypSetInr::initItemDelegate()
 {
     isInit = false;
     volts << "500" << "1000";
+    ports << "PE" << "1" << "4" << "7";
+    view->setItemDelegateForColumn(CHECKINR, new BoxQItems);
+    view->setItemDelegateForColumn(PORTINR1, new BoxQItems);
+    BoxDouble *port = new BoxDouble;
+    port->setDecimals(0);
+    port->setMininum(1);
+    port->setMaxinum(8);
+    view->setItemDelegateForColumn(PORTINR2, port);
     view->setItemDelegateForColumn(VOLTINR1, new BoxQItems);
 
     BoxDouble *real = new BoxDouble;
@@ -95,12 +100,35 @@ void TypSetInr::initItemDelegate()
 void TypSetInr::initSettings()
 {
     int addr = tmpSet.value((4000 + Qt::Key_3)).toInt();  // 绝缘配置地址
-    for (int t=1; t < mView->columnCount(); t++) {
+    for (int t=0; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
-            QString real = QString::number(tmpSet.value(addr + CACHEINR*t + i).toDouble());
-            real = (t == VOLTINR1) ? (volts.at(real.toInt() % volts.size())) : real;
-            mView->item(i, t)->setText(real);
+            double real = tmpSet.value(addr + CACHEINR*t + i).toDouble();
+            QString str = QString::number(real);
+            if (t == CHECKINR) {
+                real = (real == 0) ? Qt::Unchecked : Qt::Checked;
+                mView->setData(mView->index(i, t), real, Qt::CheckStateRole);
+                continue;
+            }
+            if (t == PORTINR1 || t == PORTINR2) {
+                str = tmpSet.value(addr + CACHEINR*t + i).toString();
+            }
+            str = (t == VOLTINR1) ? (volts.at(str.toInt() % volts.size())) : str;
+            mView->item(i, t)->setText(str);
         }
+    }
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int vacu = tmpSet.value(back + backVacu).toInt();
+
+    if (vacu == 0 || vacu == 1) {  // 非真空/真空
+        for (int i=0; i < 3; i++)
+            view->hideColumn(i);
+        for (int i=0; i < 4; i++)
+            view->hideRow(i);
+        view->setFixedHeight(120);
+    }
+    if (vacu == 2) {  // 相间
+        view->hideRow(4);
+        view->setFixedHeight(240);
     }
     isInit = (this->isHidden()) ? false : true;
 }
@@ -109,11 +137,18 @@ void TypSetInr::saveSettings()
 {
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_3)).toInt();
-    for (int t=1; t < mView->columnCount(); t++) {
+    for (int t=0; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
-            QString real = mView->item(i, t)->text();
-            real = (t == VOLTINR1) ? QString::number(volts.indexOf(real)) : real;
-            tmpMsg.insert(addr + CACHEINR*t + i, real);
+            QString str = QString::number(mView->index(i, t).data().toDouble());
+            if (t == CHECKINR) {
+                int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
+                str = QString::number((k == 0) ? 0 : 1);
+            }
+            if (t == PORTINR1 || t == PORTINR2) {
+                str = mView->index(i, t).data().toString();
+            }
+            str = (t == VOLTINR1) ? QString::number(volts.indexOf(str)) : str;
+            tmpMsg.insert(addr + CACHEINR*t + i, str);
         }
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
@@ -134,6 +169,9 @@ void TypSetInr::confSettings()
                 int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
                 str = QString::number((k == 0) ? 0 : 1);
             }
+            if (t == PORTINR1 || t == PORTINR2) {
+                str = mView->index(i, t).data().toString();
+            }
             if (t == VOLTINR1) {
                 str = QString::number(volts.indexOf(mView->index(i, t).data().toString()));
             }
@@ -149,13 +187,18 @@ void TypSetInr::confSettings()
     tmpMap.clear();
 }
 
-void TypSetInr::autoInput()
+void TypSetInr::autoInput(QModelIndex index)
 {
     if (isInit) {
-        int c = view->currentIndex().column();
+        int c = index.column();
+        if (c == PORTINR1) {
+            QString dat = index.data().toString();
+            int x = ports.indexOf(dat);
+            mView->setData(index, ports.at((x+1)%ports.size()), Qt::DisplayRole);
+        }
         if (c == VOLTINR1) {
-            QString dat = view->currentIndex().data().toString();
-            mView->setData(view->currentIndex(), (dat == "500") ? "1000" : "500", Qt::DisplayRole);
+            QString dat = index.data().toString();
+            mView->setData(index, (dat == "500") ? "1000" : "500", Qt::DisplayRole);
             change();
         }
     }

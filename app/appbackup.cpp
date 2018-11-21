@@ -47,10 +47,10 @@ void AppBackup::initBoxText()
     layout->addWidget(boxGroup);
 
     QStringList names;
-    names << tr("产品型号") << tr("产品编号") << tr("评审编号") << tr("电感电压")
+    names << tr("产品型号") << tr("产品编号") << tr("评审编号") << tr("电感模式")
           << tr("语言支持") << tr("工位设置") << tr("最高电压") << tr("自动测试")
-          << tr("测试延时") << tr("目标网络") << tr("匝间接地") << tr("测试模式")
-          << tr("屏蔽反嵌") << tr("波形比例") << tr("交耐真空") << tr("感应启动");
+          << tr("测试延时") << tr("目标网络") << tr("匝间模式") << tr("测试模式")
+          << tr("反嵌模式") << tr("波形比例") << tr("耐压模式") << tr("感应启动");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;

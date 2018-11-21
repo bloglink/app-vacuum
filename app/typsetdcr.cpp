@@ -125,7 +125,7 @@ void TypSetDcr::initInputBar(QString text, QString name, int row, int col)
 void TypSetDcr::initItemDelegate()
 {
     isInit = false;
-    wires << tr("铜") << tr("铝") << tr("铜铝");  // << tr("热敏电阻");
+    wires << tr("铜") << tr("铝") << tr("铜铝") << tr("热敏电阻");
     units << tr("mΩ") << tr("Ω") << tr("kΩ");
 
     view->setItemDelegateForColumn(CHECKDCR, new BoxQItems);

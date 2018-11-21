@@ -310,6 +310,7 @@ void TypSetImp::confSettings()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int mode = tmpSet.value(back + backMode).toInt();
     int test = tmpSet.value(back + backTest).toInt();
+    int grnd = tmpSet.value(back + backGrnd).toInt();  // 接地测试
 
     btns.value("btnappend")->setEnabled((waveCopys.size() == 0) ? false : true);
     wView->setEnabled(false);
@@ -324,6 +325,17 @@ void TypSetImp::confSettings()
     tmpMap.insert("earth", QString::number(earthBox->isChecked() ? 1 : 0));
     tmpMap.insert("power", QString::number(powerBox->isChecked() ? 1 : 0));
     tmpMap.insert("step", QString::number(stepBox->value()));
+    if (grnd == 2) {
+        for (int i=0; i < mView->rowCount(); i++) {
+            int volt = mView->index(i, VOLTIMP1).data().toInt();
+            int gear = 0;
+            gear = (volt >= 1000) ? 1 : gear;
+            gear = (volt >= 2400) ? 2 : gear;
+            gear = (volt >= 4000) ? 3 : gear;
+            tmp.append(QString::number(gear));
+        }
+        tmpMap.insert("gear", tmp.join(","));
+    }
     for (int t=0; t < names.size(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());

@@ -15,9 +15,9 @@ const QString strSY = "<p style='font:11pt;color:#FFFF00;'>%1</p>";  // 小号�
 const QString strMB = "<p style='font:18pt;color:#FFFF00;' align='center'>%1</p>";  // 中号蓝,公司
 const QString strMY = "<p style='font:18pt;color:#FFFF00;' align='left'>&nbsp;%1</p>";  // 中号黄
 
-const QString strLG = "<p style='font:72pt;color:#00FF00;'><b>%1</b></p>";  // 大号绿,OK
-const QString strLR = "<p style='font:72pt;color:#FF0000;'><b>%1</b></p>";  // 大号红,NG,中断
-const QString strLY = "<p style='font:72pt;color:#FFFF00;'><b>%1</b></p>";  // 大号黄,工位,测试
+const QString strLG = "<p style='font:64pt;color:#00FF00;'><b>%1</b></p>";  // 大号绿,OK
+const QString strLR = "<p style='font:64pt;color:#FF0000;'><b>%1</b></p>";  // 大号红,NG,中断
+const QString strLY = "<p style='font:64pt;color:#FFFF00;'><b>%1</b></p>";  // 大号黄,工位,测试
 
 AppTester::AppTester(QWidget *parent) : QWidget(parent)
 {
@@ -549,13 +549,14 @@ void AppTester:: initSetDCR()
         double test = tmpSet.value(addr + CACHEDCR + CACHEDCR*CHECKDCR + numb).toDouble();
         double from = tmpSet.value(addr + CACHEDCR + CACHEDCR*PORTDCR1 + numb).toDouble();
         double stop = tmpSet.value(addr + CACHEDCR + CACHEDCR*PORTDCR2 + numb).toDouble();
+        double wire = tmpSet.value(addr + CACHEDCR + CACHEDCR*WIREDCR1 + numb).toDouble();
         double unit = tmpSet.value(addr + CACHEDCR + CACHEDCR*UNITDCR1 + numb).toDouble();
         double rmax = tmpSet.value(addr + CACHEDCR + CACHEDCR*UPPERDCR + numb).toDouble();
         double rmin = tmpSet.value(addr + CACHEDCR + CACHEDCR*LOWERDCR + numb).toDouble();
         if (test != 0) {
             QString ustr = (unit > 0) ? "Ω" : "mΩ";
             ustr = (unit > 1) ? "kΩ" : ustr;
-            ustr.append(tr(" %1折算").arg(temp == 0 ? tr("已") : tr("未")));
+            ustr.append(tr(" %1折算").arg((temp == 0 && wire != 3) ? tr("已") : tr("未")));
             QString item = tr("电阻%1-%2").arg(from).arg(stop);
             QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
             tmpItem.insert(tmpRow, item);
@@ -632,14 +633,17 @@ void AppTester::initSetCCW()
 
 void AppTester::initSetINR()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int vacu = tmpSet.value(back + backVacu).toInt();
     int save = tmpSet.value(3000 + Qt::Key_3).toInt();  // 绝缘结果地址
     int addr = tmpSet.value(4000 + Qt::Key_3).toInt();  // 绝缘配置地址
-    int numb = 4;
-    double volt = tmpSet.value(addr + CACHEINR*VOLTINR1 + numb).toDouble();
-    double smin = tmpSet.value(addr + CACHEINR*LOWERINR + numb).toDouble();
-    double time = tmpSet.value(addr + CACHEINR*TIMEINR1 + numb).toDouble();
-    volt = (volt == 0) ? 500 : 1000;
-    if (1) {
+
+    if (vacu == 0 || vacu == 1) {  // 非真空/真空
+        int numb = 4;
+        double volt = tmpSet.value(addr + CACHEINR*VOLTINR1 + numb).toDouble();
+        double smin = tmpSet.value(addr + CACHEINR*LOWERINR + numb).toDouble();
+        double time = tmpSet.value(addr + CACHEINR*TIMEINR1 + numb).toDouble();
+        volt = (volt == 0) ? 500 : 1000;
         QString item = tr("绝缘");
         QString parm = tr("%1V %2M %3s").arg(volt).arg(smin).arg(time);
         tmpItem.insert(tmpRow, item);
@@ -648,19 +652,41 @@ void AppTester::initSetINR()
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
     }
+    if (vacu == 2) {  // 相间
+        int row = 0;
+        for (int i=0; i < 4; i++) {
+            double test = tmpSet.value(addr + CACHEINR*CHECKINR + i).toDouble();
+            double volt = tmpSet.value(addr + CACHEINR*VOLTINR1 + i).toDouble();
+            double smin = tmpSet.value(addr + CACHEINR*LOWERINR + i).toDouble();
+            double time = tmpSet.value(addr + CACHEINR*TIMEINR1 + i).toDouble();
+            volt = (volt == 0) ? 500 : 1000;
+            if (test == 1) {
+                QString item = tr("绝缘%1").arg(row+1);
+                QString parm = tr("%1V %2M %3s").arg(volt).arg(smin).arg(time);
+                tmpItem.insert(tmpRow, item);
+                tmpParm.insert(tmpRow, parm);
+                insertItem(nSetINR, row);
+                row++;
+                tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
+                tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+            }
+        }
+    }
 }
 
 void AppTester::initSetACW()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int vacu = tmpSet.value(back + backVacu).toInt();
     int save = tmpSet.value(3000 + Qt::Key_4).toInt();  // 交耐结果地址
     int addr = tmpSet.value(4000 + Qt::Key_4).toInt();  // 交耐配置地址
-    int numb = 4;
-    double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
-    double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
-    double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
-    double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
-    double last = tmpSet.value(addr + CACHEACW + CACHEACW*ADDRACWA + numb).toDouble();
-    if (1) {
+    if (vacu == 0 || vacu == 1) {  // 非真空/真空
+        int numb = 4;
+        double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
+        double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
+        double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
+        double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
+        double last = tmpSet.value(addr + CACHEACW + CACHEACW*ADDRACWA + numb).toDouble();
         QString item = tr("交耐");
         QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
         parm.append(last == 0 ? "" : tr(" ARC:%1").arg(last));
@@ -669,6 +695,28 @@ void AppTester::initSetACW()
         insertItem(nSetACW, 0x00);
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
+    }
+    if (vacu == 2) {  // 相间
+        int row = 0;
+        for (int i=0; i < 4; i++) {
+            double test = tmpSet.value(addr + CACHEACW + CACHEACW*CHECKACW + i).toDouble();
+            double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + i).toDouble();
+            double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + i).toDouble();
+            double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + i).toDouble();
+            double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + i).toDouble();
+            double last = tmpSet.value(addr + CACHEACW + CACHEACW*ADDRACWA + i).toDouble();
+            if (test == 1) {
+                QString item = tr("交耐%1").arg(row + 1);
+                QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
+                parm.append(last == 0 ? "" : tr(" ARC:%1").arg(last));
+                tmpItem.insert(tmpRow, item);
+                tmpParm.insert(tmpRow, parm);
+                insertItem(nSetACW, row);
+                row++;
+                tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
+                tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+            }
+        }
     }
 }
 
@@ -725,7 +773,7 @@ void AppTester::initSetIMP()
         QVariantMap tmp;
         tmp.insert("index", 0);
         tmp.insert("color", int(Qt::white));
-        tmp.insert("width", 85);
+        tmp.insert("width", 80);
         tmp.insert("lenth", 85);
         tmp.insert("title", tr("%1V").arg(volts));
         impWave.at(i)->setTexts(tmp);

@@ -48,17 +48,14 @@ void TypSetAcw::initViewBar()
 
     view = new QTableView(this);
     view->setModel(mView);
-    view->setFixedHeight(120);
     view->verticalHeader()->setVisible(false);
     view->horizontalHeader()->setFixedHeight(30);
     view->setEditTriggers(QAbstractItemView::AllEditTriggers);
     view->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
-    for (int i=0; i < 3; i++)
-        view->hideColumn(i);
-    for (int i=0; i < 4; i++)
-        view->hideRow(i);
+    view->horizontalHeader()->setSectionResizeMode(CHECKACW, QHeaderView::Fixed);
+    view->setColumnWidth(CHECKACW, 54);
+    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange(QModelIndex)));
     layout->addStretch();
     layout->addWidget(view);
 }
@@ -70,11 +67,11 @@ void TypSetAcw::initButtonBar()
     layout->addStretch();
     blayout->addStretch();
 
-//    vacuoBox = new QCheckBox(tr("真空测试"), this);
-//    connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(change()));
-//    blayout->addWidget(vacuoBox);
-//    blayout->addStretch();
-//    vacuoBox->setToolTip(tr("选中后请将交耐测试移动到匝间之前"));
+    //    vacuoBox = new QCheckBox(tr("真空测试"), this);
+    //    connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(change()));
+    //    blayout->addWidget(vacuoBox);
+    //    blayout->addStretch();
+    //    vacuoBox->setToolTip(tr("选中后请将交耐测试移动到匝间之前"));
 
     QPushButton *btnSave = new QPushButton(this);
     btnSave->setText(tr("保存"));
@@ -87,6 +84,14 @@ void TypSetAcw::initItemDelegate()
 {
     isInit = false;
     freqs << "50" << "60";
+    ports << "PE" << "1" << "4" << "7";
+    view->setItemDelegateForColumn(CHECKACW, new BoxQItems);
+    view->setItemDelegateForColumn(PORTACW1, new BoxQItems);
+    BoxDouble *port = new BoxDouble;
+    port->setDecimals(0);
+    port->setMininum(1);
+    port->setMaxinum(8);
+    view->setItemDelegateForColumn(PORTACW2, port);
 
     BoxDouble *curr = new BoxDouble;
     curr->setMaxinum(20);
@@ -116,39 +121,58 @@ void TypSetAcw::initItemDelegate()
 void TypSetAcw::initSettings()
 {
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
-//    vacuoBox->setChecked(tmpSet.value(addr).toInt() == 0 ? false : true);
     addr += CACHEACW;
-    for (int t=1; t < mView->columnCount(); t++) {
+    for (int t=0; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
-            QString real = QString::number(tmpSet.value(addr + CACHEACW*t + i).toDouble());
-            real = (t == FREQACW1) ? (freqs.at(real.toInt() % freqs.size())) : real;
-            mView->item(i, t)->setText(real);
+            double real = tmpSet.value(addr + CACHEACW*t + i).toDouble();
+            QString str = QString::number(real);
+            if (t == CHECKACW) {
+                real = (real == 0) ? Qt::Unchecked : Qt::Checked;
+                mView->setData(mView->index(i, t), real, Qt::CheckStateRole);
+                continue;
+            }
+            if (t == PORTACW1 || t == PORTACW2) {
+                str = tmpSet.value(addr + CACHEACW*t + i).toString();
+            }
+            str = (t == FREQACW1) ? (freqs.at(str.toInt() % freqs.size())) : str;
+            mView->item(i, t)->setText(str);
         }
     }
 
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
-    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    int show = tmpSet.value(back + backVacu).toInt();
+    int vacu = tmpSet.value(back + backVacu).toInt();
+
     BoxDouble *volt = new BoxDouble;
     volt->setMaxinum(vmax);
     volt->setMininum(300);
     volt->setDecimals(0);
-    view->setItemDelegateForColumn(VOLTACW1, volt);
-    if (mode == 1 && show == 1) {
-        view->hideColumn(0x0A);
-    } else {
-        view->showColumn(0x0A);
-    }
-//    vacuoBox->setVisible((mode == 1 && show == 1) ? true : false);
-    int acw2 = tmpSet.value(back + 0x10 + 0x0F).toInt();
-    if (acw2 == 0) {
+
+    if (vacu == 0 || vacu == 1) {  // 非真空/真空
+        for (int i=0; i < 3; i++)
+            view->hideColumn(i);
+        for (int i=0; i < 4; i++)
+            view->hideRow(i);
+        view->setFixedHeight(120);
         view->hideRow(5);
-        view->hideColumn(9);
-    } else {
-        view->showRow(5);
-        view->showColumn(9);
     }
+    if (vacu == 2) {  // 相间+100mA
+        view->hideRow(4);
+        view->hideRow(5);
+        view->setFixedHeight(240);
+        BoxDouble *curr = new BoxDouble;
+        curr->setMaxinum(100);
+        curr->setDecimals(2);
+        volt->setMininum(200);
+        view->setItemDelegateForColumn(UPPERACW, curr);
+        view->setItemDelegateForColumn(LOWERACW, curr);
+    }
+    if (vacu == 1) {
+        view->showColumn(0x09);
+    } else {
+        view->hideColumn(0x09);
+    }
+    view->setItemDelegateForColumn(VOLTACW1, volt);
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -156,13 +180,19 @@ void TypSetAcw::saveSettings()
 {
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
-//    tmpMsg.insert(addr + 0, QString::number(vacuoBox->isChecked() ? 1 : 0));
     addr += CACHEACW;
-    for (int t=1; t < mView->columnCount(); t++) {
+    for (int t=0; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
-            QString real = mView->item(i, t)->text();
-            real = (t == FREQACW1) ? QString::number(freqs.indexOf(real)) : real;
-            tmpMsg.insert(addr + CACHEACW*t + i, real);
+            QString str = mView->item(i, t)->text();
+            if (t == CHECKACW) {
+                int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
+                str = QString::number((k == 0) ? 0 : 1);
+            }
+            if (t == PORTACW1 || t == PORTACW2) {
+                str = mView->index(i, t).data().toString();
+            }
+            str = (t == FREQACW1) ? QString::number(freqs.indexOf(str)) : str;
+            tmpMsg.insert(addr + CACHEACW*t + i, str);
         }
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
@@ -173,6 +203,9 @@ void TypSetAcw::saveSettings()
 
 void TypSetAcw::confSettings()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int vacu = tmpSet.value(back + backVacu).toInt();
+    int row = (vacu == 2) ? mView->columnCount() : 5;
     QStringList names;
     names << "test" << "port1" << "port2" << "volt" << "max" << "min"
           << "time" << "freq" << "arc" << "isvacuo";
@@ -180,11 +213,14 @@ void TypSetAcw::confSettings()
     tmpMap.insert("vacuo", tmp.join(","));
     tmp.clear();
     for (int t=0; t < names.size(); t++) {
-        for (int i=0; i < mView->rowCount(); i++) {
+        for (int i=0; i < row; i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());
             if (t == CHECKACW) {
                 int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
                 str = QString::number((k == 0) ? 0 : 1);
+            }
+            if (t == PORTACW1 || t == PORTACW2) {
+                str = mView->index(i, t).data().toString();
             }
             if (t == FREQACW1) {
                 str = QString::number(freqs.indexOf(mView->index(i, t).data().toString()));
@@ -201,15 +237,19 @@ void TypSetAcw::confSettings()
     tmpMap.clear();
 }
 
-void TypSetAcw::autoChange()
+void TypSetAcw::autoChange(QModelIndex index)
 {
     change();
     if (isInit) {
-        int r = view->currentIndex().row();
-        int c = view->currentIndex().column();
+        int c = index.column();
+        if (c == PORTACW1) {
+            QString dat = index.data().toString();
+            int x = ports.indexOf(dat);
+            mView->setData(index, ports.at((x+1)%ports.size()), Qt::DisplayRole);
+        }
         if (c == FREQACW1) {
-            QString next = mView->item(r, c)->text();
-            mView->item(r, c)->setText(next == "50" ? "60" : "50");
+            QString next = index.data().toString();
+            mView->setData(index, (next == "50" ? "60" : "50"), Qt::DisplayRole);
         }
     }
 }

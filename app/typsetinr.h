@@ -18,6 +18,7 @@
 #include <QPushButton>
 
 #include "main.h"
+#include "appbackup.h"
 #include "boxqmodel.h"
 #include "boxdouble.h"
 #include "boxqitems.h"
@@ -49,7 +50,7 @@ private slots:
     void initSettings();
     void saveSettings();
     void confSettings();
-    void autoInput();
+    void autoInput(QModelIndex index);
     void change();
     void recvShowEvent();
     void recvAppMsg(QTmpMap msg);
@@ -63,6 +64,7 @@ private:
     QVariantMap tmpMap;
 
     QStringList volts;
+    QStringList ports;
 
     QTmpMap tmpSet;
     QTmpMap tmpMsg;
