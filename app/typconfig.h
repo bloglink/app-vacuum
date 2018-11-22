@@ -90,6 +90,7 @@ private:
     QLineEdit *page;
     QLabel *type;
     QLineEdit *name;
+    QLabel *testWarnBox;
 
     QPushButton *btnSave;
 

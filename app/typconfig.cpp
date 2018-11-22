@@ -145,6 +145,16 @@ void TypConfig::initItemBar()
     btnLower->setFixedHeight(44);
     connect(btnLower, SIGNAL(clicked(bool)), this, SLOT(clickMove()));
 
+    QString strSW = "<p style='font:11pt;color:#FFFFFF;' align='left'>%1</p>";
+    QString str;
+    str += strSW.arg(tr("真空下推荐的测试顺序为:"));
+    str += strSW.arg(tr("绝缘->交耐->"));
+    str += strSW.arg(tr("电阻->反嵌->电感->"));
+    str += strSW.arg(tr("匝间->交耐2"));
+
+    testWarnBox = new QLabel(str, this);
+    layout->addWidget(testWarnBox);
+
     layout->addStretch();
 }
 
@@ -336,6 +346,7 @@ void TypConfig::initOtherBar()
     testDrivBox->setChecked((tmpSet.value(conf + ADDRDRIV).toInt() == 0) ? false : true);
     testAutoBox->setVisible((mode == 1 && test >= 1) ? true : false);
     testDrivBox->setVisible((mode >= 2) ? true : false);
+    testWarnBox->setVisible((mode == 1) ? true : false);
 }
 
 void TypConfig::saveSettings()
@@ -354,6 +365,12 @@ void TypConfig::saveSettings()
             QString name = mView->index(i, 1).data().toString();
             warnItems.append(QString::number(itemNams.indexOf(name) + 1));
         }
+    }
+    if (testItems.contains(QString::number(0x10)) && testItems.contains(QString::number(nSetIMP))) {
+        int from = testItems.indexOf(QString::number(0x10));
+        int stop = testItems.indexOf(QString::number(nSetIMP));
+        if (from - stop != 1)
+            testItems.move(from, (from > stop) ? stop+1 : stop);
     }
     tmpMsg.insert(r + ADDRITEM, testItems.join(","));
     tmpMsg.insert(r + 0x05, warnItems.join(","));
@@ -376,14 +393,23 @@ void TypConfig::saveSettings()
 
 void TypConfig::confSettings()
 {
-    QStringList sendItems;
+    QStringList sendItems,testItems;
     for (int i=0; i < mView->rowCount(); i++) {
         int c = mView->index(i, 0).data(Qt::CheckStateRole).toInt();
         if (c != 0) {
-            QString name = mView->index(i, 1).data().toString();
-            name = (name == tr("交耐2")) ? tr("交耐") : name;
-            sendItems.append(QString::number(itemNams.indexOf(name) + 1));
+            testItems.append(mView->index(i, 1).data().toString());
         }
+    }
+    if (testItems.contains(tr("交耐2")) && testItems.contains(tr("匝间"))) {
+        int from = testItems.indexOf(tr("交耐2"));
+        int stop = testItems.indexOf(tr("匝间"));
+        if (from - stop != 1)
+            testItems.move(from, (from > stop) ? stop+1 : stop);
+    }
+    for (int i=0; i < testItems.size(); i++) {
+        QString name = testItems.at(i);
+        name = (name == tr("交耐2")) ? tr("交耐") : name;
+        sendItems.append(QString::number(itemNams.indexOf(name) + 1));
     }
     tmpMap.insert("test", 0);
     tmpMap.insert("type", testTypeBox->currentText());

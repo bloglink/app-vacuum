@@ -67,12 +67,6 @@ void TypSetAcw::initButtonBar()
     layout->addStretch();
     blayout->addStretch();
 
-    //    vacuoBox = new QCheckBox(tr("真空测试"), this);
-    //    connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(change()));
-    //    blayout->addWidget(vacuoBox);
-    //    blayout->addStretch();
-    //    vacuoBox->setToolTip(tr("选中后请将交耐测试移动到匝间之前"));
-
     QPushButton *btnSave = new QPushButton(this);
     btnSave->setText(tr("保存"));
     btnSave->setMinimumSize(97, 44);
@@ -112,10 +106,7 @@ void TypSetAcw::initItemDelegate()
     darc->setDecimals(0);
     view->setItemDelegateForColumn(ADDRACWA, darc);
 
-    BoxDouble *vacu = new BoxDouble;
-    vacu->setMaxinum(1);
-    vacu->setDecimals(0);
-    view->setItemDelegateForColumn(0x09, vacu);
+    view->setItemDelegateForColumn(0x09, new BoxQItems);
 }
 
 void TypSetAcw::initSettings()
@@ -134,6 +125,9 @@ void TypSetAcw::initSettings()
             if (t == PORTACW1 || t == PORTACW2) {
                 str = tmpSet.value(addr + CACHEACW*t + i).toString();
             }
+            if (t == 0x09) {
+                str = (str.toInt() == 0) ? "非真空" : "真空";
+            }
             str = (t == FREQACW1) ? (freqs.at(str.toInt() % freqs.size())) : str;
             mView->item(i, t)->setText(str);
         }
@@ -147,19 +141,21 @@ void TypSetAcw::initSettings()
     volt->setMaxinum(vmax);
     volt->setMininum(300);
     volt->setDecimals(0);
+    view->setColumnHidden(0, (vacu != 2));
+    view->setColumnHidden(1, (vacu != 2));
+    view->setColumnHidden(2, (vacu != 2));
+    view->setColumnHidden(9, (vacu != 1 && vacu != 3));
 
-    if (vacu == 0 || vacu == 1) {  // 非真空/真空
-        for (int i=0; i < 3; i++)
-            view->hideColumn(i);
-        for (int i=0; i < 4; i++)
-            view->hideRow(i);
-        view->setFixedHeight(120);
-        view->hideRow(5);
-    }
+    view->setRowHidden(0, (vacu != 2));
+    view->setRowHidden(1, (vacu != 2));
+    view->setRowHidden(2, (vacu != 2));
+    view->setRowHidden(3, (vacu != 2));
+    view->setRowHidden(4, (vacu == 2));
+    view->setRowHidden(5, (vacu != 3));
+
+    view->setFixedHeight((vacu == 2) ? 240 : 120);
+
     if (vacu == 2) {  // 相间+100mA
-        view->hideRow(4);
-        view->hideRow(5);
-        view->setFixedHeight(240);
         BoxDouble *curr = new BoxDouble;
         curr->setMaxinum(100);
         curr->setDecimals(2);
@@ -167,11 +163,7 @@ void TypSetAcw::initSettings()
         view->setItemDelegateForColumn(UPPERACW, curr);
         view->setItemDelegateForColumn(LOWERACW, curr);
     }
-    if (vacu == 1) {
-        view->showColumn(0x09);
-    } else {
-        view->hideColumn(0x09);
-    }
+
     view->setItemDelegateForColumn(VOLTACW1, volt);
     isInit = (this->isHidden()) ? false : true;
 }
@@ -191,6 +183,9 @@ void TypSetAcw::saveSettings()
             if (t == PORTACW1 || t == PORTACW2) {
                 str = mView->index(i, t).data().toString();
             }
+            if (t == 0x09) {
+                str = (str == "非真空") ? "0" : "1";
+            }
             str = (t == FREQACW1) ? QString::number(freqs.indexOf(str)) : str;
             tmpMsg.insert(addr + CACHEACW*t + i, str);
         }
@@ -205,13 +200,11 @@ void TypSetAcw::confSettings()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int vacu = tmpSet.value(back + backVacu).toInt();
-    int row = (vacu == 2) ? mView->columnCount() : 5;
+    int row = (vacu == 2 || vacu == 3) ? 6 : 5;
     QStringList names;
     names << "test" << "port1" << "port2" << "volt" << "max" << "min"
           << "time" << "freq" << "arc" << "isvacuo";
     QStringList tmp;
-    tmpMap.insert("vacuo", tmp.join(","));
-    tmp.clear();
     for (int t=0; t < names.size(); t++) {
         for (int i=0; i < row; i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());
@@ -224,6 +217,9 @@ void TypSetAcw::confSettings()
             }
             if (t == FREQACW1) {
                 str = QString::number(freqs.indexOf(mView->index(i, t).data().toString()));
+            }
+            if (t == 0x09) {
+                str = (str == "非真空") ? "0" : "1";
             }
             tmp.append(str);
         }
@@ -250,6 +246,10 @@ void TypSetAcw::autoChange(QModelIndex index)
         if (c == FREQACW1) {
             QString next = index.data().toString();
             mView->setData(index, (next == "50" ? "60" : "50"), Qt::DisplayRole);
+        }
+        if (c == 0x09) {
+            QString next = index.data().toString();
+            mView->setData(index, (next == "真空" ? "非真空" : "真空"), Qt::DisplayRole);
         }
     }
 }

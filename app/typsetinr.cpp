@@ -119,17 +119,17 @@ void TypSetInr::initSettings()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int vacu = tmpSet.value(back + backVacu).toInt();
 
-    if (vacu == 0 || vacu == 1) {  // 非真空/真空
-        for (int i=0; i < 3; i++)
-            view->hideColumn(i);
-        for (int i=0; i < 4; i++)
-            view->hideRow(i);
-        view->setFixedHeight(120);
-    }
-    if (vacu == 2) {  // 相间
-        view->hideRow(4);
-        view->setFixedHeight(240);
-    }
+    view->setColumnHidden(0, (vacu != 2));
+    view->setColumnHidden(1, (vacu != 2));
+    view->setColumnHidden(2, (vacu != 2));
+
+    view->setRowHidden(0, (vacu != 2));
+    view->setRowHidden(1, (vacu != 2));
+    view->setRowHidden(2, (vacu != 2));
+    view->setRowHidden(3, (vacu != 2));
+    view->setRowHidden(4, (vacu == 2));
+    view->setFixedHeight((vacu == 2) ? 240 : 120);
+
     isInit = (this->isHidden()) ? false : true;
 }
 

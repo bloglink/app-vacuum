@@ -638,7 +638,7 @@ void AppTester::initSetINR()
     int save = tmpSet.value(3000 + Qt::Key_3).toInt();  // 绝缘结果地址
     int addr = tmpSet.value(4000 + Qt::Key_3).toInt();  // 绝缘配置地址
 
-    if (vacu == 0 || vacu == 1) {  // 非真空/真空
+    if (vacu != 2) {  // 非真空/真空
         int numb = 4;
         double volt = tmpSet.value(addr + CACHEINR*VOLTINR1 + numb).toDouble();
         double smin = tmpSet.value(addr + CACHEINR*LOWERINR + numb).toDouble();
@@ -680,7 +680,7 @@ void AppTester::initSetACW()
     int vacu = tmpSet.value(back + backVacu).toInt();
     int save = tmpSet.value(3000 + Qt::Key_4).toInt();  // 交耐结果地址
     int addr = tmpSet.value(4000 + Qt::Key_4).toInt();  // 交耐配置地址
-    if (vacu == 0 || vacu == 1) {  // 非真空/真空
+    if (vacu != 2) {  // 非真空/真空
         int numb = 4;
         double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
         double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();

@@ -2105,7 +2105,7 @@ void AppWindow::calcHALL(QString msg)
                     int r = (tmp.at(numb) >= vmax || tmp.at(numb) <= vmin) ? DATANG : DATAOK;
                     real = (r == DATANG) ? DATANG : real;
                     tmpSave.insert(addr + item*0x10 + numb*3 + 1, tmp.at(numb));
-                    tmpSave.insert(addr + item*0x10 + numb*3 + 2, r);
+                    tmpSave.insert(addr + item*0x10 + numb*3 + 2, (r == DATAOK) ? "OK" : "NG");
                 }
                 isok = (real == DATAOK) ? isok : DATANG;
                 tmpMsg.insert(Qt::Key_0, Qt::Key_News);

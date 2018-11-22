@@ -213,7 +213,7 @@ void AppBackup::initMacText()
     QStringList headers;
     headers << "K" << "b";
     QStringList items;
-    items << tr("电流") << tr("电压") << tr("功率") << tr("转速") << tr("Icc")
+    items << tr("电流") << tr("电压") << tr("功率") << tr("Icc") << tr("转速")
           << tr("Isp") << tr("转向") << tr("电压") << tr("常数") << tr("相位")
           << tr("高电平") << tr("低电平") << tr("占空比") << tr("频率");
     offView->setRowCount(items.size());
