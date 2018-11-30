@@ -35,6 +35,7 @@
 #include "typsetinr.h"
 #include "typsetacw.h"
 #include "typsetimp.h"
+#include "typsetpwr.h"
 #include "typsetind.h"
 
 class AppTester : public QWidget
@@ -72,6 +73,7 @@ private slots:
     void initSetACW();
     void initSetACW2();
     void initSetIMP();
+    void initSetPWR();
     void initSetIND();
     void initSetHAL();
     void initSetLOD();

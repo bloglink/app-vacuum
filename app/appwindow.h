@@ -159,6 +159,7 @@ private slots:
     virtual void cloudAntimation();
     virtual void closeEvent(QCloseEvent *e);
     virtual void keyReleaseEvent(QKeyEvent *e);
+    void display(int item, int numb, int mode, QString str, int work);
     void loopBoxbar();
     void warnningString(QString dat);
     void recvSqlMsg(QTmpMap msg);
@@ -169,6 +170,7 @@ private slots:
     void sendUdpStr(QByteArray msg);
     void recvNewMsg(QString msg);
     void recvStaMsg(QString msg);
+    void recvPwrMsg(QString msg);
     void wait(int ms);
     void calcHALL(QString msg);
     void calcLOAD(QString msg);
@@ -235,6 +237,7 @@ private:
     QTimer *loading;
     bool isSetnvt;
     bool isWarn;
+    QVariantMap bufmap;
 };
 
 #endif // APPWINDOW_H

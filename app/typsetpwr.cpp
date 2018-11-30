@@ -35,6 +35,7 @@ void TypSetPwr::initViewBar()
             mView->setData(mView->index(i, j), "", Qt::DisplayRole);
         }
         mView->item(i, CHECKPWR)->setCheckable(true);
+        mView->item(i, CHECKPWR)->setText(QString("12%1").arg(i+3));
     }
     connect(mView, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(autoInput()));
 
@@ -45,9 +46,9 @@ void TypSetPwr::initViewBar()
     view->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view->horizontalHeader()->setSectionResizeMode(CHECKPWR, QHeaderView::Fixed);
-    view->setColumnWidth(CHECKPWR, 58);
+    view->setColumnWidth(CHECKPWR, 96);
     view->setFixedHeight(240);
-    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
+    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange(QModelIndex)));
     layout->addWidget(view);
 }
 
@@ -83,24 +84,14 @@ void TypSetPwr::initButtonBar()
     btnLayout->addWidget(vminBox, row, 3);
 
     row++;
-    cnvtBox = new QComboBox(this);
-    cnvtBox->addItem(tr("是"));
-    cnvtBox->addItem(tr("否"));
-    cnvtBox->setFixedSize(125, 40);
-    cnvtBox->setView(new QListView);
-    cnvtBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(cnvtBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("温度折算")), row, 0);
-    btnLayout->addWidget(cnvtBox, row, 1);
-
     voltBox = new QSpinBox(this);
     voltBox->setMaximum(500);
     voltBox->setFixedSize(125, 40);
     voltBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     voltBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(voltBox, SIGNAL(valueChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("输出电压")), row, 2);
-    btnLayout->addWidget(voltBox, row, 3);
+    btnLayout->addWidget(new QLabel(tr("输出电压")), row, 0);
+    btnLayout->addWidget(voltBox, row, 1);
 
     compBox = new QDoubleSpinBox(this);
     compBox->setDecimals(1);
@@ -109,8 +100,8 @@ void TypSetPwr::initButtonBar()
     compBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     compBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(compBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("补偿电压")), row, 4);
-    btnLayout->addWidget(compBox, row, 5);
+    btnLayout->addWidget(new QLabel(tr("补偿电压")), row, 2);
+    btnLayout->addWidget(compBox, row, 3);
 
     row++;
     smaxBox = new QDoubleSpinBox(this);
@@ -147,7 +138,7 @@ void TypSetPwr::initButtonBar()
 void TypSetPwr::initItemDelegate()
 {
     isInit = false;
-    turns << tr("不测") << tr("反转") << tr("正转");
+    turns << tr("NULL") << tr("CCW") << tr("CW");
 
     view->setItemDelegateForColumn(CHECKPWR, new BoxQItems);
 
@@ -172,7 +163,6 @@ void TypSetPwr::initSettings()
     passBox->setValue(tmpSet.value(addr + 0).toDouble());
     vmaxBox->setValue(tmpSet.value(addr + 1).toDouble());
     vminBox->setValue(tmpSet.value(addr + 2).toDouble());
-    cnvtBox->setCurrentIndex(tmpSet.value(addr + 3).toInt());
     voltBox->setValue(tmpSet.value(addr + 4).toDouble());
     compBox->setValue(tmpSet.value(addr + 5).toDouble());
     smaxBox->setValue(tmpSet.value(addr + 6).toDouble());
@@ -194,6 +184,12 @@ void TypSetPwr::initSettings()
             mView->setData(mView->index(i, t), str, Qt::DisplayRole);
         }
     }
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    for (int i=1; i < PWR_SIZE; i++) {
+        view->setRowHidden(i, (mode == 1) ? true : false);
+    }
+    view->setFixedHeight((mode == 1) ? 120 : 360);
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -205,7 +201,6 @@ void TypSetPwr::saveSettings()
     tmpMsg.insert(addr + 0, QString::number(passBox->value()));
     tmpMsg.insert(addr + 1, QString::number(vmaxBox->value()));
     tmpMsg.insert(addr + 2, QString::number(vminBox->value()));
-    tmpMsg.insert(addr + 3, QString::number(cnvtBox->currentIndex()));
     tmpMsg.insert(addr + 4, QString::number(voltBox->value()));
     tmpMsg.insert(addr + 5, QString::number(compBox->value()));
     tmpMsg.insert(addr + 6, QString::number(smaxBox->value()));
@@ -251,7 +246,7 @@ void TypSetPwr::confSettings()
             QString str = QString::number(mView->index(i, t).data().toDouble());
             if (t == CHECKPWR) {
                 int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
-                str = QString::number((k == 0) ? 0 : 1);
+                str = QString::number((k == 0) ? 0 : 1+i);
             }
             if (t == TURNPWR1) {
                 str = QString::number(turns.indexOf(mView->index(i, t).data().toString()));
@@ -268,17 +263,17 @@ void TypSetPwr::confSettings()
     tmpMap.clear();
 }
 
-void TypSetPwr::autoChange()
+void TypSetPwr::autoChange(QModelIndex index)
 {
     change();
     if (isInit) {
-        int r = view->currentIndex().row();
-        int c = view->currentIndex().column();
+        int r = index.row();
+        int c = index.column();
         int i = 0;
         switch (c) {
         case TURNPWR1:
             i = turns.indexOf(view->currentIndex().data().toString());
-            i = (i + 1) % turns.size();
+            i = qMax(1, (i + 1) % turns.size());
             mView->setData(mView->index(r, c), turns.at(i), Qt::DisplayRole);
             break;
         default:

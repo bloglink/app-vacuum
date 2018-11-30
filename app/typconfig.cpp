@@ -134,6 +134,7 @@ void TypConfig::initItemBar()
     item->setSelectionBehavior(QAbstractItemView::SelectRows);
     item->setSelectionMode(QAbstractItemView::SingleSelection);
     item->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    connect(item, SIGNAL(clicked(QModelIndex)), this, SLOT(change()));
 
     QPushButton *btnUpper = new QPushButton(tr("上移"), this);
     layout->addWidget(btnUpper);
@@ -237,7 +238,7 @@ void TypConfig::initButtonBar()
     name->setFixedHeight(40);
     btnLayout->addWidget(name);
     name->setValidator(validator_16c);
-    connect(name, SIGNAL(textChanged(QString)), this, SLOT(change()));
+    connect(name, SIGNAL(textChanged(QString)), this, SLOT(changeEdit()));
     QString str;
     str += tr("切换型号:双击型号\n");
     str += tr("添加型号:选中空白型号->输入型号名称->保存\n");
@@ -529,6 +530,7 @@ void TypConfig::removeModel()
 
 void TypConfig::autoPixmap(QString name)
 {
+    change();
     QString pixmap = QString("./types/%1.jpg").arg(name);
     typePixmap->setPixmap(QPixmap(pixmap));
 }
@@ -539,6 +541,7 @@ void TypConfig::selectColor()
     QColor color = QColorDialog::getColor(Qt::white, this);
     if (color.isValid())
         btn->setStyleSheet(QString("background-color:%1").arg(color.name()));
+    change();
 }
 
 void TypConfig::clickMove()
@@ -580,6 +583,7 @@ void TypConfig::clickMove()
         mView->setData(mView->index(r+0, 2), warnNext, Qt::CheckStateRole);
         item->setCurrentIndex(mView->index(r+1, 1));
     }
+    change();
 }
 
 void TypConfig::clickSave()
@@ -629,11 +633,21 @@ void TypConfig::clickViewBar()
         name->setText(view->item(row, 1)->text());
 }
 
-void TypConfig::change()
+void TypConfig::changeEdit()
 {
     int row = view->currentRow();
     if (row >= 0) {
         isRemove = (!view->item(row, 1)->text().isEmpty() && name->text().isEmpty());
+    }
+}
+
+void TypConfig::change()
+{
+    if (isInit) {  // 初始化完成后才发送界面修改
+        tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
+        tmpMsg.insert(Qt::Key_1, this->objectName());
+        emit sendAppMsg(tmpMsg);
+        tmpMsg.clear();
     }
 }
 
@@ -649,6 +663,10 @@ void TypConfig::recvAppMsg(QTmpMap msg)
             recvShow();
             confSettings();
         }
+        break;
+    case Qt::Key_Save:
+        if (!this->isHidden())
+            saveSettings();
         break;
     default:
         break;

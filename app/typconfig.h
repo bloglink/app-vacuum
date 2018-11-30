@@ -76,6 +76,7 @@ private slots:
     void clickSave();
     void clickButtons();
     void clickViewBar();
+    void changeEdit();
     void change();
     void recvAppMsg(QTmpMap msg);
     void recvShow();

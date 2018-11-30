@@ -178,6 +178,17 @@ void TypSetDcr::initSettings()
             mView->setData(mView->index(i, t), str, Qt::DisplayRole);
         }
     }
+    int setuser = tmpSet.value(DataUser).toInt();
+    QString user = tmpSet.value(setuser).toString();
+    for (int i=0; i < 20; i++) {
+        int addr = tmpSet.value(2000 + Qt::Key_5).toInt() + (i + 1) * 5;  // 隐藏超级用户
+        QString name = tmpSet.value(addr + mName).toString();
+        QString role = tmpSet.value(addr + mRole).toString();
+        if (user == name) {
+            view->setColumnHidden(COMPDCR1, role.toInt() >= 2 ? true : false);
+            view->setColumnHidden(COMPDCR2, role.toInt() >= 2 ? true : false);
+        }
+    }
     isInit = (this->isHidden()) ? false : true;
 }
 

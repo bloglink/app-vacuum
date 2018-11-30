@@ -26,6 +26,7 @@
 #include <QDoubleSpinBox>
 
 #include "main.h"
+#include "appmaster.h"
 #include "boxqmodel.h"
 #include "boxdouble.h"
 #include "boxqitems.h"

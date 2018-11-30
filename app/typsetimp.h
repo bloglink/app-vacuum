@@ -115,7 +115,10 @@ private:
     QTmpMap tmpMsg;
     QTmpMap wvdata;
     bool isInit;
+    QVariantMap buftmp;
+    int isChange;
     QTimer *timer;
+    QVector<int> x;
 };
 
 #endif // TYPSETIMP_H

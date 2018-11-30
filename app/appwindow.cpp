@@ -807,7 +807,7 @@ int AppWindow::taskStartSave()
 
 int AppWindow::taskClearWarn()
 {
-//    isWarn = true;
+    //    isWarn = true;
     if (isWarn) {
         sendUdpStr("6094 1");  // 启用防呆
         bool ok = false;
@@ -1432,6 +1432,7 @@ void AppWindow::recvAppPrep()
     double snap = tmpSet.value(syst + SystMode).toInt();  // 弹线配置
     double tmOK = tmpSet.value(syst + SystTime).toDouble();
     double tmNG = tmpSet.value(syst + SystWarn).toDouble();
+    double tmWT = tmpSet.value(syst + SystWait).toDouble();
     double conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
 
     if (mode >= 2) {
@@ -1491,8 +1492,13 @@ void AppWindow::recvAppPrep()
             sendUdpStr(tr("6091 %1").arg(snap).toUtf8());
         }
     }
+    if (mode == 0) {
+        sendUdpStr("6008");  // 进入测试界面
+        wait(200);
+    }
     sendUdpStr(tr("6071 %1 %2").arg(tmOK).arg(tmNG).toUtf8());  // 报警时间
     wait(200);
+    sendUdpStr(tr("6096 %1 %2").arg((mode == 0 ? 1 : 0)).arg(tmWT*1000).toUtf8());
 
     isVacuum = true;
 }
@@ -1568,6 +1574,17 @@ void AppWindow::keyReleaseEvent(QKeyEvent *e)
     tmpcode.append(e->text());
     scanner->start(200);
     e->accept();
+}
+
+void AppWindow::display(int item, int numb, int mode, QString str, int work)
+{
+    tmpMsg.insert(Qt::Key_0, Qt::Key_News);
+    tmpMsg.insert(Qt::Key_1, item);
+    tmpMsg.insert(Qt::Key_2, numb);
+    tmpMsg.insert((mode == 0) ? Qt::Key_3 : Qt::Key_4, str);
+    tmpMsg.insert(Qt::Key_6, work);
+    emit sendAppMsg(tmpMsg);
+    tmpMsg.clear();
 }
 
 void AppWindow::loopBoxbar()
@@ -1886,9 +1903,15 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         }
         taskCheckStop();
         break;
-    case 6080:
-        isok = (dat == "NG") ? DATANG : DATAOK;
+    case 6083: {
+        int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+        int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+        if (mode <= 1) {
+            isok = (dat == "NG") ? DATANG : DATAOK;
+            taskCheckStop();
+        }
         break;
+    }
     case 6062:  // 真空泵待机
         isVacuum = false;
         warnningString(tr("真空泵已关闭"));
@@ -1907,6 +1930,9 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         break;
     case 6088:
         mTurn = dat;
+        break;
+    case 6089:
+//        recvPwrMsg(dat);
         break;
     default:
         break;
@@ -1951,6 +1977,9 @@ void AppWindow::recvNewMsg(QString dat)
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
             timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
+            timeRsl = ((currItem == nSetPWR) && (temp.contains(tr("正转")))) ? 0x03 : timeRsl;
+            timeRsl = ((currItem == nSetPWR) && (temp.contains(tr("反转")))) ? 0x03 : timeRsl;
+            timeRsl = ((currItem == nSetPWR) && (temp.contains(tr("不转")))) ? 0x03 : timeRsl;
             timeRsl = ((currItem == nSetIND) && (temp.contains(tr("%")))) ? 0x08 : timeRsl;
             temp = temp.contains(tr("正转")) ? "CW" : temp;
             temp = temp.contains(tr("反转")) ? "CCW" : temp;
@@ -2034,7 +2063,7 @@ void AppWindow::recvStaMsg(QString msg)
     QString err;
     for (int i=0; i < dat.size(); i++) {
         int cmd = dat.at(i).toInt();
-        if (cmd >= errs.size() && cmd < 0xFF) {
+        if (cmd >= errs.size() && cmd < 0xFFFF) {
             err += tr("未知异常") + QString::number(cmd) + "\n";
         }
         if (cmd <= errs.size()) {
@@ -2048,6 +2077,51 @@ void AppWindow::recvStaMsg(QString msg)
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
         warnningString(err);
+    }
+}
+
+void AppWindow::recvPwrMsg(QString msg)
+{
+    QStringList strs = msg.split(" ");
+    if (strs.size() >= 9) {
+        int real = tmpSet.value(3000 + Qt::Key_7).toInt();  // 电参结果地址
+        int conf = tmpSet.value(Qt::Key_7 + 4000).toInt() + CACHEPWR;
+        double cmax = tmpSet.value(conf + CACHEPWR*CMAXPWR1 + 0x00).toDouble();
+        double cmin = tmpSet.value(conf + CACHEPWR*CMINPWR1 + 0x00).toDouble();
+        double pmax = tmpSet.value(conf + CACHEPWR*PMAXPWR1 + 0x00).toDouble();
+        double pmin = tmpSet.value(conf + CACHEPWR*PMINPWR1 + 0x00).toDouble();
+        double vmax = tmpSet.value(conf + CACHEPWR*VMAXPWR1 + 0x00).toDouble();
+        double vmin = tmpSet.value(conf + CACHEPWR*VMINPWR1 + 0x00).toDouble();
+        double turn = tmpSet.value(conf + CACHEPWR*TURNPWR1 + 0x00).toDouble();
+        QStringList turns;
+        turns << tr("不转") << tr("反转") << tr("正转");
+        double volt = strs.at(0).toDouble();
+        double curr = strs.at(1).toDouble();
+        double pwrs = strs.at(2).toDouble();
+        double itemnumb = strs.at(6).toDouble();
+        double itemturn = turns.indexOf(strs.at(8));
+        display(nSetPWR, 0x00, 0, QString("%1A").arg(curr), WORKL);
+        display(nSetPWR, 0x01, 0, QString("%1W").arg(pwrs), WORKL);
+        display(nSetPWR, 0x02, 0, QString("%1V").arg(volt), WORKL);
+        display(nSetPWR, 0x03, 0, strs.at(8), WORKL);
+        if (itemnumb <= 6) {
+            isok = (curr >= cmax || curr < cmin) ? DATANG : isok;
+            display(nSetPWR, 0x00, 1, (curr >= cmax || curr < cmin) ? "NG" : "OK", WORKL);
+            isok = (pwrs >= pmax || pwrs < pmin) ? DATANG : isok;
+            display(nSetPWR, 0x01, 1, (pwrs >= pmax || pwrs < pmin) ? "NG" : "OK", WORKL);
+            isok = (volt >= vmax || volt < vmin) ? DATANG : isok;
+            display(nSetPWR, 0x02, 1, (volt >= vmax || volt < vmin) ? "NG" : "OK", WORKL);
+            isok = (itemturn != turn) ? DATANG : isok;
+            display(nSetPWR, 0x03, 1, (itemturn != turn) ? "NG" : "OK", WORKL);
+            tmpSave.insert(real + 0x00*3 + 2, curr);
+            tmpSave.insert(real + 0x00*3 + 3, (curr >= cmax || curr < cmin) ? "NG" : "OK");
+            tmpSave.insert(real + 0x01*3 + 2, pwrs);
+            tmpSave.insert(real + 0x01*3 + 3, (pwrs >= pmax || pwrs < pmin) ? "NG" : "OK");
+            tmpSave.insert(real + 0x02*3 + 2, volt);
+            tmpSave.insert(real + 0x02*3 + 3, (volt >= vmax || volt < vmin) ? "NG" : "OK");
+            tmpSave.insert(real + 0x03*3 + 2, itemturn);
+            tmpSave.insert(real + 0x03*3 + 3, (itemturn != turn) ? "NG" : "OK");
+        }
     }
 }
 

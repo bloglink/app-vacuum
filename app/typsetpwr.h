@@ -18,11 +18,12 @@
 #include <QDoubleSpinBox>
 
 #include "main.h"
+#include "appbackup.h"
 #include "boxqmodel.h"
 #include "boxdouble.h"
 #include "boxqitems.h"
 
-#define PWR_SIZE 5
+#define PWR_SIZE 6
 
 #define CHECKPWR 0x00  // 电参测试
 #define CMAXPWR1 0x01  // 电流上限
@@ -53,7 +54,7 @@ private slots:
     void initSettings();
     void saveSettings();
     void confSettings();
-    void autoChange();
+    void autoChange(QModelIndex index);
     void autoInput();
     void change();
     void recvShowEvent();

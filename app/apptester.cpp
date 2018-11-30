@@ -461,6 +461,9 @@ void AppTester::initSettings()
             if (str.toInt() == 0x06) {
                 initSetIMP();
             }
+            if (str.toInt() == 0x07) {
+                initSetPWR();
+            }
             if (str.toInt() == 0x08) {
                 initSetIND();
             }
@@ -502,24 +505,20 @@ void AppTester::initSettings()
     }
 
     if (Qt::Key_1) {
-        int emag = tmpSet.value(back + 0x10 + nSetMAG - 1).toInt();  // 测试反嵌
-        int eimp = tmpSet.value(back + 0x10 + nSetIMP - 1).toInt();  // 测试匝间
-        int hall = tmpSet.value(back + 0x10 + nSetHAL - 1).toInt();  // 测试霍尔
-        int bemf = tmpSet.value(back + 0x10 + nSetEMF - 1).toInt();  // 测试反电动势
-        btnTest->setVisible((eimp != 0) && (hall != 0) ? false : true);
+        btnTest->setVisible((mode == 4) ? false : true);
         QTmpMap tmpShow;
-        tmpShow.insert(0x09, ((emag != 0) || (hall == 0 && eimp != 0)) ? 1 : 0);
-        tmpShow.insert(0x0A, ((emag != 0) || (hall == 0 && eimp != 0)) ? 1 : 0);
-        tmpShow.insert(0x0B, (eimp != 0) ? 1 : 0);
-        tmpShow.insert(0x0C, (eimp != 0) ? 1 : 0);
-        tmpShow.insert(0x0D, (eimp != 0 && hall == 0) ? 1 : 0);
-        tmpShow.insert(0x0E, (eimp != 0 && hall == 0) ? 1 : 0);
-        tmpShow.insert(0x0F, (bemf != 0 || eimp == 0) ? 1 : 0);
-        tmpShow.insert(0x10, (bemf != 0 || eimp == 0) ? 1 : 0);
-        tmpShow.insert(0x11, (hall != 0) ? 1 : 0);
-        tmpShow.insert(0x12, (hall != 0) ? 1 : 0);
-        tmpShow.insert(0x13, (hall != 0) ? 1 : 0);
-        tmpShow.insert(0x14, (hall != 0) ? 1 : 0);
+        tmpShow.insert(0x09, (mode <= 1) ? 1 : 0);  // 反嵌
+        tmpShow.insert(0x0A, (mode <= 1) ? 1 : 0);  // 反嵌
+        tmpShow.insert(0x0B, (mode <= 1 || mode == 4) ? 1 : 0);  // 匝间
+        tmpShow.insert(0x0C, (mode <= 1 || mode == 4) ? 1 : 0);  // 匝间
+        tmpShow.insert(0x0D, (mode <= 1 || mode == 4) ? 1 : 0);  // 匝间
+        tmpShow.insert(0x0E, (mode <= 1 || mode == 4) ? 1 : 0);  // 匝间
+        tmpShow.insert(0x0F, (mode >= 2 && mode != 4) ? 1 : 0);
+        tmpShow.insert(0x10, (mode >= 2 && mode != 4) ? 1 : 0);
+        tmpShow.insert(0x11, (mode >= 2) ? 1 : 0);
+        tmpShow.insert(0x12, (mode >= 2) ? 1 : 0);
+        tmpShow.insert(0x13, (mode >= 2) ? 1 : 0);
+        tmpShow.insert(0x14, (mode >= 2) ? 1 : 0);
         QList<int> keys = tmpShow.keys();
         for (int i=0; i < keys.size(); i++) {
             int t = keys.at(i);
@@ -804,6 +803,63 @@ void AppTester::initSetIMP()
                 tmpParm.insert(tmpRow, tr("%1% %2%").arg(area1).arg(diff1));
                 insertItem(nSetIMP, 0x00);
             }
+        }
+    }
+}
+
+void AppTester::initSetPWR()
+{
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int nmag = tmpSet.value(back + backNMag).toInt();
+
+    int real = tmpSet.value(3000 + Qt::Key_7).toInt();  // 霍尔结果地址
+    int conf = tmpSet.value(4000 + Qt::Key_7).toInt();  // 霍尔配置地址
+    QStringList items;
+    items << tr("电流") << tr("功率") << tr("转速") << tr("转向");
+    QStringList units;
+    units << "A" << "W" << "rpm" << "";
+    for (int i=0; i < PWR_SIZE; i++) {
+        double test = tmpSet.value(conf + CACHEPWR + CACHEPWR*CHECKPWR + i).toDouble();
+        double imax = tmpSet.value(conf + CACHEPWR + CACHEPWR*CMAXPWR1 + i).toDouble();
+        double imin = tmpSet.value(conf + CACHEPWR + CACHEPWR*CMINPWR1 + i).toDouble();
+        double pmax = tmpSet.value(conf + CACHEPWR + CACHEPWR*PMAXPWR1 + i).toDouble();
+        double pmin = tmpSet.value(conf + CACHEPWR + CACHEPWR*PMINPWR1 + i).toDouble();
+        double rmax = tmpSet.value(conf + CACHEPWR + CACHEPWR*VMAXPWR1 + i).toDouble();
+        double rmin = tmpSet.value(conf + CACHEPWR + CACHEPWR*VMINPWR1 + i).toDouble();
+        double tmax = tmpSet.value(conf + CACHEPWR + CACHEPWR*TURNPWR1 + i).toDouble();
+
+        if (test != 0 && imax != 0 && nmag == 0) {
+            QString item = tr("电参%1").arg(i+1) + tr("电流");
+            QString parm = tr("%1-%2A").arg(imin).arg(imax);
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetPWR + 100 * i, 0x00);
+            tmpSave.insert(real + i*0x10 + 0x00*3 + 0, ((i==0) ? tr("低速") : tr("高速")));
+            tmpSave.insert(real + i*0x10 + 0x00*3 + 1, parm);
+        }
+        if (test != 0 && pmax != 0 && nmag == 0) {
+            QString item = tr("电参%1").arg(i+1) +  tr("功率");
+            QString parm = tr("%1-%2W").arg(pmin).arg(pmax);
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetPWR + 100 * i, 0x01);
+            tmpSave.insert(real + i*0x10 + 0x01*3 + 1, parm);
+        }
+        if (test != 0 && rmax != 0 && nmag == 0) {
+            QString item = tr("电参%1").arg(i+1) +  tr("容压");
+            QString parm = tr("%1-%2rpm").arg(rmin).arg(rmax);
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetPWR + 100 * i, 0x02);
+            tmpSave.insert(real + i*0x10 + 0x02*3 + 1, parm);
+        }
+        if (test != 0 && tmax != 0) {
+            QString item = tr("电参%1").arg(i+1) +  tr("转向");
+            QString parm = (tmax == 1) ? tr("CCW") : tr("CW");
+            tmpItem.insert(tmpRow, item);
+            tmpParm.insert(tmpRow, parm);
+            insertItem(nSetPWR + 100 * i, 0x03);
+            tmpSave.insert(real + i*0x10 + 0x03*3 + 1, parm);
         }
     }
 }
@@ -1404,7 +1460,6 @@ void AppTester::recvNewMsg(QTmpMap msg)
         }
     }
     if (item <= 0x10) {
-        qDebug() << item << numb;
         for (int i=0; i < tmpView.size(); i++) {
             QTmpMap tmp = tmpView.at(i);
             int pn = tmp.value(Qt::Key_1).toInt();

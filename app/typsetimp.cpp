@@ -209,7 +209,7 @@ void TypSetImp::initItemDelegate()
 }
 
 void TypSetImp::initSettings()
-{
+{  // grnd 0:常规模式;1:放电模式;2:设置档位
     int setuser = tmpSet.value(DataUser).toInt();
     bool issupper = (tmpSet.value(setuser).toString() == "supper") ? true : false;
     int addr = tmpSet.value(4000 + Qt::Key_6).toInt();
@@ -300,6 +300,7 @@ void TypSetImp::saveSettings()
     tmpMsg.insert(Qt::Key_1, "aip_config");
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
+    buftmp.clear();
 }
 
 void TypSetImp::confSettings()
@@ -375,7 +376,7 @@ void TypSetImp::confSettings()
 }
 
 void TypSetImp::lineUpdate()
-{
+{  // 更新区间
     change();
     BoxQLabel *w = qobject_cast<BoxQLabel*>(sender());
     w->setText(QString::number(w->getFrom()), 3);
@@ -461,6 +462,7 @@ void TypSetImp::change()
 
 void TypSetImp::sample()
 {  // 采集标准波形,命令为6041+dat1+dat2,dat1为工位0x13/0x14,dat2为是否真空
+    saveSettings();
     waveCopys.clear();
     wvdata.clear();
     btns.value("btnresult")->setText(tr("完成采集"));
