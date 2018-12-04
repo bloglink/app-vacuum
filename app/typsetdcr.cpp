@@ -55,7 +55,7 @@ void TypSetDcr::initViewBar()
     view->horizontalHeader()->setSectionResizeMode(CHECKDCR, QHeaderView::Fixed);
     view->setColumnWidth(CHECKDCR, 58);
     view->setFixedHeight(360);
-    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
+    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange(QModelIndex)));
     layout->addWidget(view);
 }
 
@@ -153,6 +153,9 @@ void TypSetDcr::initItemDelegate()
 
 void TypSetDcr::initSettings()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+
     int addr = tmpSet.value((4000 + Qt::Key_1)).toInt();
     inputs.value("time")->setValue(tmpSet.value(addr + 0).toDouble());
     inputs.value("mode")->setValue(tmpSet.value(addr + 1).toDouble());
@@ -189,6 +192,16 @@ void TypSetDcr::initSettings()
             view->setColumnHidden(COMPDCR2, role.toInt() >= 2 ? true : false);
         }
     }
+    if (test == 1) {
+        for (int i=0; i < mView->rowCount(); i++) {
+            QString str = QString::number(tmpSet.value(20000 + i).toDouble());
+            mView->setData(mView->index(i, COMPDCR1), str, Qt::DisplayRole);
+        }
+        for (int i=0; i < mView->rowCount(); i++) {
+            QString str = QString::number(tmpSet.value(20000 + i + CACHEDCR).toDouble());
+            mView->setData(mView->index(i, COMPDCR2), str, Qt::DisplayRole);
+        }
+    }
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -223,11 +236,27 @@ void TypSetDcr::saveSettings()
             tmpMsg.insert(addr + CACHEDCR*t + i, str);
         }
     }
-
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
     tmpMsg.insert(Qt::Key_1, "aip_config");
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
+
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    if (test == 1) {
+        for (int i=0; i < mView->rowCount(); i++) {
+            QString str = QString::number(mView->index(i, COMPDCR1).data().toDouble());
+            tmpMsg.insert(20000 + i, str);
+        }
+        for (int i=0; i < mView->rowCount(); i++) {
+            QString str = QString::number(mView->index(i, COMPDCR2).data().toDouble());
+            tmpMsg.insert(20000 + i + CACHEDCR, str);
+        }
+        tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+        tmpMsg.insert(Qt::Key_1, "aip_system");
+        emit sendAppMsg(tmpMsg);
+        tmpMsg.clear();
+    }
 }
 
 void TypSetDcr::confSettings()
@@ -270,27 +299,14 @@ void TypSetDcr::confSettings()
     tmpMap.clear();
 }
 
-void TypSetDcr::autoChange()
+void TypSetDcr::autoChange(QModelIndex index)
 {
     change();
-    if (isInit) {
-        int r = view->currentIndex().row();
-        int c = view->currentIndex().column();
-        int i = 0;
-        switch (c) {
-        case WIREDCR1:
-            i = wires.indexOf(view->currentIndex().data().toString());
-            i = (i + 1) % wires.size();
-            mView->setData(mView->index(r, c), wires.at(i), Qt::DisplayRole);
-            break;
-        case UNITDCR1:
-            i = units.indexOf(view->currentIndex().data().toString());
-            i = (i + 1) % units.size();
-            mView->setData(mView->index(r, c), units.at(i), Qt::DisplayRole);
-            break;
-        default:
-            break;
-        }
+    int c = index.column();
+    if (isInit && (c == WIREDCR1 || c == UNITDCR1)) {
+        QStringList buff = (c == WIREDCR1) ? wires : units;
+        int t = (buff.indexOf(index.data().toString()) + 1) % buff.size();
+        mView->setData(index, buff.at(t), Qt::DisplayRole);
     }
 }
 

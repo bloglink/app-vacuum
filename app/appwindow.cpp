@@ -1805,6 +1805,9 @@ void AppWindow::recvUdpMsg(QByteArray msg)
     case 6001:  // 自检信息
         recvStaMsg(dat);
         break;
+    case 6003:
+        recvErrMsg(dat);
+        break;
     case 6005:  // 上传测试界面显示信息
         recvNewMsg(dat);
         break;
@@ -1812,6 +1815,8 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         testShift = Qt::Key_Away;
         if (tempShift == Qt::Key_Away)
             taskCheckStop();
+        if (currItem == nSetLOD || currItem == nSetNLD)
+            calcLOAD(strLoad, 1);
         break;
     case 6015:  // 空载/负载启动完成
         break;
@@ -1819,13 +1824,13 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         if (currItem == 0x0B) //  霍尔
             calcHALL(dat);
         if (currItem == 0x0C) // 负载
-            calcLOAD(dat);
+            calcLOAD(dat, 0);
         if (currItem == 0x0D)
-            calcLOAD(dat);
+            calcLOAD(dat, 0);
         if (currItem == 0x0E)  // 反电动势
             calcBEMF(dat);
         if (currItem == 0x0F)
-            calcLOAD(dat);
+            calcLOAD(dat, 0);
         break;
     case 6021:  // 空载/负载/反电势波形
         tmpMsg.insert(Qt::Key_0, Qt::Key_News);
@@ -1932,7 +1937,7 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         mTurn = dat;
         break;
     case 6089:
-//        recvPwrMsg(dat);
+        //        recvPwrMsg(dat);
         break;
     default:
         break;
@@ -2080,6 +2085,18 @@ void AppWindow::recvStaMsg(QString msg)
     }
 }
 
+void AppWindow::recvErrMsg(QString msg)
+{
+    if (msg.isEmpty())
+        return;
+    tmpMsg.insert(Qt::Key_0, Qt::Key_Word);
+    tmpMsg.insert(Qt::Key_1, msg);
+    emit sendAppMsg(tmpMsg);
+    tmpMsg.clear();
+    warnningString(msg);
+    taskCheckStop();
+}
+
 void AppWindow::recvPwrMsg(QString msg)
 {
     QStringList strs = msg.split(" ");
@@ -2156,10 +2173,10 @@ void AppWindow::calcHALL(QString msg)
         for (int i=0; i < 3; i++) {
             int tst = tmpSet.value(hall + CACHEHAL + i).toInt();  // 是否显示
             if (tst != 0) {
-                hhh << qMax(0.0, (tmp2.at(100 + i*20).toDouble()*15.28/4095) * kh - bh);
-                lll << qMax(0.0, (tmp2.at(101 + i*20).toDouble()*15.28/4095) * kl - bl);
-                ddd << qMax(0.0, (tmp2.at(21 + i*4).toDouble()/1000) * kd - bd);
-                fff << qMax(0.0, (tmp2.at(20 + i*4).toDouble()/1000) * kf - bf);
+                hhh << qMax(0.0, (tmp2.at(100 + i*20).toDouble()/1000) * kh - bh);
+                lll << qMax(0.0, (tmp2.at(101 + i*20).toDouble()/1000) * kl - bl);
+                ddd << qMax(0.0, (tmp2.at(21 + i*4).toDouble()) * kd - bd);
+                fff << qMax(0.0, (tmp2.at(20 + i*4).toDouble()) * kf - bf);
             }
         }
         QStringList units;
@@ -2176,7 +2193,7 @@ void AppWindow::calcHALL(QString msg)
                 tmp = (item == 3) ? fff : tmp;
                 for (int numb = 0; numb < tmp.size(); numb++) {
                     reals << QString::number(tmp.at(numb), 'f', 2) + units.at(item);
-                    int r = (tmp.at(numb) >= vmax || tmp.at(numb) <= vmin) ? DATANG : DATAOK;
+                    int r = (tmp.at(numb) >= vmax || tmp.at(numb) < vmin) ? DATANG : DATAOK;
                     real = (r == DATANG) ? DATANG : real;
                     tmpSave.insert(addr + item*0x10 + numb*3 + 1, tmp.at(numb));
                     tmpSave.insert(addr + item*0x10 + numb*3 + 2, (r == DATAOK) ? "OK" : "NG");
@@ -2197,8 +2214,9 @@ void AppWindow::calcHALL(QString msg)
     }
 }
 
-void AppWindow::calcLOAD(QString msg)
+void AppWindow::calcLOAD(QString msg, int ext)
 {
+    strLoad = msg;
     int item = Qt::Key_C;
     item = (currItem == 0x0D) ? Qt::Key_D : item;
     item = (currItem == 0x0F) ? Qt::Key_F : item;
@@ -2228,13 +2246,12 @@ void AppWindow::calcLOAD(QString msg)
         kv = (kv == 0) ? 1 : kv;
         kp = (kp == 0) ? 1 : kp;
         ki = (ki == 0) ? 1 : ki;
-        double crr = (tmp2.at(20 + 0x00).toDouble()*1000) * kc + bc;  // 电流换算为mA
-        double vlt = (tmp2.at(20 + 0x01).toDouble()*500) * kv + bv;  // 电压换算为V
+        double crr = (tmp2.at(20 + 0x00).toDouble()*1000/100) * kc + bc;  // 电流换算为mA
+        double vlt = (tmp2.at(20 + 0x01).toDouble()) * kv + bv;  // 电压换算为V
         double pwr = (crr*vlt/1000) * kp + bp;  // 功率
         double icc = (tmp2.at(20 + 0x04).toDouble()) * ki + bi;  // icc电流
-        double rpm = tmp2.at(20 + 0x03).toDouble()*60/1000/numb;  // 转速
+        double rpm = tmp2.at(20 + 0x03).toDouble()*60/numb;  // 转速
         double ccw = tmp2.at(20 + 0x06).toDouble();  // 转向
-        double ext = tmp2.at(20 + 0x09).toDouble();
         if (!mTurn.isEmpty()) {
             QStringList tt = mTurn.split(" ");
             if (tt.size() >= 2) {
@@ -2294,7 +2311,7 @@ void AppWindow::calcLOAD(QString msg)
                 tmpMsg.insert(Qt::Key_3, real);
                 tmpSave.insert(addr + i*0x10 + 1, reals.at(i));
                 if (ext != 0) {
-                    rrrr = (reals.at(i) >= imax || reals.at(i) <= imin) ? DATANG : DATAOK;
+                    rrrr = (reals.at(i) >= imax || reals.at(i) < imin) ? DATANG : DATAOK;
                     rrrr = (i == 4) ? ((reals.at(i) != imax) ? DATANG : DATAOK) : rrrr;
                     isok = (rrrr == DATAOK) ? isok : DATANG;
                     tmpMsg.insert(Qt::Key_4, (rrrr == DATAOK) ? "OK" : "NG");

@@ -170,10 +170,11 @@ private slots:
     void sendUdpStr(QByteArray msg);
     void recvNewMsg(QString msg);
     void recvStaMsg(QString msg);
+    void recvErrMsg(QString msg);
     void recvPwrMsg(QString msg);
     void wait(int ms);
     void calcHALL(QString msg);
-    void calcLOAD(QString msg);
+    void calcLOAD(QString msg, int ext);
     void calcBEMF(QString msg);
     double calcNoun(QList<double> tmp);
 private:
@@ -238,6 +239,7 @@ private:
     bool isSetnvt;
     bool isWarn;
     QVariantMap bufmap;
+    QString strLoad;
 };
 
 #endif // APPWINDOW_H

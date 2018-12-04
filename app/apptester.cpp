@@ -743,6 +743,8 @@ void AppTester::initSetACW2()
 
 void AppTester::initSetIMP()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int grnd = tmpSet.value(back + backGrnd).toInt();
     int save = tmpSet.value(3000 + Qt::Key_6).toInt();  // 匝间结果地址
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合配置地址
     QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
@@ -757,7 +759,7 @@ void AppTester::initSetIMP()
         double diff1 = tmpSet.value(addr + CACHEIMP + CACHEIMP*DIFFIMP1 + i).toDouble();
         double sflut = tmpSet.value(addr + CACHEIMP + CACHEIMP*FLUTIMP1 + i).toDouble();
         double phase = tmpSet.value(addr + CACHEIMP + CACHEIMP*PHSEIMP1 + i).toDouble();
-        check = (isTest) ? check : 0;
+        check = (isTest && (grnd != 1)) ? check : 0;
         QString str = (check != 0) ? strSW : strSG;
         QString item = tr("匝间%1-%2").arg(portf).arg(portt);
         impText.at(i*5 + 0)->setText(str.arg(tr("项目: 匝间%1-%2").arg(portf).arg(portt)));
@@ -790,7 +792,7 @@ void AppTester::initSetIMP()
             if (phase > 0)
                 tmpSave.insert(save + i*0x10 + 0x0A, tr("%1").arg(phase));  // 项目
         }
-        if (check != 0) {
+        if (check != 0 || grnd == 1) {
             bool isShow = true;
             for (int i=0; i < tmpView.size(); i++) {
                 QTmpMap tmp = tmpView.at(i);
@@ -799,8 +801,13 @@ void AppTester::initSetIMP()
                 }
             }
             if (isShow) {
-                tmpItem.insert(tmpRow, tr("匝间"));
-                tmpParm.insert(tmpRow, tr("%1% %2%").arg(area1).arg(diff1));
+                if (grnd == 1) {
+                    tmpItem.insert(tmpRow, tr("单点破损"));
+                    tmpParm.insert(tmpRow, tr("0~5mA"));
+                } else {
+                    tmpItem.insert(tmpRow, tr("匝间"));
+                    tmpParm.insert(tmpRow, tr("%1% %2%").arg(area1).arg(diff1));
+                }
                 insertItem(nSetIMP, 0x00);
             }
         }
@@ -1237,10 +1244,10 @@ void AppTester::updateTest()
     btnTest->setEnabled(true);
     typeText->setEnabled(true);
 
-    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
-    int grnd = tmpSet.value(back + backGrnd).toInt();
-    if (grnd == 1)
-        impWave.at(0)->clicked();
+    //    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    //    int grnd = tmpSet.value(back + backGrnd).toInt();
+    //    if (grnd == 1)
+    //        impWave.at(0)->clicked();
 }
 
 void AppTester::recvErrMsg(QTmpMap msg)
@@ -1283,6 +1290,7 @@ void AppTester::recvLedMsg(QTmpMap msg)
         btnHome->setEnabled(false);
         btnConf->setEnabled(false);
         btnTest->setEnabled(false);
+        warnText->clear();
     }
     if (c == DATAOK || c == DATANG || c == DATADC) {
         QString str = strLG.arg("OK");
@@ -1374,6 +1382,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
     tmpMap.insert("frame", 1);
     tmpMap.insert("shade", 1);
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int grnd = tmpSet.value(back + backGrnd).toInt();
     int nmag = tmpSet.value(back + backNMag).toInt();
     int item = msg.value(Qt::Key_1).toInt();  // 测试项目
     int numb = msg.value(Qt::Key_2).toInt();  // 单项数量
@@ -1406,7 +1415,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
             tmpStr = msg.value(Qt::Key_5).toString();
         }
     }
-    if (item == nSetIMP && numb < 6) {  // 更新匝间结果
+    if (item == nSetIMP && numb < 6 && grnd != 1) {  // 更新匝间结果
         if (!msg.value(Qt::Key_3).isNull()) {
             QString str = msg.value(Qt::Key_3).toString();
             QStringList imp = str.split(",");
@@ -1511,12 +1520,12 @@ void AppTester::recvNewMsg(QTmpMap msg)
             labels.value("prod")->setStyleSheet("color:white;background:#121919");
         }
     }
-    if (item == 6042) {  // 手动波形
-        recvManual(msg);
-    }
-    if (item == 6087) {  // 匝间电压
-        strv = msg.value(Qt::Key_5).toString();
-    }
+    //    if (item == 6042) {  // 手动波形
+    //        recvManual(msg);
+    //    }
+    //    if (item == 6087) {  // 匝间电压
+    //        strv = msg.value(Qt::Key_5).toString();
+    //    }
     tmpMap.clear();
 }
 
@@ -1551,7 +1560,7 @@ void AppTester::recvAppMsg(QTmpMap msg)
         }
         break;
     case Qt::Key_Word:
-        //        recvErrMsg(msg);
+        recvErrMsg(msg);
         break;
     default:
         break;

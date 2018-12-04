@@ -26,6 +26,7 @@
 #include <QDoubleSpinBox>
 
 #include "main.h"
+#include "appbackup.h"
 #include "appmaster.h"
 #include "boxqmodel.h"
 #include "boxdouble.h"
@@ -64,7 +65,7 @@ private slots:
     void initSettings();
     void saveSettings();
     void confSettings();
-    void autoChange();
+    void autoChange(QModelIndex index);
     void autoInput();
     void autoCal();
     void change();
