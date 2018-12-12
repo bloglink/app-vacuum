@@ -499,10 +499,10 @@ int AppWindow::initThread()
 
     QList<pClass> testBuf;
     testBuf << &AppWindow::testClearData << &AppWindow::testToolIocan
-            << &AppWindow::testToolInvrt
-            << &AppWindow::testToolServo << &AppWindow::testStartSend
-            << &AppWindow::testStartTest << &AppWindow::testStopServo
-            << &AppWindow::testStopInvrt << &AppWindow::testStopIocan;
+            << &AppWindow::testToolServo << &AppWindow::testToolInvrt
+            << &AppWindow::testStartSend
+            << &AppWindow::testStartTest << &AppWindow::testStopInvrt
+            << &AppWindow::testStopServo << &AppWindow::testStopIocan;
 
     testMap.clear();
     for (int i=0; i < testBuf.size(); i++) {
@@ -662,7 +662,7 @@ int AppWindow::taskCheckCode()
             if (timeOut > 300) { // 重复3次后未检到RFID,显示警告,下发停止
                 timeOut = 0;
                 warnningString(tr("警告:RFID未检到"));
-                currTask = taskMap.values().indexOf(&AppWindow::taskStartTest) + 1;
+                currTask = taskMap.values().indexOf(&AppWindow::taskStartSave);
                 sendUdpStr(tr("6022 %1").arg(station).toUtf8());
                 taskShift = Qt::Key_Stop;
             }
@@ -770,11 +770,13 @@ int AppWindow::taskStartSave()
         if (mode == 3) {  // 产线模式,控石产线专用
             quint32 cmd = 0;
             cmd += (isSetnvt) ? YY15 : 0x00;
-            cmd |= (isok == DATAOK && !barcode.isEmpty() && !isSetnvt) ? YY0E : YY10;  // 总合格/总不合格
             cmd |= barcode.isEmpty() ? YY09 : 0x00;  // RFID未读到
-            cmd |= (tmpItem.value(nSetNLD) == DATAOK) ? 0x00 : YY11;
-            cmd |= (tmpItem.value(nSetHAL) == DATAOK) ? 0x00 : YY12;
-            cmd |= (tmpItem.value(nSetLOD) == DATAOK) ? 0x00 : YY13;
+            if (!isSetnvt && !barcode.isEmpty()) {
+                cmd |= (isok == DATAOK && !barcode.isEmpty() && !isSetnvt) ? YY0E : YY10;  // 总合格/总不合格
+                cmd |= (tmpItem.value(nSetNLD) == DATAOK) ? 0x00 : YY11;
+                cmd |= (tmpItem.value(nSetHAL) == DATAOK) ? 0x00 : YY12;
+                cmd |= (tmpItem.value(nSetLOD) == DATAOK) ? 0x00 : YY13;
+            }
             sendUdpStr(tr("6077 %1").arg(cmd).toUtf8());
         }
         if (mode >= 2)  // 无刷模式
@@ -1891,9 +1893,15 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         tmpMsg.clear();
         timeImp++;
         break;
-    case 6053:  // A8询问是否真空模式
-        sendUdpStr("6052 1");
+    case 6053: {  // A8询问是否真空模式
+        int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
+        QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
+        int imp = tmpSet.value(4000 + Qt::Key_6).toInt();
+        int vac = tmpSet.value(imp + 0x00).toInt();
+        vac = (testItems.contains(QString::number(0x06))) ? vac : 2;
+        sendUdpStr(tr("6052 %1").arg(vac).toUtf8());
         break;
+    }
     case 6060:  // 真空上传启动信号
         if (recvIoCtrl(Qt::Key_Play, dat.toInt()) == Qt::Key_Away) {
             taskShift = Qt::Key_Play;

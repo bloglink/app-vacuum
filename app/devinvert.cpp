@@ -48,8 +48,8 @@ void DevInvert::setFreq()
     QString msg;
     msg.append("02100001000204");
     int turn = tmpMap.value("turn").toInt();
-    msg.append((turn == 0) ? "0001" : "0002");
     int freq = tmpMap.value("freq").toInt();
+    msg.append((freq == 0) ? "0000 " : ((turn == 0) ? "0001" : "0002"));
     msg.append(QString("%1").arg(freq*100/256, 2, 16, QChar('0')));
     msg.append(QString("%1").arg(freq*100%256, 2, 16, QChar('0')));
     write(QByteArray::fromHex(msg.toUtf8()));

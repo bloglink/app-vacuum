@@ -219,6 +219,7 @@ void TypSetAcw::confSettings()
                 str = QString::number(freqs.indexOf(mView->index(i, t).data().toString()));
             }
             if (t == 0x09) {
+                str = mView->item(i, t)->text();
                 str = (str == "非真空") ? "0" : "1";
             }
             tmp.append(str);

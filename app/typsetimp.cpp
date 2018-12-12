@@ -329,16 +329,17 @@ void TypSetImp::confSettings()
     if (grnd == 2) {
         for (int i=0; i < mView->rowCount(); i++) {
             int volt = mView->index(i, VOLTIMP1).data().toInt();
-            int gear = 0;
-            gear = (volt >= 1000) ? 1 : gear;
-            gear = (volt >= 2400) ? 2 : gear;
-            gear = (volt >= 4000) ? 3 : gear;
+            int gear = 1;
+            gear = (volt >= 1000) ? 2 : gear;
+            gear = (volt >= 2400) ? 3 : gear;
+            gear = (volt >= 4000) ? 4 : gear;
             tmp.append(QString::number(gear));
         }
         tmpMap.insert("gear", tmp.join(","));
     }
+    tmp.clear();
     for (int t=0; t < names.size(); t++) {
-        for (int i=0; i < mView->rowCount(); i++) {
+        for (int i=0; i < 8; i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());
             if (t == CHECKIMP) {
                 int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();

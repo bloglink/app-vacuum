@@ -285,43 +285,33 @@ void TypConfig::initModelBar()
 
 void TypConfig::initItemsBar()
 {
-    QMap<int, QVariantMap> tmpbuf;
-    int rows = 0;
-    int less = 0;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x10;
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
-    QStringList testItem = tmpSet.value(conf + ADDRITEM).toString().split(",");
-    QStringList tmpPupop = tmpSet.value(conf + 0x05).toString().split(",");
+    QStringList userItems;
     for (int i=0; i < itemNams.size(); i++) {
-        QVariantMap tmp = tmpbuf.value(i);
-        int show = tmpSet.value(back + i).toInt();
-        tmp.insert("show", show);
-        int numb = testItem.indexOf(QString::number(i+1));
-        int test = (numb >= 0) ? 1 : 0;
-        tmp.insert("test", test);
-        less = (show != 0 && numb == -1) ? less + 1 : less;
-        numb = (show != 0 && numb == -1) ? less + testItem.size() - 1 : numb;
-        tmp.insert("numb", numb);
-        int warn = tmpPupop.indexOf(QString::number(i+1));
-        warn = (warn < 0) ? 0 : 1;
-        tmp.insert("warn", warn);
-        tmpbuf.insert(i, tmp);
-        rows = (show != 0) ? rows + 1 : rows;
+        int stat = tmpSet.value(back + i).toInt();
+        if (stat != 0)
+            userItems.append(QString::number(i + 1));
     }
-    mView->setRowCount(rows);
-    for (int i=0; i < itemNams.size(); i++) {
-        QVariantMap tmp = tmpbuf.value(i);
-        int show = tmp.value("show").toInt();
-        int numb = tmp.value("numb").toInt();
-        if (show != 0) {
-            Qt::CheckState test = (tmp.value("test").toInt() > 0) ? Qt::Checked : Qt::Unchecked;
-            Qt::CheckState warn = (tmp.value("warn").toInt() > 0) ? Qt::Checked : Qt::Unchecked;
-            mView->setData(mView->index(numb, 0), test, Qt::CheckStateRole);
-            mView->setData(mView->index(numb, 1), itemNams.at(i), Qt::DisplayRole);
-            mView->setData(mView->index(numb, 2), warn, Qt::CheckStateRole);
+    QStringList testItem = tmpSet.value(conf + ADDRITEM).toString().split(",");  // 测试项目
+    QStringList tmpPupop = tmpSet.value(conf + 0x05).toString().split(",");
+    for (int i=0; i < testItem.size(); i++) {
+        int t = userItems.indexOf(testItem.at(i));
+        if (t >= 0) {
+            userItems.removeAt(t);
+            userItems.insert(i, testItem.at(i));
         }
     }
-    item->setFixedHeight(rows * 40 + 20);
+    mView->setRowCount(userItems.size());
+    for (int i=0; i < userItems.size(); i++) {
+        int t = userItems.at(i).toInt();
+        Qt::CheckState test = (i < testItem.size()) ? Qt::Checked : Qt::Unchecked;
+        Qt::CheckState warn = (tmpPupop.contains(QString::number(t))) ? Qt::Checked : Qt::Unchecked;
+        mView->setData(mView->index(i, 0), test, Qt::CheckStateRole);
+        mView->setData(mView->index(i, 1), itemNams.at(t-1), Qt::DisplayRole);
+        mView->setData(mView->index(i, 2), warn, Qt::CheckStateRole);
+    }
+    item->setFixedHeight(userItems.size() * 40 + 20);
     int syst = tmpSet.value(2000 + Qt::Key_1).toInt();
     int warn = tmpSet.value(syst + SystItem).toInt();
     if (warn == 0)
