@@ -335,7 +335,7 @@ void TypConfig::initOtherBar()
 
     testAutoBox->setChecked((tmpSet.value(conf + ADDRAUTO).toInt() == 0) ? false : true);
     testDrivBox->setChecked((tmpSet.value(conf + ADDRDRIV).toInt() == 0) ? false : true);
-    testAutoBox->setVisible((mode == 1 && test >= 1) ? true : false);
+    testAutoBox->setVisible((mode == 1 && (test & 0x01)) ? true : false);
     testDrivBox->setVisible((mode >= 2) ? true : false);
     testWarnBox->setVisible((mode == 1) ? true : false);
 }

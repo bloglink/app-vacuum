@@ -362,7 +362,7 @@ void TypSetImp::confSettings()
             tmp.append(str);
         }
         QString map = tmp.join(",");
-        map = (t == TIMEIMP1 && mode == 1 && test >= 1) ? "1,1,1,1,1,1,1,1" : map;
+        map = (t == TIMEIMP1 && mode == 1 && (test & 0x01)) ? "1,1,1,1,1,1,1,1" : map;
         tmpMap.insert(names.at(t), map);
         tmp.clear();
     }

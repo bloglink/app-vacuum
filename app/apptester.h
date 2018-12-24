@@ -72,6 +72,7 @@ private slots:
     void initSetINR();
     void initSetACW();
     void initSetACW2();
+    void initSetDCW();
     void initSetIMP();
     void initSetPWR();
     void initSetIND();

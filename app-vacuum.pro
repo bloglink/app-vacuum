@@ -52,9 +52,6 @@ HEADERS += \
     app/typsethal.h \
     app/typsetbmf.h \
     app/appioctrl.h \
-    app/devplctrl.h \
-    app/devinvert.h \
-    app/devdriver.h \
     app/apppermit.h \
     app/typsetind.h \
     app/apprepair.h \
@@ -94,9 +91,6 @@ SOURCES += \
     app/typsethal.cpp \
     app/typsetbmf.cpp \
     app/appioctrl.cpp \
-    app/devplctrl.cpp \
-    app/devinvert.cpp \
-    app/devdriver.cpp \
     app/apppermit.cpp \
     app/typsetind.cpp \
     app/apprepair.cpp \

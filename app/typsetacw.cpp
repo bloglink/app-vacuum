@@ -112,6 +112,7 @@ void TypSetAcw::initItemDelegate()
 void TypSetAcw::initSettings()
 {
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
+    addr = (this->objectName() == "setdcw") ? tmpSet.value(4000 + Qt::Key_5).toInt() : addr;
     addr += CACHEACW;
     for (int t=0; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
@@ -165,6 +166,14 @@ void TypSetAcw::initSettings()
     }
 
     view->setItemDelegateForColumn(VOLTACW1, volt);
+    view->setColumnHidden(7, (this->objectName() == "setdcw") ? true : false);
+    view->setColumnHidden(8, (this->objectName() == "setdcw") ? true : false);
+    BoxDouble *curr = new BoxDouble;
+    curr->setMaxinum((this->objectName() == "setdcw") ? 10 : 20);
+    curr->setDecimals(2);
+    view->setItemDelegateForColumn(UPPERACW, curr);
+    view->setItemDelegateForColumn(LOWERACW, curr);
+
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -172,6 +181,7 @@ void TypSetAcw::saveSettings()
 {
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
+    addr = (this->objectName() == "setdcw") ? tmpSet.value(4000 + Qt::Key_5).toInt() : addr;
     addr += CACHEACW;
     for (int t=0; t < mView->columnCount(); t++) {
         for (int i=0; i < mView->rowCount(); i++) {
@@ -227,7 +237,9 @@ void TypSetAcw::confSettings()
         tmpMap.insert(names.at(t), tmp.join(","));
         tmp.clear();
     }
-    config.insert("ACW", tmpMap);
+    tmpMap.insert("comp", "0,0,0,0,0,0");
+    tmpMap.insert("comp_enable", "0,0,0,0,0,0");
+    config.insert(this->objectName() == "setdcw" ? "DCW" : "ACW", tmpMap);
     config.insert("enum", Qt::Key_Save);
     emit sendAppMap(config);
     config.clear();
@@ -296,6 +308,8 @@ void TypSetAcw::recvShowEvent()
 {
     tmpMap.insert("enum", Qt::Key_View);
     tmpMap.insert("text", QString("6004 ACW"));
+    if (this->objectName() == "setdcw")
+        tmpMap.insert("text", QString("6004 DCW"));
     emit sendAppMap(tmpMap);
     tmpMap.clear();
     initSettings();

@@ -11,6 +11,7 @@
 
 #include <QLayout>
 #include <QThread>
+#include <QLibrary>
 #include <QDateTime>
 #include <QMainWindow>
 #include <QInputDialog>
@@ -18,6 +19,9 @@
 #include <QProgressDialog>
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
+#include <QLocalServer>
+#include <QLocalSocket>
+#include <QDataStream>
 
 #include "tcpsocket.h"
 #include "udpsocket.h"
@@ -50,10 +54,6 @@
 #include "apptester.h"
 
 #include "boxdialog.h"
-
-#include "devplctrl.h"
-#include "devinvert.h"
-#include "devdriver.h"
 
 #include "main.h"
 #ifdef __arm__
@@ -95,6 +95,7 @@ private slots:
     int initSetMag();
     int initSetInr();
     int initSetAcw();
+    int initSetDcw();
     int initSetImp();
     int initSetPwr();
     int initSetInd();
@@ -124,8 +125,13 @@ private slots:
     int taskStartView();
     int taskToolIobrd();
     int taskStartWait();
+    int taskOpenServo();
     int taskStartTest();
     int taskClearCtrl();
+    int taskStopMotor();
+    int taskStopServo();
+    int taskQuitServo();
+    int taskClearWait();
     int taskClearWarn();
     int taskStartSave();
     int taskStartBeep();
@@ -146,6 +152,7 @@ private slots:
     int getNextItem();
     int taskConfig();
     int recvIoCtrl(int key, int work);
+    QVariantMap taskSerial(QString taskname, QString taskwork, QVariant taskdata);
     void showTester();
     void showBarCode();
     void showBoxPop(QString text, int t);
@@ -177,6 +184,7 @@ private slots:
     void calcLOAD(QString msg, int ext);
     void calcBEMF(QString msg);
     double calcNoun(QList<double> tmp);
+    void test();
 private:
     QStackedWidget *stack;
     QVBoxLayout *btnLayout;
@@ -184,35 +192,18 @@ private:
     QList<QPushButton*> buttons;
     BoxDialog *boxbar;
 
-    DevPlctrl mbdktL;
-    DevPlctrl mbdktR;
-    DevDriver servoL;
-    DevDriver servoR;
-    DevInvert invert;
-
     QThread *sql;
 
-    QString verNumb;
-
-    int speed;
-    QList<int> speeds;
     int preindex;
-    int currMode;
     int currTask;
-    int currTest;
     int codeShift;
     int taskShift;
     int testShift;
     int tempShift;
     int prevShift;
     int currItem;
-    int handUdp;
     int isok;
-    qint64 timeUdp;
-    qint64 timeOut;
-    qint64 timeTst;
     qint64 timeRsl;
-    qint64 timeDet;
     qint64 timeMag;
     qint64 timeImp;
     QElapsedTimer t;
@@ -226,20 +217,16 @@ private:
     QString tmpcode;
     QTimer *scanner;
     quint8 station;
-    QVariantMap tmpMap;
-    QTmpMap tstMap;
     QList<QVariantMap> bufwin;
     quint32 ioHex;
-    bool isChange;
-    bool isVacuum;
-    QString mTurn;
     int turnBuff;
     quint16 ioSave;
-    QTimer *loading;
-    bool isSetnvt;
-    bool isWarn;
-    QVariantMap bufmap;
     QString strLoad;
+    QList<int> buffrate;
+    QVariantMap taskparm;
+    QVariantMap testparm;
+    QVariantMap itemparm;
+    QList<double> tempvolt;
 };
 
 #endif // APPWINDOW_H

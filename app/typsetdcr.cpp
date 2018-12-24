@@ -192,7 +192,7 @@ void TypSetDcr::initSettings()
             view->setColumnHidden(COMPDCR2, role.toInt() >= 2 ? true : false);
         }
     }
-    if (test == 1) {
+    if (test & 0x01) {
         for (int i=0; i < mView->rowCount(); i++) {
             QString str = QString::number(tmpSet.value(20000 + i).toDouble());
             mView->setData(mView->index(i, COMPDCR1), str, Qt::DisplayRole);
@@ -243,7 +243,7 @@ void TypSetDcr::saveSettings()
 
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
-    if (test == 1) {
+    if (test & 0x01) {
         for (int i=0; i < mView->rowCount(); i++) {
             QString str = QString::number(mView->index(i, COMPDCR1).data().toDouble());
             tmpMsg.insert(20000 + i, str);

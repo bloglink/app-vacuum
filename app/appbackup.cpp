@@ -50,7 +50,7 @@ void AppBackup::initBoxText()
     names << tr("产品型号") << tr("产品编号") << tr("评审编号") << tr("电感模式")
           << tr("语言支持") << tr("工位设置") << tr("最高电压") << tr("自动测试")
           << tr("测试延时") << tr("目标网络") << tr("匝间模式") << tr("测试模式")
-          << tr("转向模式") << tr("波形比例") << tr("耐压模式") << tr("感应启动");
+          << tr("转向模式") << tr("波形比例") << tr("耐压模式") << tr("特殊配置");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
@@ -156,7 +156,7 @@ void AppBackup::initDevText()
     QStringList names;
     names << tr("一代气缸左") << tr("一代气缸右") << tr("横河电参左") << tr("横河电参右");
     names << tr("松下伺服左") << tr("松下伺服右") << tr("松下PLC左") << tr("松下PLC右");
-    names << tr("蓝仪电源左") << tr("安川变频器") << tr("温度传感器");
+    names << tr("蓝仪电源左") << tr("安川变频器") << tr("温度传感器") << tr("扭矩传感器");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *ll = new QHBoxLayout;
@@ -189,7 +189,8 @@ void AppBackup::initActText()
           << tr("夹紧动作左") << tr("夹紧到位左") << tr("夹紧归位左")
           << tr("夹紧动作右") << tr("夹紧到位右") << tr("夹紧归位右")
           << tr("弹开动作左") << tr("弹开动作右") << tr("启动信号左")
-          << tr("启动信号右") << tr("停止信号左") << tr("停止信号右");
+          << tr("启动信号右") << tr("停止信号左") << tr("停止信号右")
+          << tr("待机时保持") << tr("产品到位左") << tr("产品到位右");
 
     actView = new QTableWidget(this);
     actView->setColumnCount(1);

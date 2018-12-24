@@ -296,17 +296,18 @@ void AppTester::initButtonBar()
 
     btnTest = new QPushButton("开始测试", this);
     blayout->addWidget(btnTest);
-    btnTest->setMinimumSize(97, 72);
+    btnTest->setMinimumSize(97, 56);
     connect(btnTest, SIGNAL(clicked(bool)), this, SLOT(clickTest()));
 
     btnStop = new QPushButton("停止测试", this);
     blayout->addWidget(btnStop);
-    btnStop->setMinimumSize(97, 72);
+    btnStop->setMinimumSize(97, 56);
     connect(btnStop, SIGNAL(clicked(bool)), this, SLOT(clickStop()));
 
     blayout->addStretch();
 
     warnText = new QLabel(this);
+    warnText->setFixedHeight(120);
     blayout->addWidget(warnText);
 
     blayout->addStretch();
@@ -423,8 +424,8 @@ void AppTester::initSettings()
     int work = tmpSet.value(back + backWork).toInt();
     wFrame->setVisible((work == 2) ? true : false);
     workText->setText(strLY.arg((work == 0) ? "右" : "左"));
-    labels.value("stop")->setVisible((mode == 1 && test >= 1) ? true : false);
-    labels.value("prod")->setVisible((mode == 1 && test >= 1) ? true : false);
+    labels.value("stop")->setVisible((mode == 1 && (test & 0x01)) ? true : false);
+    labels.value("prod")->setVisible((mode == 1 && (test & 0x01)) ? true : false);
 
     tmpNG.clear();
     initQuality();
@@ -457,6 +458,9 @@ void AppTester::initSettings()
             }
             if (str.toInt() == 0x04) {
                 initSetACW();
+            }
+            if (str.toInt() == 0x05) {
+                initSetDCW();
             }
             if (str.toInt() == 0x06) {
                 initSetIMP();
@@ -736,6 +740,26 @@ void AppTester::initSetACW2()
         tmpItem.insert(tmpRow, item);
         tmpParm.insert(tmpRow, parm);
         insertItem(0x10, 0x00);
+        tmpSave.insert(save + 0x00, item);  // 项目
+        tmpSave.insert(save + 0x01, parm);  // 参数
+    }
+}
+
+void AppTester::initSetDCW()
+{
+    int save = tmpSet.value(3000 + Qt::Key_5).toInt();  // 直耐结果地址
+    int addr = tmpSet.value(4000 + Qt::Key_5).toInt();  // 直耐配置地址
+    int numb = 4;
+    double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
+    double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
+    double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
+    double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
+    if (1) {
+        QString item = tr("直耐");
+        QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
+        tmpItem.insert(tmpRow, item);
+        tmpParm.insert(tmpRow, parm);
+        insertItem(nSetDCW, 0x00);
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
     }

@@ -93,9 +93,30 @@ void TypSetLod::initViewBar()
     pView->verticalHeader()->setFixedWidth(128);
     connect(pView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
+    QStringList mname;
+    mname << tr("参数");
+    QStringList pwms;
+    pwms << tr("PWM:0; Vsp:1") << tr("PWM电压(V)") << tr("PWM频率(kHz)") << tr("PWM占空比(%)")
+         << tr("采样频率(kHz)") << tr("采样长度");
+    mMode = new BoxQModel(this);
+    mMode->setRowCount(parms.size());
+    mMode->setColumnCount(mname.size());
+    mMode->setVerticalHeaderLabels(pwms);
+    mMode->setHorizontalHeaderLabels(mname);
+    connect(mMode, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(change()));
+
+    mView = new QTableView(this);
+    mView->setModel(mMode);
+    mView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    mView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    mView->horizontalHeader()->setFixedHeight(30);
+    mView->verticalHeader()->setFixedWidth(128);
+    connect(mView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
+
     QHBoxLayout *vlay = new QHBoxLayout;
     vlay->addWidget(vView);
     vlay->addWidget(pView);
+    vlay->addWidget(mView);
     QGroupBox *boxParm = new QGroupBox(this);
     boxParm->setTitle(tr("设置参数"));
     boxParm->setFixedHeight(240);
@@ -192,7 +213,7 @@ void TypSetLod::initItemDelegate()
     pView->setItemDelegateForRow(0, curr);
     pView->setItemDelegateForRow(1, poff);
     pView->setItemDelegateForRow(2, poff);
-//    pView->setItemDelegateForRow(3, toff);
+    //    pView->setItemDelegateForRow(3, toff);
     pView->setItemDelegateForRow(4, new BoxQItems);
     pView->setItemDelegateForRow(5, new BoxQItems);
 }
@@ -232,6 +253,11 @@ void TypSetLod::initSettings()
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
         tMode->setData(tMode->index(0, i), str, Qt::DisplayRole);
     }
+    row++;
+    for (int i=0; i < mMode->rowCount(); i++) {
+        QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
+        mMode->setData(mMode->index(i, 0), str, Qt::DisplayRole);
+    }
     isInit = (this->isHidden()) ? false : true;
 }
 
@@ -269,6 +295,10 @@ void TypSetLod::saveSettings()
     for (int i=0; i < tMode->columnCount(); i++) {
         QString str = tMode->index(0, i).data().toString();
         tmpMsg.insert(addr + CACHELOD*0x03 + i, str);
+    }
+    for (int i=0; i < mMode->rowCount(); i++) {
+        QString str = mMode->index(i, 0).data().toString();
+        tmpMsg.insert(addr + CACHELOD*0x04 + i, str);
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
     tmpMsg.insert(Qt::Key_1, "aip_config");
@@ -313,7 +343,16 @@ void TypSetLod::confSettings()
         tmpStr.append(str);
     }
     tmpMap.insert("sequence", tmpStr.join(","));
+
+    tmpStr.clear();
+    tmpStr << "vsp_pwm" << "pwm_volt" << "pwm_rate" << "pwm_duty" << "sample_freq" << "sample_lenth";
+    for (int i=0; i < mMode->rowCount(); i++) {
+        QString str = mMode->index(i, 0).data().toString();
+        tmpMap.insert(tmpStr.at(i), str);
+    }
     tmpMap.insert("freq_std", 1000);
+    tmpMap.insert("vcc_driver", 0);
+    tmpMap.insert("baudrate", 6);
 
     QString str = QString("LOAD");
     str = (this->objectName() == "setnld") ? QString("NOLOAD") : str;

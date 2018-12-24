@@ -63,6 +63,8 @@ private:
     BoxQModel *vMode;
     QTableView *pView;
     BoxQModel *pMode;
+    QTableView *mView;
+    BoxQModel *mMode;
     QTableView *tView;
     BoxQModel *tMode;
     QStringList drivers;
