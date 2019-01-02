@@ -138,7 +138,7 @@ void AppSignin::initInputBar()
     layout->addStretch();
 
     QStringList tmp;
-    tmp << tr("地址") << tr("端口") << tr("产线") << tr("工位")
+    tmp << tr("编号") << tr("端口") << tr("产线") << tr("工位")
         << tr("备用") << tr("备用") << tr("备用") << tr("备用");
 
     for (int i=0; i < tmp.size()/2; i++) {

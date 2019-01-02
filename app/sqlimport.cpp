@@ -67,8 +67,11 @@ void SqlImport::saveRecord(QTmpMap msg)
 
     int conf = tmpSet.value(2000 + Qt::Key_3).toInt();
     int mode = tmpSet.value(conf + 0x00).toInt();
-    if (mode >= 3) {
+    if (mode == 3) {
         saveUpload(tmpMap);
+    }
+    if (mode == 4) {
+        saveOracle(tmpMap);
     }
     tmpMap.clear();
 }
@@ -126,6 +129,149 @@ void SqlImport::saveUpload(QTmpMap msg)
         }
     }
     query.clear();
+}
+
+void SqlImport::saveOracle(QTmpMap msg)
+{
+    int addr = tmpSet.value(2000 + Qt::Key_4).toInt();  // 登录信息地址
+    QString code = tmpSet.value(addr + 0).toString();  // 设备号
+    QString numb = tmpSet.value(addr + 2).toString();  // 产线号
+    QString work = tmpSet.value(addr + 3).toString();  // 工位号
+    QString type = tmpSet.value(DataType).toString();  // 电机型号
+    addr = tmpSet.value(DataUser).toInt();
+    QString user = tmpSet.value(addr).toString();  // 当前用户
+    addr = tmpSet.value(3000 + Qt::Key_0).toInt();
+    QString isok = msg.value(addr + TEMPISOK).toString();
+    QString cmd = "insert into hwms.HME_PERFORMANCE_MACHINE_TEST (";
+    cmd += "CODE,PROD_LINE,WORK_LOC,TEST_TIME,";
+    cmd += "MOTOR_TYPE,OPERATOR,TOTAL_RESULT,";
+    cmd += "RESISTANCE_1,RESISTANCE_2,RESISTANCE_3,RESISTANCE_4,RESISTANCE_5,RESISTANCE_6,RES_RESULT,";
+    cmd += "ISOL_VOLT,ISOL_RESIS,ISOL_RESULT,";
+    cmd += "WT_VOLT,WT_CURR,PRES_ARC_DETEC,WT_VOLT_RESULT,";
+    cmd += "ZJZS_VOLT,ZJZS_COR,ZJZS_PHASE,ZJZS_AREA,ZJZS_DIFFPROD,";
+    cmd += "ZJFX_VOLT,ZJFX_COR,ZJFX_PHASE,ZJFX_AREA,ZJFX_DIFFPROD,";
+    cmd += "ZJZF_VOLT,ZJZF_COR,ZJZF_PHASE,ZJZF_AREA,ZJZF_DIFFPROD,";
+    cmd += "FXZJZX_VOLT,FXZJZX_COR,FXZJZX_PHASE,FXZJZX_AREA,XFZJZX_DIFFPROD,";
+    cmd += "FXZJFX_VOLT,FXZJFX_COR,FXZJFX_PHASE,FXZJFX_AREA,FXZJFX_DIFFPROD,";
+    cmd += "FXZJZF_VOLT,FXZJZF_COR,FXZJZF_PHASE,FXZJZF_AREA,FXZJZF_DIFFPROD,";
+    cmd += "ZJ_RESULT,RATATION,ROTA_SETTING,ROTA_RESULT,";
+    cmd += "CREATOR,CREATE_TIME,UPDATOR,UPDATE_TIME) ";
+    cmd += "values(";
+    cmd += "?,?,?,?,?,?,?,?,?,?,";
+    cmd += "?,?,?,?,?,?,?,?,?,?,";
+    cmd += "?,?,?,?,?,?,?,?,?,?,";
+    cmd += "?,?,?,?,?,?,?,?,?,?,";
+    cmd += "?,?,?,?,?,?,?,?,?,?,";
+    cmd += "?,?,?,?,?,?,?,?,?)";
+
+    QSqlQuery query(QSqlDatabase::database("upload"));
+    query.prepare(cmd);
+    query.addBindValue(code);
+    query.addBindValue(numb);  // 产线号
+    query.addBindValue(work);  // 工位号
+    query.addBindValue(QDateTime::currentDateTime());
+    query.addBindValue(type);
+    query.addBindValue(user);
+    query.addBindValue((isok == "NG") ? "NG" : "PASS");
+
+    addr = tmpSet.value(3000 + Qt::Key_1).toInt();  // 电阻结果地址
+    isok = "OK";
+    for (int i=0; i < 6; i++) {
+        if (!msg.value(addr + i*0x10 + 2).isNull()) {
+            QString tmp = msg.value(addr + i*0x10 + 2).toString();
+            tmp = tmp.remove(">").remove("m").remove("k").remove("Ω");
+            query.addBindValue(tmp);
+            isok = (msg.value(addr + i*0x10 + 3).toString() == "NG") ? "NG" : isok;
+        } else {
+            query.addBindValue("");
+        }
+    }
+    if (!msg.value(addr+2).isNull())
+        query.addBindValue((isok == "OK") ? "PASS" : "NG");  // 7+7=14
+    else
+        query.addBindValue("");
+
+    addr = tmpSet.value(3000 + Qt::Key_3).toInt();  // 绝缘结果地址
+    if (!msg.value(addr + 3).isNull()) {
+        QStringList volts = msg.value(addr+1).toString().split(" ");
+        QString volt = QString(volts.at(0)).remove("V");
+        QString curr = msg.value(addr+2).toString().remove(">").remove("M").remove("Ω");
+        query.addBindValue(volt.toInt());
+        query.addBindValue(curr);
+        query.addBindValue(msg.value(addr + 3).toString() == "OK" ? "NG" : "PASS");
+    } else {
+        query.addBindValue("");
+        query.addBindValue("");
+        query.addBindValue("");
+    }
+    addr = tmpSet.value(3000 + Qt::Key_4).toInt();  // 交耐结果地址
+    if (!msg.value(addr + 3).isNull()) {
+        QStringList volts = msg.value(addr+1).toString().split(" ");
+        QString volt = QString(volts.at(0)).remove("V");
+        QString curr = msg.value(addr+2).toString().remove(">").remove("mA");
+        query.addBindValue(volt.toInt());
+        query.addBindValue(curr);
+        query.addBindValue(msg.value(addr + 3).toString() == "ARC" ? "NG" : "PASS");
+        query.addBindValue(msg.value(addr + 3).toString() == "NG" ? "NG" : "PASS");
+    } else {
+        query.addBindValue("");
+        query.addBindValue("");
+        query.addBindValue("");
+        query.addBindValue("");
+    }
+
+    addr = tmpSet.value(3000 + Qt::Key_6).toInt();  // 匝间结果地址
+    isok = "OK";
+    for (int i=0; i < 6; i++) {
+        if (!msg.value(addr + i*0x10 + 0x02).isNull()) {
+            int conf = tmpSet.value(4000 + Qt::Key_6).toInt();  // 匝间配置地址
+            int volt = tmpSet.value(conf + 0x40 + i).toInt();
+            query.addBindValue(QString::number(volt));
+            query.addBindValue(msg.value(addr + i*0x10 + 0x08).toString());
+            query.addBindValue(msg.value(addr + i*0x10 + 0x0B).toString());
+            query.addBindValue(msg.value(addr + i*0x10 + 0x02).toString());
+            query.addBindValue(msg.value(addr + i*0x10 + 0x05).toString());
+            for (int t=0; t < 4; t++) {
+                QString tmp = msg.value(addr + i*0x10 + t*0x03 + 3).toString();
+                isok = (tmp == "NG") ? "NG" : isok;
+            }
+        } else {
+            query.addBindValue("");
+            query.addBindValue("");
+            query.addBindValue("");
+            query.addBindValue("");
+            query.addBindValue("");
+        }
+    }
+    query.addBindValue((isok == "NG") ? "NG" : "PASS");
+
+    addr = tmpSet.value(3000 + Qt::Key_2).toInt();  // 反嵌结果地址
+    if (!msg.value(addr + 0x80 + 2).isNull()) {
+        int conf = tmpSet.value(4000 + Qt::Key_2).toInt();  // 反嵌配置地址
+        int turn = tmpSet.value(conf + 0).toInt();
+        QString tmp = msg.value(addr + 0x80 + 2).toString();
+        tmp = (tmp == "NULL") ? "STATIC" : tmp;
+        query.addBindValue(turn == 0 ? "CW" : "CCW");
+        query.addBindValue(tmp);
+        query.addBindValue(msg.value(addr + 0x80 + 3).toString() == "NG" ? "NG" : "PASS");
+    } else {
+        query.addBindValue("");
+        query.addBindValue("");
+        query.addBindValue("");
+    }
+
+    query.addBindValue(user);
+    query.addBindValue(QDateTime::currentDateTime());
+    query.addBindValue(user);
+    query.addBindValue(QDateTime::currentDateTime());
+
+    if (!query.exec()) {
+        QVariantMap tmp;
+        tmp.insert("enum", Qt::Key_Word);
+        tmp.insert("text", query.lastError().text());
+        emit sendAppMap(tmp);
+        qDebug() << query.lastError();
+    }
 }
 
 void SqlImport::recvAppMsg(QTmpMap msg)

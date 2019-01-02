@@ -51,6 +51,18 @@ void SqlUpload::initBoxText()
         }
     }
     boxLayout->addStretch();
+
+    QHBoxLayout *btn = new QHBoxLayout;
+
+    text = new QLabel(this);
+    btn->addWidget(text);
+    QPushButton *btnOpen = new QPushButton(this);
+    connect(btnOpen, SIGNAL(clicked(bool)), this, SLOT(recvOpen()));
+    btnOpen->setText(tr("连接"));
+    btnOpen->setFixedSize(97, 44);
+    btn->addStretch();
+    btn->addWidget(btnOpen);
+    boxLayout->addLayout(btn);
 }
 
 void SqlUpload::initBoxCtrl()
@@ -116,6 +128,7 @@ void SqlUpload::recvOpen()
     QString user = tmpSet.value(addr + 0x02).toString();
     QString pswd = tmpSet.value(addr + 0x03).toString();
     QString base = tmpSet.value(addr + 0x04).toString();
+    QString port = tmpSet.value(addr + 0x05).toString();
     QString dsn;
     QString driver;
     if (mode == 0) {
@@ -125,27 +138,35 @@ void SqlUpload::recvOpen()
     if (mode == 1) {  // QMYSQL3
         driver = "QMYSQL3";
     }
-    if (mode >= 2) {  // QODBC3
+    if (mode == 2 || mode ==3) {  // QODBC3
         driver = "QODBC3";
         dsn = QString("DRIVER={SQL SERVER};SERVER=%1;DATABASE=%2;").arg(host).arg(base);
+    }
+    if (mode == 4) {
+        driver = "QODBC3";
+        dsn = "Oracle";
     }
     qDebug() << "sql open:" << driver;
     QSqlDatabase db = QSqlDatabase::addDatabase(driver, "upload");
     db.setHostName(host);
+    db.setPort(port.toInt());
     db.setUserName(user);
     db.setPassword(pswd);
     db.setDatabaseName(dsn);
-    db.setConnectOptions("SQL_ATTR_LOGIN_TIMEOUT=2;SQL_ATTR_CONNECTION_TIMEOUT=2");
+    if (mode == 2 || mode == 3)
+        db.setConnectOptions("SQL_ATTR_LOGIN_TIMEOUT=2;SQL_ATTR_CONNECTION_TIMEOUT=2");
     if (!db.open()) {
+        QMessageBox::warning(this, "", db.lastError().text(), QMessageBox::Ok);
         qDebug() << db.lastError();
     } else {
-        if (mode >= 3) {
+        if (mode == 2 || mode == 3) {
             isConnected = true;
             QTimer *timer = new QTimer(this);
             connect(timer, SIGNAL(timeout()), this, SLOT(recvRead()));
             timer->start(5000);
             recvRead();
         }
+        text->setText("连接成功");
     }
 }
 

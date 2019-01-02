@@ -344,7 +344,7 @@ void TypConfig::saveSettings()
 {
     confSettings();
     int r = tmpSet.value(4000 + Qt::Key_0).toInt();
-    QStringList testItems,warnItems;
+    QStringList testItems, warnItems;
     for (int i=0; i < mView->rowCount(); i++) {
         int test = mView->index(i, 0).data(Qt::CheckStateRole).toInt();
         if (test != 0) {
@@ -384,7 +384,7 @@ void TypConfig::saveSettings()
 
 void TypConfig::confSettings()
 {
-    QStringList sendItems,testItems;
+    QStringList sendItems, testItems;
     for (int i=0; i < mView->rowCount(); i++) {
         int c = mView->index(i, 0).data(Qt::CheckStateRole).toInt();
         if (c != 0) {

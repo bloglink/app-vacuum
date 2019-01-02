@@ -44,10 +44,12 @@ public:
 
 signals:
     void sendAppMsg(QTmpMap msg);
+    void sendAppMap(QVariantMap msg);
 private slots:
     void initUpload();
     void saveRecord(QTmpMap msg);
     void saveUpload(QTmpMap msg);
+    void saveOracle(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
 private:
     QTmpMap tmpQuan;

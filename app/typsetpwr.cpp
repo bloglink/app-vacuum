@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Copyright [2018] <青岛艾普智能仪器有限公司>
+ * All rights reserved.
+ *
+ * version:     0.1
+ * author:      zhaonanlin
+ * brief:       电参配置界面
+*******************************************************************************/
 #include "typsetpwr.h"
 
 TypSetPwr::TypSetPwr(QWidget *parent) : QWidget(parent)
@@ -24,7 +32,7 @@ void TypSetPwr::initViewBar()
     QStringList headers;
     headers << tr("电参") << tr("电流上限") << tr("电流下限") << tr("功率上限")
             << tr("功率下限") << tr("容压上限") << tr("容压下限") << tr("转向")
-            << tr("时间") ;
+            << tr("时间");
     mView = new BoxQModel;
     mView->setRowCount(PWR_SIZE);
     mView->setColumnCount(headers.size());

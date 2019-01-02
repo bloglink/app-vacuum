@@ -14,8 +14,7 @@
 #include "main.h"
 #include "appwindow.h"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 #if (QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
     QTextCodec *codec = QTextCodec::codecForName("UTF-8");
     QTextCodec::setCodecForLocale(codec);

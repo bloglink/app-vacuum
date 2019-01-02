@@ -352,7 +352,7 @@ void AppTester::initWorkState()
     QGridLayout *wlayout = new QGridLayout;
     blayout->addLayout(wlayout);
 
-    QStringList names,texts;
+    QStringList names, texts;
     names << tr("光幕") << tr("产品");
     texts << "stop" << "prod";
     for (int i=0; i < names.size(); i++) {
@@ -865,8 +865,8 @@ void AppTester::initSetPWR()
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
             insertItem(nSetPWR + 100 * i, 0x00);
-            tmpSave.insert(real + i*0x10 + 0x00*3 + 0, ((i==0) ? tr("低速") : tr("高速")));
-            tmpSave.insert(real + i*0x10 + 0x00*3 + 1, parm);
+            tmpSave.insert(real+i*0x10+0x00*3+0, ((i == 0) ? tr("低速") : tr("高速")));
+            tmpSave.insert(real+i*0x10+0x00*3+1, parm);
         }
         if (test != 0 && pmax != 0 && nmag == 0) {
             QString item = tr("电参%1").arg(i+1) +  tr("功率");

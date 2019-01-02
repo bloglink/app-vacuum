@@ -326,7 +326,7 @@ void TypSetLod::confSettings()
         tmpMap.insert(tmpStr.at(i), str);
     }
     tmpStr.clear();
-    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset" << "power" << "turn";
+    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset" << "power" << "turn_out";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
         if (i == 0)
@@ -345,7 +345,8 @@ void TypSetLod::confSettings()
     tmpMap.insert("sequence", tmpStr.join(","));
 
     tmpStr.clear();
-    tmpStr << "vsp_pwm" << "pwm_volt" << "pwm_rate" << "pwm_duty" << "sample_freq" << "sample_lenth";
+    tmpStr << "vsp_pwm" << "pwm_volt" << "pwm_rate"
+           << "pwm_duty" << "sample_freq" << "sample_lenth";
     for (int i=0; i < mMode->rowCount(); i++) {
         QString str = mMode->index(i, 0).data().toString();
         tmpMap.insert(tmpStr.at(i), str);

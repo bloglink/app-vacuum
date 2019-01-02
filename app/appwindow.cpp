@@ -333,6 +333,7 @@ int AppWindow::initImport()
     SqlImport *app = new SqlImport;
     connect(app, SIGNAL(sendAppMsg(QTmpMap)), this, SLOT(recvAppMsg(QTmpMap)));
     connect(this, SIGNAL(sendAppMsg(QTmpMap)), app, SLOT(recvAppMsg(QTmpMap)));
+    connect(app, SIGNAL(sendAppMap(QVariantMap)), this, SLOT(recvAppMap(QVariantMap)));
     app->moveToThread(sql);
 
     return Qt::Key_Away;
@@ -660,17 +661,15 @@ int AppWindow::taskToolIobrd()
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (mode == 2) {  // 无刷模式
-        int agnd = ((station == WORKL) ? Y04 : Y05);  // 耐压
-        int down = ((station == WORKL) ? 0x00 : 0x03) + back + 0x40;
-        int move = ((station == WORKL) ? 0x0C : 0x0F) + back + 0x40;
-        down = tmpSet.value(down).toString().toInt(NULL, 16);  // 下压
-        move = tmpSet.value(move).toString().toInt(NULL, 16);  // 夹紧
-        if (driv == 0) {
-            int tmp = (ioSave == 0) ? (down + move) : (agnd + ioSave + Y06);
-            sendUdpStr(tr("6036 %1").arg(tmp).toUtf8());
-        }
-    }
+    if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+        int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 下压动作左/右地址
+        int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
+        int saveaddr = 0x0A + back + 0x40;
+        int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
+        int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
+        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
+        sendUdpStr(tr("6036 %1").arg(down + grab + save).toUtf8());
+    }  // 外置驱动无动作
     return Qt::Key_Away;
 }
 
@@ -697,19 +696,19 @@ int AppWindow::taskOpenServo()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     if (!tmpSet.value(back + 0x20 + 0x04).toString().isEmpty()) {  // 伺服左
         QString com = tmpSet.value(back + 0x20 + 0x04).toString();
-        taskSerial("read", "open", com);
+        taskSerial("readL", "open", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x05).toString().isEmpty()) {  // 伺服右
         QString com = tmpSet.value(back + 0x20 + 0x05).toString();
-        taskSerial("read", "open", com);
+        taskSerial("readR", "open", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x06).toString().isEmpty()) {  // PLC左
         QString com = tmpSet.value(back + 0x20 + 0x06).toString();
-        taskSerial("load", "open", com);
+        taskSerial("loadL", "open", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x07).toString().isEmpty()) {  // PLC右
         QString com = tmpSet.value(back + 0x20 + 0x07).toString();
-        taskSerial("load", "open", com);
+        taskSerial("loadR", "open", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x09).toString().isEmpty()) {  // 变频器
         QString com = tmpSet.value(back + 0x20 + 0x09).toString();
@@ -735,12 +734,6 @@ int AppWindow::taskClearCtrl()
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int itemctrl = itemparm.value("itemctrl").toInt() + 1;
     itemparm.insert("itemctrl", itemctrl);
-
-    if (mode == 2) {
-        if (ioSave != 0) {
-            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
-        }
-    }
     if (mode == 3) {
         if (itemctrl % 100 == 1) {
             sendUdpStr(tr("6077 %1").arg(YY14 | YY08).toUtf8());
@@ -766,8 +759,9 @@ int AppWindow::taskStopMotor()
 
 int AppWindow::taskStopServo()
 {
-    if (testparm.value("teststop").toInt() == 1 && !taskparm.value("load").isNull()) {
-        taskSerial("load", "stop", 0);
+    QString str = (station == WORKL) ? "loadL" : "loadR";
+    if (testparm.value("teststop").toInt() == 1 && !taskparm.value(str).isNull()) {
+        taskSerial(str, "stop", 0);
     }
     return Qt::Key_Away;
 }
@@ -777,19 +771,19 @@ int AppWindow::taskQuitServo()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     if (!tmpSet.value(back + 0x20 + 0x04).toString().isEmpty()) {  // 伺服左
         QString com = tmpSet.value(back + 0x20 + 0x04).toString();
-        taskSerial("read", "quit", com);
+        taskSerial("readL", "quit", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x05).toString().isEmpty()) {  // 伺服右
         QString com = tmpSet.value(back + 0x20 + 0x05).toString();
-        taskSerial("read", "quit", com);
+        taskSerial("readR", "quit", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x06).toString().isEmpty()) {  // PLC左
         QString com = tmpSet.value(back + 0x20 + 0x06).toString();
-        taskSerial("load", "quit", com);
+        taskSerial("loadL", "quit", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x07).toString().isEmpty()) {  // PLC右
         QString com = tmpSet.value(back + 0x20 + 0x07).toString();
-        taskSerial("load", "quit", com);
+        taskSerial("loadR", "quit", com);
     }
     if (!tmpSet.value(back + 0x20 + 0x09).toString().isEmpty()) {  // 变频器
         QString com = tmpSet.value(back + 0x20 + 0x09).toString();
@@ -825,7 +819,7 @@ int AppWindow::taskStartSave()
             bool isSetnvt = (testparm.value("testloop").toInt() == 0) ? false : true;
             quint32 cmd = 0;
             cmd += (isSetnvt) ? YY15 : 0x00;
-            cmd |= (isok == DATAOK && !barcode.isEmpty() && !isSetnvt) ? YY0E : YY10;  // 总合格/总不合格
+            cmd |= (isok == DATAOK && !barcode.isEmpty() && !isSetnvt) ? YY0E : YY10;
             cmd |= barcode.isEmpty() ? YY09 : 0x00;  // RFID未读到
             cmd |= (tmpItem.value(nSetNLD) == DATAOK) ? 0x00 : YY11;
             cmd |= (tmpItem.value(nSetHAL) == DATAOK) ? 0x00 : YY12;
@@ -894,14 +888,19 @@ int AppWindow::taskStartBeep()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动,松开夹紧气缸
+        int downaddr = ((station == WORKL) ? 0x08 : 0x09) + back + 0x40;  // 下压动作左/右地址
+        int beepaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
+        int saveaddr = 0x0A + back + 0x40;
+        int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
+        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
+        int beep = tmpSet.value(beepaddr).toString().toInt(NULL, 16);  // 内驱保持
+        sendUdpStr(tr("6036 %1").arg(down + save + beep).toUtf8());
+    }  // 外置驱动无动作
     int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
     int beep = tmpSet.value(syst + SystBeep).toInt() * 10 + 9;  // 报警时间
-    if (mode == 2) { // 无刷模式
-        int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x40;
-        int down = back + ((station == 0x13) ? 0x12 : 0x13);
-        down = tmpSet.value(down).toString().toInt(NULL, 16);
-        sendUdpStr(tr("6036 %1").arg(down | ioSave).toUtf8());  // 松开夹紧气缸
-    }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
     tmpMsg.insert(Qt::Key_1, isok == DATAOK ? "LEDG" : "LEDR");
     tmpMsg.insert(Qt::Key_2, (taskShift == Qt::Key_Stop) ? DATADC : isok);
@@ -917,6 +916,8 @@ int AppWindow::taskClearBeep()
     int ret = Qt::Key_Meta;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();
     int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
     int real = tmpSet.value(3000 + Qt::Key_0).toInt();  // 零散参数地址
     int isok = tmpSet.value(real + TEMPISOK).toInt();
@@ -924,10 +925,13 @@ int AppWindow::taskClearBeep()
     int testbeep = testparm.value("testbeep").toInt() + 1;
     testparm.insert("testbeep", testbeep);
     if (testbeep >= tt) {
-        if (mode == 2) { // 无刷模式
-            int free = taskparm.value("taskfree").toInt();
-            sendUdpStr(tr("6036 %1").arg(ioSave | free).toUtf8());  // 松开上移气缸
-        }
+        if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+            int saveaddr = 0x0A + back + 0x40;
+            int freeaddr = 0x0C + back + 0x40;
+            int free = tmpSet.value(freeaddr).toString().toInt(NULL, 16);  //
+            int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
+            sendUdpStr(tr("6036 %1").arg(save + free).toUtf8());
+        }  // 外置驱动无动作
         ret = Qt::Key_Away;
         tmpMsg.insert(Qt::Key_0, Qt::Key_Call);
         tmpMsg.insert(Qt::Key_3, 0);
@@ -1018,34 +1022,47 @@ int AppWindow::testToolIocan()
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (mode == 2) {  // 无刷模式
-        bool isDriv = (currItem == nSetINR || currItem == nSetACW);
-        if (ioSave != 0 && driv == 0 && isDriv) {  // 内置驱动绝缘耐压切换
-            int agnd = ((station == WORKL) ? Y04 : Y05);  // 耐压
-            sendUdpStr(tr("6036 %1").arg(agnd | ioSave | Y06).toUtf8());
-        }
+    bool isDriv = (currItem == nSetINR || currItem == nSetACW);  // 高压项目
+    if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+        int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
+        int voltaddr = ((station == WORKL) ? 0x06 : 0x07) + back + 0x40;  // 低压动作左/右地址
+        int testaddr = (isDriv) ? highaddr : voltaddr;
+        int saveaddr = 0x0A + back + 0x40;
+        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
+        int test = tmpSet.value(testaddr).toString().toInt(NULL, 16);
+        if (test != 0)
+            sendUdpStr(tr("6036 %1").arg(test + save).toUtf8());
     }
     return Qt::Key_Away;
 }
 
 int AppWindow::testStopIocan()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (ioSave != 0 && driv == 0) {
-        if (currItem == nSetINR || currItem == nSetACW) {
-            int item = getNextItem();
-            if (item != nSetINR && item != nSetACW) {
-                sendUdpStr(tr("6036 %1").arg(ioSave | Y06).toUtf8());
-            }
-        }
+    bool isDriv = (currItem == nSetINR || currItem == nSetACW);  // 当前项目为高压项目
+    int nextitem = getNextItem();
+    bool isNext = (nextitem == nSetINR || nextitem == nSetACW);  // 下一项目为高压项目
+    bool isMove = (isDriv && !isNext) || (!isDriv && isNext);
+    if (mode == 2 && driv == 0 && isMove) {  // 高压变低压动作
+        int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
+        int voltaddr = ((station == WORKL) ? 0x06 : 0x07) + back + 0x40;  // 低压动作左/右地址
+        int testaddr = (isDriv) ? highaddr : voltaddr;
+        int saveaddr = 0x0A + back + 0x40;
+        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
+        int test = tmpSet.value(testaddr).toString().toInt(NULL, 16);
+        if (test != 0)
+            sendUdpStr(tr("6036 %1").arg(save).toUtf8());
     }
     return Qt::Key_Away;
 }
 
 int AppWindow::testToolServo()
 {
-    if (taskparm.value("load").isNull())
+    QString strLoad = (station == WORKL) ? "loadL" : "loadR";
+    if (taskparm.value(strLoad).isNull())
         return Qt::Key_Away;
     if (currItem == 0x0C || currItem == 0x0E) { // 负载/反拖
         int addr = tmpSet.value(4000 + Qt::Key_E).toInt();  // 反电动势配置地址
@@ -1058,16 +1075,16 @@ int AppWindow::testToolServo()
         QVariantMap map;
         switch (testtool) {
         case 00:
-            map = taskSerial("load", "mode", taskdata);
+            map = taskSerial(strLoad, "mode", taskdata);
             break;
         case 05:
-            map = taskSerial("load", "turn", taskdata);
+            map = taskSerial(strLoad, "turn", taskdata);
             break;
         case 10:
-            map = taskSerial("load", "data", taskdata);
+            map = taskSerial(strLoad, "data", taskdata);
             break;
         case 15:
-            map = taskSerial("load", "load", taskdata);
+            map = taskSerial(strLoad, "load", taskdata);
             break;
         case 20:
             return Qt::Key_Away;
@@ -1083,9 +1100,10 @@ int AppWindow::testToolServo()
 
 int AppWindow::testWaitServo()
 {
+    QString strLoad = (station == WORKL) ? "loadL" : "loadR";
     int itemwait = itemparm.value("itemwait").toInt() + 1;
     itemparm.insert("itemwait", itemwait);
-    if (currItem == 0x0C && !taskparm.value("load").isNull()) { // 负载
+    if (currItem == 0x0C && !taskparm.value(strLoad).isNull()) { // 负载
         int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         int time = 0;
         for (int i=0; i < 4; i++) {
@@ -1113,27 +1131,32 @@ int AppWindow::testWaitServo()
         tor = (tor <= 0.035) ? 0 : tor;
         tor = (tor < 0.065 && tor > 0.035) ? tor*0.77 : tor;
         tor = (tor >= 0.05) ? tor/0.94 : tor;
-        if (!taskparm.value("taskvolt").isNull()) {
-            tor = taskparm.value("taskvolt").toDouble();
-        }
+
         if (tempvolt.size() >= 8) {
             double sum = 0;
-            foreach (double dat, tempvolt) {
+            foreach(double dat, tempvolt) {
                 sum += fabs(dat) / 2.5;
             }
             sum /= tempvolt.size();  // 平均扭矩
-            if (fabs(temp - sum) > 0.005 && tempvolt.size() >= 20)
-                tor += temp > sum ? 0.005 : -0.005;
+            if (taskparm.value("taskvolt").isNull()) {  // 第一次补偿
+                taskparm.insert("taskvolt", temp - sum);
+            } else {
+                double tmp = taskparm.value("taskvolt").toDouble();
+                if (fabs(temp - sum) > 0.005 && tempvolt.size() >= 20)
+                    tmp += temp > sum ? 0.005 : -0.005;
+                taskparm.insert("taskvolt", tmp);
+            }
             tmpMsg.insert(Qt::Key_0, Qt::Key_Word);
             tmpMsg.insert(Qt::Key_1, QString("%1Nm").arg(sum));
             emit sendAppMsg(tmpMsg);
             tmpMsg.clear();
             qDebug() << "app volt:" << sum << tempvolt.size();
         }
-        taskparm.insert("taskvolt", tor);
+        double volt = taskparm.value("taskvolt").toDouble();
+        tor = qMax(0.0, tor + volt);
         qDebug() << "app data:" << tor;
         int taskdata = ((mode == 3) ? tor*1368 : tor*2500);  // 控石伺服与常规不同
-        taskSerial("load", "data", taskdata);
+        taskSerial(strLoad, "data", taskdata);
         return Qt::Key_Away;
     }
     return Qt::Key_Away;
@@ -1141,20 +1164,14 @@ int AppWindow::testWaitServo()
 
 void AppWindow::test()
 {
-    //    currItem = 0x0C;
-    //    taskSerial("load", "open", "ttyS0");
-    //    taskSerial("volt", "open", "ttyMI0");
 
-    //    for (int i=0; i < 150; i++) {
-    //        if (testToolServo() == Qt::Key_Away)
-    //            break;
-    //    }
 }
 
 int AppWindow::testStopServo()
 {
-    if ((currItem == 0x0C || currItem == 0x0E) && !taskparm.value("load").isNull()) {
-        taskSerial("load", "stop", 0);
+    QString strLoad = (station == WORKL) ? "loadL" : "loadR";
+    if ((currItem == 0x0C || currItem == 0x0E) && !taskparm.value(strLoad).isNull()) {
+        taskSerial(strLoad, "stop", 0);
     }
     return Qt::Key_Away;
 }
@@ -1214,34 +1231,47 @@ int AppWindow::testStartSend()
 
 int AppWindow::testStartTest()
 {
-    //    int load = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
-    //    int from = tmpSet.value(load + 9).toInt();  // 转速读取位置
-    int testvolt = testparm.value("testvolt").toInt();
+    int load = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
+    int from = tmpSet.value(load + 9).toInt();  // 转速读取位置
+    int testvolt = itemparm.value("testvolt").toInt();
+    QString strLoad = (station == WORKL) ? "readL" : "readR";
 
-    //    if (currItem == 0x0C && !taskparm.value("read").isNull() && from == 1) { // 负载读转速
-    //        QVariantMap tmp = taskSerial("read", "read", 0);
-    //        if (tmp.value("taskstat").toInt() != 0) {
-    //            int taskread = tmp.value("taskrate").toInt();
-    //            if (abs(taskread) <= 4000) {
-    //                int speedmax = testparm.value("speedmax").toInt();
-    //                speedmax = (abs(taskread) >= abs(speedmax)) ? taskread : speedmax;
-    //                buffrate.append(taskread);
-    //                if (buffrate.size() < 5) {
-    //                    testparm.insert("taskrate", speedmax);
-    //                } else {
-    //                    int sum = 0;
-    //                    int tasknumb = buffrate.indexOf(speedmax);
-    //                    if (tasknumb >= 5) {
-    //                        for (int i=tasknumb-5; i < tasknumb; i++) {
-    //                            sum += buffrate.at(i);
-    //                        }
-    //                        sum /= 5;
-    //                        testparm.insert("taskrate", sum);
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
+    if (currItem == 0x0C && !taskparm.value(strLoad).isNull() && from == 1) { // 负载读转速
+        QVariantMap tmp;
+        switch (testvolt % 20) {
+        case 00:  // 握手
+            tmp = taskSerial(strLoad, "hand", 0);
+            break;
+        case 05:  // 配置
+            tmp = taskSerial(strLoad, "conf", 0);
+            break;
+        case 10:  // 读取
+            tmp = taskSerial(strLoad, "read", 0);
+            break;
+        case 15:  // 返回
+            tmp = taskSerial(strLoad, "rate", 0);
+            break;
+        default:
+            break;
+        }
+        if (tmp.value("taskrate").toInt() != 0) {
+            int taskread = tmp.value("taskrate").toInt();
+            if (abs(taskread) <= 4000) {
+                int speedmax = testparm.value("speedmax").toInt();
+                if (abs(taskread) >= abs(speedmax)) {
+                    testparm.insert("speedmax", taskread);
+                    buffrate.append(taskread);
+                    if (buffrate.size() > 5)
+                        buffrate.removeFirst();
+                    int sum = 0;
+                    foreach (int tmp, buffrate)
+                        sum += tmp;
+                    sum /= buffrate.size();
+                    testparm.insert("taskrate", sum);
+                }
+            }
+        }
+    }
     if (currItem == 0x0C && !taskparm.value("volt").isNull()) {
         int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         int time = tmpSet.value(addr + CACHELOD*0x02).toDouble() * 100;
@@ -1267,7 +1297,7 @@ int AppWindow::testStartTest()
     //            }
     //        }
     //    }
-    testparm.insert("testvolt", testvolt + 1);
+    itemparm.insert("testvolt", testvolt + 1);
     return (testShift == Qt::Key_Away) ? Qt::Key_Away : Qt::Key_Meta;
 }
 
@@ -1347,13 +1377,27 @@ int AppWindow::recvIoCtrl(int key, int work)
         }
     }
     if (mode == 2) {
-        int tmp = back + 0x40 + ((work == WORKL) ? 25 : 26);
-        int hex = tmpSet.value(tmp).toString().toInt(NULL, 16);
-        if (have == 1 && hex != 0 && ((ioHex & hex) == 0))
+        int playaddr = back + 0x40 + ((work == WORKL) ? 0x14 : 0x15);  // 按钮启动信号地址
+        int stopaddr = back + 0x40 + ((work == WORKL) ? 0x16 : 0x17);  // 光幕遮挡信号地址
+        int prodaddr = back + 0x40 + ((work == WORKL) ? 0x18 : 0x19);  // 产品到位信号地址
+        int play = tmpSet.value(playaddr).toString().toInt(NULL, 16);
+        int stop = tmpSet.value(stopaddr).toString().toInt(NULL, 16);
+        int prod = tmpSet.value(prodaddr).toString().toInt(NULL, 16);
+        bool isPlay = (key == Qt::Key_Play || (play & ioHex));
+        if (stop & ioHex) {
+            taskCheckStop();
+        }
+        if (isPlay && (stop & ioHex)) {
+            str = tr("警告:光幕被遮挡!");
+        }
+        if (isPlay && have == 1 && prod != 0 && ((ioHex & prod) == 0))
             str = tr("警告:产品未放置!");
         if (!str.isEmpty()) {
             warnningString(str);
             return Qt::Key_Meta;
+        }
+        if ((play & ioHex) && !(stop & ioHex)) {  // 启动测试
+            taskShift = Qt::Key_Play;
         }
     }
     return Qt::Key_Away;
@@ -1574,36 +1618,26 @@ void AppWindow::recvAppShow(QString msg)
 
 void AppWindow::recvAppPrep()
 {
-    double back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
-    double mode = tmpSet.value(back + backMode).toInt();  // 测试模式
-    double syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
-    double snap = tmpSet.value(syst + SystMode).toInt();  // 弹线配置
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int snap = tmpSet.value(syst + SystMode).toInt();  // 弹线配置
     double tmOK = tmpSet.value(syst + SystTime).toDouble();
     double tmNG = tmpSet.value(syst + SystWarn).toDouble();
     double tmWT = tmpSet.value(syst + SystWait).toDouble();
-    double conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
 
     if (mode >= 2) {
-
-        int free = tmpSet.value(back + 0x40 + 24).toString().toInt(NULL, 16);  // 待机时保持
-
-        int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-        int eimp = tmpSet.value(back + 0x10 + nSetIMP - 1).toInt();  // 测试匝间
-        int hall = tmpSet.value(back + 0x10 + nSetHAL - 1).toInt();  // 测试霍尔
-        int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
         sendUdpStr("6058 1");  // IO状态上传
         wait(100);
-        if (eimp != 0 && hall != 0) {
-            ioSave = Y00;
-            ioSave |= (driv != 0) ? Y01 : (Y02 | Y03);
-            sendUdpStr(tr("6036 %1").arg(ioSave).toUtf8());
-            addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 空载配置地址
-        }
-        if (free != 0) {
-            taskparm.insert("taskfree", free);
-            sendUdpStr(tr("6036 %1").arg(free).toUtf8());
-        } else {
-            taskparm.remove("taskfree");
+        int addr = tmpSet.value(4000 + Qt::Key_C).toInt();  // 负载配置地址
+        if (mode == 2 || mode == 4) {  // 无刷模式
+            int saveaddr = ((driv == 0) ? 0x0A : 0x0B) + back + 0x40;
+            int freeaddr = 0x0C + back + 0x40;
+            int free = tmpSet.value(freeaddr).toString().toInt(NULL, 16);  // 待机时保持
+            int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
+            sendUdpStr(tr("6036 %1").arg(save + free).toUtf8());
         }
         if (mode == 3) {
             sendUdpStr(tr("6072 %1").arg(driv).toUtf8());  // 内外置接触器切换
@@ -1611,6 +1645,8 @@ void AppWindow::recvAppPrep()
             sendUdpStr(tr("6073 %1").arg(driv).toUtf8());  // 内外置接触器切换
             wait(100);
         }
+        if (mode == 4)
+            addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 空载配置地址
         int stop = (driv == 1) ? 1 : 2;
         int work = (station == WORKL) ? 1 : 2;
         int volt = tmpSet.value(addr + 0x10).toInt();
@@ -1925,17 +1961,45 @@ void AppWindow::recvAppMap(QVariantMap msg)
         sendUdpStr(msg.value("text").toByteArray());
         break;
     case Qt::Key_Shop: {  // 设备预热
-        //        int back = tmpSet.value(1000 + Qt::Key_0).toInt() + 0x40;  // 后台设置地址
-        //        int left = tmpSet.value(back + 0x0C).toString().toInt(NULL, 16);
-        //        int move = left + tmpSet.value(back + 0x0F).toString().toInt(NULL, 16);
-        //        if (!msg.value("data").isNull())
-        //            sendUdpStr(tr("6036 %1").arg(move).toUtf8());
-        //        wait(200);
-        //        mbdktL.test(msg);
-        //        mbdktR.test(msg);
-        //        wait(200);
-        //        if (msg.value("data").isNull())
-        //            sendUdpStr(tr("6036 %1").arg(0).toUtf8());
+        int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+        int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+        if (mode == 2) {  // 无刷模式,内置驱动
+            int down1 = tmpSet.value(back + 0x40).toString().toInt(NULL, 16);  // 下压动作
+            int down2 = tmpSet.value(back + 0x41).toString().toInt(NULL, 16);  // 下压动作
+            int grab1 = tmpSet.value(back + 0x42).toString().toInt(NULL, 16);  // 夹紧动作
+            int grab2 = tmpSet.value(back + 0x43).toString().toInt(NULL, 16);  // 夹紧动作
+            int speed = msg.value("data").toInt();
+            if (speed != 0) {
+                sendUdpStr(tr("6036 %1").arg(down1 +down2 + grab1 + grab2).toUtf8());
+                taskOpenServo();
+                wait(500);
+                taskSerial("loadL", "mode", speed << 16);
+                taskSerial("loadR", "mode", speed << 16);
+                wait(100);
+                taskSerial("loadL", "turn", speed << 16);
+                taskSerial("loadR", "turn", speed << 16);
+                wait(100);
+                taskSerial("loadL", "data", speed << 16);
+                taskSerial("loadR", "data", speed << 16);
+                wait(100);
+                taskSerial("loadL", "load", speed << 16);
+                taskSerial("loadR", "load", speed << 16);
+                wait(100);
+                taskQuitServo();
+            } else {
+                taskOpenServo();
+                wait(100);
+                taskSerial("loadL", "stop", 0);
+                taskSerial("loadR", "stop", 0);
+                wait(500);
+                taskQuitServo();
+                sendUdpStr(tr("6036 %1").arg(0).toUtf8());
+            }
+        }  // 外置驱动无动作
+        break;
+    }
+    case Qt::Key_Word: {
+        warnningString(msg.value("text").toString());
         break;
     }
     default:
@@ -1967,7 +2031,7 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         testShift = Qt::Key_Away;
         if (tempShift == Qt::Key_Away)
             taskCheckStop();
-        if (currItem == nSetLOD || currItem == nSetNLD)
+        if (currItem == nSetLOD || currItem == nSetNLD || currItem == 0x0F)
             calcLOAD(strLoad, 1);
         break;
     case 6015:  // 空载/负载启动完成

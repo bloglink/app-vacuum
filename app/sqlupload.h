@@ -55,6 +55,7 @@ private:
     QTmpMap tmpSet;
     bool isConnected;
     QTmpMap tmpMsg;
+    QLabel *text;
 };
 
 #endif // SQLUPLOAD_H
