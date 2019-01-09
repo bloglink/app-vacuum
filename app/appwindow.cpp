@@ -9,11 +9,10 @@
 #include "appwindow.h"
 
 typedef int (AppWindow::*pClass)(void);
-QMap<int, pClass> initMap;
 QList<pClass> taskBuf;
 QList<pClass> testBuf;
 
-QLibrary *lib;
+QLibrary *libSerial;
 
 AppWindow::AppWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -96,13 +95,26 @@ int AppWindow::initDevice()
 
 int AppWindow::initScreen()
 {
-    boxbar = new BoxDialog(this);
-    boxbar->setValue(0);
-    boxbar->show();
+    boxbar = new QProgressDialog(this);
+    boxbar->setCancelButton(NULL);
+    boxbar->setWindowFlags(Qt::FramelessWindowHint);
+    boxbar->setFixedSize(240, 72);
+    boxbar->move(this->width()/2 - 120, this->height()/2 - 24);
+    boxbar->hide();
 
+    QProgressDialog *tmpbox = new QProgressDialog(this);
+    tmpbox->setCancelButton(NULL);
+    tmpbox->setWindowFlags(Qt::FramelessWindowHint);
+    tmpbox->setFixedSize(240, 72);
+    tmpbox->move(this->width()/2 - 120, this->height()/2 - 24);
+    tmpbox->show();
+
+    QMap<int, pClass> initMap;
     QStringList names;
     initMap[names.size()] = &AppWindow::initTester;
     names << tr("正在初始化测试界面");
+    initMap[names.size()] = &AppWindow::initLogger;
+    names << tr("正在初始化调试信息");
     initMap[names.size()] = &AppWindow::initSignin;
     names << tr("正在初始化登录界面");
     initMap[names.size()] = &AppWindow::initSystem;
@@ -115,8 +127,6 @@ int AppWindow::initScreen()
     names << tr("正在初始化权限管理");
     initMap[names.size()] = &AppWindow::initBackup;
     names << tr("正在初始化后台设置");
-    initMap[names.size()] = &AppWindow::initLogger;
-    names << tr("正在初始化调试信息");
     initMap[names.size()] = &AppWindow::initRepair;
     names << tr("正在初始化日常保养");
     initMap[names.size()] = &AppWindow::initConfig;
@@ -172,9 +182,13 @@ int AppWindow::initScreen()
     initMap[names.size()] = &AppWindow::initThread;
     names << tr("正在初始化系统线程");
 
-    for (int i=0; i < names.size(); i++)
-        showBoxPop(names.at(i), i);
-
+    for (int i=0; i < names.size(); i++) {
+        tmpbox->setLabelText(names.at(i));
+        wait(10);
+        (this->*initMap[i])();
+        tmpbox->setValue((i+1)*100/initMap.size());
+    }
+    tmpbox->hide();
     btnLayout->addStretch();
     return Qt::Key_Away;
 }
@@ -193,6 +207,11 @@ int AppWindow::initTester()
     return initWidget(nTester, 0, "tester", tr("测试界面"), app);
 }
 
+int AppWindow::initLogger()
+{
+    return initLibWidget(nLogger, 1, "logger", tr("调试信息"), "./lib/libLogger");
+}
+
 int AppWindow::initSignin()
 {
     AppSignin *app = new AppSignin(this);
@@ -207,8 +226,7 @@ int AppWindow::initSystem()
 
 int AppWindow::initIoCtrl()
 {
-    AppIoCtrl *app = new AppIoCtrl(this);
-    return initWidget(nIoctrl, 1, "ioctrl", tr("动作设置"), app);
+    return initLibWidget(nIoctrl, 1, "ioctrl", tr("动作设置"), "./lib/libOutput");
 }
 
 int AppWindow::initMaster()
@@ -227,12 +245,6 @@ int AppWindow::initBackup()
 {
     AppBackup *app = new AppBackup(this);
     return initWidget(nBackup, 1, "backup", tr("后台管理"), app);
-}
-
-int AppWindow::initLogger()
-{
-    AppLogger *app = AppLogger::instance();
-    return initWidget(nLogger, 1, "logger", tr("调试信息"), app);
 }
 
 int AppWindow::initRepair()
@@ -323,7 +335,7 @@ int AppWindow::initSetBmf()
 int AppWindow::initSetLvs()
 {
     TypSetLod *app = new TypSetLod(this);
-    return initWidget(0x0F, 2, "setlvs", tr("低启配置"), app);
+    return initWidget(0x0F, 2, "setlvs", tr("缺相配置"), app);
 }
 
 int AppWindow::initImport()
@@ -446,19 +458,28 @@ int AppWindow::sendSignin()
 
 int AppWindow::initSocket()
 {
-    UdpSocket *udp = new UdpSocket;
-    connect(udp, SIGNAL(sendUdpMsg(QByteArray)), this, SLOT(recvUdpMsg(QByteArray)));
-    connect(this, SIGNAL(sendUdpMsg(QTmpMap)), udp, SLOT(recvAppMsg(QTmpMap)));
-    udp->initSocket(tmpSet);
+    QLibrary *libSocket = new QLibrary("./lib/libSocket");
+    if (!libSocket->load())
+        qWarning() << libSocket->errorString();
+    typedef QUdpSocket* (*CSocket)();
+    CSocket fun = (CSocket)libSocket->resolve("init");
+    QUdpSocket *socket = fun();
+    connect(socket, SIGNAL(readReady(QByteArray)), this, SLOT(recvSocket(QByteArray)));
+    connect(this, SIGNAL(sendReady(QByteArray)), socket, SIGNAL(sendReady(QByteArray)));
+
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    QHostAddress host(tmpSet.value(back + backHost).toString());
+    taskparm.insert("taskhost", host.toIPv4Address());
+    socket->writeDatagram("6000", host, 6000);
 
     return Qt::Key_Away;
 }
 
 int AppWindow::initSerial()
 {
-    lib = new QLibrary("./lib/libSerial");
-    if (!lib->load())
-        qDebug() << lib->errorString();
+    libSerial = new QLibrary("./lib/libSerial");
+    if (!libSerial->load())
+        qWarning() << libSerial->errorString();
     return Qt::Key_Away;
 }
 
@@ -470,7 +491,8 @@ int AppWindow::initThread()
             << &AppWindow::taskOpenServo << &AppWindow::taskStartTest
             << &AppWindow::taskClearCtrl << &AppWindow::taskStopMotor
             << &AppWindow::taskStopServo << &AppWindow::taskQuitServo
-            << &AppWindow::taskClearWait << &AppWindow::taskStartSave
+            << &AppWindow::taskClearWait << &AppWindow::taskCheckSave
+            << &AppWindow::taskStartSave
             << &AppWindow::taskClearWarn << &AppWindow::taskStartBeep
             << &AppWindow::taskClearBeep << &AppWindow::taskResetTest;
 
@@ -497,6 +519,7 @@ int AppWindow::initThread()
     currTask = 0;
     station = 0x13;
     prevShift = Qt::Key_Meta;
+    boxsave = NULL;
     return Qt::Key_Away;
 }
 
@@ -515,6 +538,39 @@ int AppWindow::initWidget(int numb, int form, QString name, QString mark, QWidge
     connect(app, SIGNAL(sendAppMsg(QTmpMap)), this, SLOT(recvAppMsg(QTmpMap)));
     connect(this, SIGNAL(sendAppMsg(QTmpMap)), app, SLOT(recvAppMsg(QTmpMap)));
     connect(app, SIGNAL(sendAppMap(QVariantMap)), this, SLOT(recvAppMap(QVariantMap)));
+
+    QPushButton *btnTester = new QPushButton(mark, this);
+    btnTester->setFlat(true);
+    btnTester->setCheckable(true);
+    btnTester->setFixedSize(BTN_WIDTH, BTN_LENTH);
+    btnTester->setFocusPolicy(Qt::NoFocus);
+    buttons.append(btnTester);
+    btnLayout->addWidget(btnTester);
+    btnTester->setObjectName(name);
+    connect(btnTester, SIGNAL(clicked(bool)), this, SLOT(clickButtons()));
+    return Qt::Key_Away;
+}
+
+int AppWindow::initLibWidget(int numb, int form, QString name, QString mark, QString lib)
+{
+    QLibrary *tmplib = new QLibrary(lib);
+    if (!tmplib->load()) {
+        qWarning() << tmplib->errorString();
+        return 0;
+    }
+    typedef QWidget* (*LibWidget)();
+    LibWidget fun = (LibWidget)tmplib->resolve("init");
+    QWidget *app = fun();
+    QVariantMap tmpMap;
+    tmpMap.insert("numb", numb);
+    tmpMap.insert("form", form);
+    tmpMap.insert("name", name);
+    tmpMap.insert("mark", mark);
+    bufwin.append(tmpMap);
+    tmpMap.clear();
+
+    app->setObjectName(name);
+    stack->addWidget(app);
 
     QPushButton *btnTester = new QPushButton(mark, this);
     btnTester->setFlat(true);
@@ -810,6 +866,27 @@ int AppWindow::taskClearWait()
     return (teststat == 2 || testwait > 500) ? Qt::Key_Away : Qt::Key_Meta;
 }
 
+int AppWindow::taskCheckSave()
+{
+    int conf = tmpSet.value(2000 + Qt::Key_3).toInt();
+    int mode = tmpSet.value(conf + 0x00).toInt();
+    if (mode == 4 && taskShift != Qt::Key_Stop) {
+        if (boxsave == NULL) {
+            boxsave = new QMessageBox(this);
+            boxsave->addButton(QMessageBox::Yes);
+            boxsave->addButton(QMessageBox::No);
+            boxsave->setText(tr("测试不合格,是否上传?"));
+        }
+        if (boxsave->isHidden())
+            testparm.remove("tasksave");
+        if (isok == DATANG) {
+            int ret = boxsave->exec();
+            testparm.insert("tasksave", (ret == QMessageBox::Yes) ? 0 : 1);
+        }
+    }
+    return Qt::Key_Away;
+}
+
 int AppWindow::taskStartSave()
 {
     if (1) {
@@ -829,7 +906,7 @@ int AppWindow::taskStartSave()
         if (mode >= 2)  // 无刷模式
             sendUdpStr(tr("6080 %1").arg((isok == DATAOK) ? "1" : "0").toUtf8());  // 下发总测试结果
     }
-    if (taskShift == Qt::Key_Stop)
+    if (taskShift == Qt::Key_Stop || testparm.value("tasksave").toInt() != 0)
         return Qt::Key_Away;
     int addr = tmpSet.value((3000 + Qt::Key_0)).toInt();
     int user = tmpSet.value(DataUser).toInt();
@@ -848,7 +925,8 @@ int AppWindow::taskStartSave()
     tmpMsg.insert(addr + TEMPWORK, (station == 0x13) ? "L" : "R");  // 工位
     tmpMsg.insert(addr + TEMPTEMP, temp);  // 温度
     tmpMsg.insert(addr + TEMPISOK, (isok == DATAOK) ? "OK" : "NG");  // 结果
-    emit sendAppMsg(tmpMsg);
+    if (testparm.value("tasksave").toInt() != 1)
+        emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
     qDebug() <<"app save:" << tr("%1ms").arg(t.elapsed(), 4, 10, QChar('0'));
     return Qt::Key_Away;
@@ -865,7 +943,7 @@ int AppWindow::taskClearWarn()
             return Qt::Key_Meta;
         }
         QString text = QInputDialog::getText(this, tr(""), tr("请输入密码"),
-                                             QLineEdit::Normal, "", &ok);
+                                             QLineEdit::Password, "", &ok);
         if (!ok) {
             return Qt::Key_Meta;
         }
@@ -1142,12 +1220,18 @@ int AppWindow::testWaitServo()
                 taskparm.insert("taskvolt", temp - sum);
             } else {
                 double tmp = taskparm.value("taskvolt").toDouble();
-                if (fabs(temp - sum) > 0.005 && tempvolt.size() >= 20)
-                    tmp += temp > sum ? 0.005 : -0.005;
+                double dif = fabs(temp - sum);
+                if (tempvolt.size() >= 20) {
+                    double cmp = 0;
+                    double plus = (temp > sum) ? 1.0 : -1.0;
+                    cmp = (dif > 0.001) ? 0.001 : cmp;
+                    cmp = (dif > 0.005) ? 0.005 : cmp;
+                    tmp += cmp * plus;
+                }
                 taskparm.insert("taskvolt", tmp);
             }
             tmpMsg.insert(Qt::Key_0, Qt::Key_Word);
-            tmpMsg.insert(Qt::Key_1, QString("%1Nm").arg(sum));
+            tmpMsg.insert(Qt::Key_1, QString("%1Nm").arg(sum, 0, 'g', 4));
             emit sendAppMsg(tmpMsg);
             tmpMsg.clear();
             qDebug() << "app volt:" << sum << tempvolt.size();
@@ -1324,7 +1408,6 @@ int AppWindow::taskConfig()
     names << "setdcr" << "setmag" << "setinr" << "setacw" << "setdcw"
           << "setimp" << "setpwr" << "setind" << "setlvs" << "setlck"
           << "sethal" << "setlod" << "setnld" << "setbmf" << "setlvs";
-
     QProgressDialog dialog(tr("配置下发进度"), tr("隐藏"), 0, names.size()*3, this);
     dialog.setWindowTitle(tr("进度对话框"));
     dialog.setWindowModality(Qt::WindowModal);
@@ -1409,9 +1492,9 @@ QVariantMap AppWindow::taskSerial(QString taskname, QString taskwork, QVariant t
     tmp.insert("taskname", taskname);
     tmp.insert("taskwork", taskwork);
     tmp.insert("taskdata", taskdata);
-    if (lib->isLoaded()) {
+    if (libSerial->isLoaded()) {
         typedef QVariantMap (*CSerial)(QVariantMap);
-        CSerial fun = (CSerial)lib->resolve("work");
+        CSerial fun = (CSerial)libSerial->resolve("work");
         QVariantMap map = fun(tmp);
         if (!map.value("tasktext").isNull()) {
             QString str = tr("异常:") + taskparm.value(taskname).toString();
@@ -1447,14 +1530,6 @@ void AppWindow::showBarCode()
         scanner->stop();
     }
     tmpcode.clear();
-}
-
-void AppWindow::showBoxPop(QString text, int t)
-{
-    boxbar->setLabelText(text);
-    wait(10);
-    (this->*initMap[t])();
-    boxbar->setValue((t+1)*100/initMap.size());
 }
 
 void AppWindow::saveConfig(QTmpMap msg)
@@ -1493,16 +1568,16 @@ void AppWindow::saveConfig(QTmpMap msg)
             query.addBindValue(uuid);
             query.addBindValue(tmpSet.value(uuid));
             if (!query.exec()) {
-                qDebug() << query.lastError();
+                qWarning() << query.lastError();
             }
         }
         boxbar->setValue(i*50/uuids.size());
     }
     QSqlDatabase::database(sqlName).commit();
-    boxbar->setValue(99);
+    boxbar->setValue(100);
+    boxbar->hide();
     wait(500);
     query.clear();
-    boxbar->setValue(100);
 
     if (name == "aip_reload") {  // 重新加载参数
         readConfig();
@@ -1822,6 +1897,7 @@ void AppWindow::recvSqlMsg(QTmpMap msg)
     }
     if (msg.value(Qt::Key_1).toString() == "over") {  // 备份完成
         boxbar->setValue(100);
+        boxbar->hide();
     }
 }
 
@@ -1874,9 +1950,9 @@ void AppWindow::recvAppMsg(QTmpMap msg)
 #endif
         break;
     case Qt::Key_Book:
-        boxbar->show();
         boxbar->setLabelText(tr("正在查询数据"));
         boxbar->setValue(1);
+        boxbar->show();
         wait(1);
         emit sendAppMsg(msg);
         break;
@@ -1884,9 +1960,13 @@ void AppWindow::recvAppMsg(QTmpMap msg)
         if (!msg.value(Qt::Key_1).isNull())
             boxbar->setLabelText(msg.value(Qt::Key_1).toString());
         if (!msg.value(Qt::Key_2).isNull()) {
-            if (msg.value(Qt::Key_2).toInt() >= 100)
+            if (msg.value(Qt::Key_2).toInt() >= 100) {
                 wait(1000);
-            boxbar->setValue(msg.value(Qt::Key_2).toInt());
+                boxbar->setValue(100);
+                boxbar->hide();
+            } else {
+                boxbar->setValue(msg.value(Qt::Key_2).toInt());
+            }
         }
         break;
     case Qt::Key_Game: {
@@ -2007,15 +2087,23 @@ void AppWindow::recvAppMap(QVariantMap msg)
     }
 }
 
-void AppWindow::recvUdpMsg(QByteArray msg)
+void AppWindow::recvSocket(QByteArray msg)
 {
-    if (taskparm.value("taskhand").toInt() == 0) {
-        QTimer::singleShot(1000, this, SLOT(taskConfig()));
+    quint32 host;
+    QByteArray tmp;
+    QDataStream in(&msg, QIODevice::ReadOnly);
+    in >> host >> tmp;
+    if (tmp.startsWith("0x31") || tmp.startsWith("6001")) {
+        taskparm.remove("tasktime");
+        if (taskparm.value("taskhand").toInt() == 0) {
+            QTimer::singleShot(1000, this, SLOT(taskConfig()));
+        }
+        taskparm.insert("taskhand", 1);
+    } else if (!tmp.startsWith("6032")) {
+        qDebug() << "udp recv:" << tmp;
     }
-    taskparm.insert("taskhand", 1);
-    taskparm.remove("tasktime");
-    int cmd = msg.mid(0, 4).toInt();
-    QString dat = msg.mid(5, msg.size());
+    int cmd = tmp.mid(0, 4).toInt();
+    QString dat = tmp.mid(5, tmp.size());
     quint32 hex = dat.toInt();
     switch (cmd) {
     case 6001:  // 自检信息
@@ -2124,7 +2212,8 @@ void AppWindow::recvUdpMsg(QByteArray msg)
         }
         break;
     case 6061:  // 真空上传停止信号
-        taskCheckStop();
+        if (currTask > taskBuf.indexOf(&AppWindow::taskCheckPlay))
+            taskCheckStop();
         break;
     case 6083: {
         testparm.insert("teststat", 2);
@@ -2158,6 +2247,14 @@ void AppWindow::recvUdpMsg(QByteArray msg)
     case 6089:
         //        recvPwrMsg(dat);
         break;
+    case 6097:
+        if (boxsave != NULL) {
+            if (dat.toInt() == 0)
+                boxsave->button(QMessageBox::Yes)->click();
+            if (dat.toInt() == 1)
+                boxsave->button(QMessageBox::No)->click();
+        }
+        break;
     default:
         break;
     }
@@ -2165,10 +2262,13 @@ void AppWindow::recvUdpMsg(QByteArray msg)
 
 void AppWindow::sendUdpStr(QByteArray msg)
 {
-    tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
-    tmpMsg.insert(Qt::Key_1, msg);
-    emit sendUdpMsg(tmpMsg);
-    tmpMsg.clear();
+    quint32 host = taskparm.value("taskhost").toInt();
+    QByteArray dat;
+    QDataStream out(&dat, QIODevice::WriteOnly);
+    out << host << msg;
+    emit sendReady(dat);
+    if (!msg.startsWith("6000") && !msg.startsWith("6030"))
+        qDebug() << "udp send:" << msg;
 }
 
 void AppWindow::recvNewMsg(QString dat)

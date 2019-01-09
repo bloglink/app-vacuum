@@ -22,7 +22,7 @@ void AppAuthor::initUI()
 
 void AppAuthor::initLayout()
 {
-    QString str = ".QFrame{border-image:url(:/author.png)}";
+    QString str = ".QFrame{border-image:url(./qrc/author.png)}";
     this->setStyleSheet(str);
 
     QVBoxLayout *mLayout = new QVBoxLayout(this);
@@ -42,7 +42,7 @@ void AppAuthor::initTitleBar()
     topLayout->addStretch();
 
     tcpStat = new QLabel(this);
-    tcpStat->setPixmap(QPixmap(":/icon_wifi.png"));
+    tcpStat->setPixmap(QPixmap("./qrc/icon_wifi.png"));
     topLayout->addWidget(tcpStat);
     tcpStat->hide();
     verStat = new QLabel(this);

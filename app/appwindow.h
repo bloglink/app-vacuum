@@ -19,19 +19,16 @@
 #include <QProgressDialog>
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
-#include <QLocalServer>
-#include <QLocalSocket>
+#include <QUdpSocket>
 #include <QDataStream>
-
-#include "tcpsocket.h"
-#include "udpsocket.h"
+#include <QDomElement>
+#include <QDomText>
+#include <QProgressBar>
 
 #include "appauthor.h"
 #include "appsignin.h"
 #include "appsystem.h"
-#include "appioctrl.h"
 #include "appbackup.h"
-#include "applogger.h"
 #include "appmaster.h"
 #include "apppermit.h"
 #include "apprepair.h"
@@ -53,8 +50,6 @@
 #include "sqlexport.h"
 #include "apptester.h"
 
-#include "boxdialog.h"
-
 #include "main.h"
 #ifdef __arm__
 #define BTN_WIDTH 240
@@ -63,6 +58,9 @@
 #define BTN_WIDTH 240
 #define BTN_LENTH 72
 #endif
+
+#define TIME_OUT 1000
+
 class AppWindow : public QMainWindow
 {
     Q_OBJECT
@@ -70,9 +68,8 @@ public:
     explicit AppWindow(QWidget *parent = 0);
     ~AppWindow();
 signals:
-    void sendUdpMsg(QTmpMap msg);
-    void sendNetMsg(QTmpMap msg);
     void sendAppMsg(QTmpMap msg);
+    void sendReady(QByteArray msg);
 private slots:
     int initUI();
     int initTitle();
@@ -117,6 +114,7 @@ private slots:
     int initSerial();
     int initThread();
     int initWidget(int numb, int form, QString name, QString mark, QWidget *app);
+    int initLibWidget(int numb, int form, QString name, QString mark, QString lib);
     int taskThread();
     int taskLoopSignin();
     int taskClearData();
@@ -132,8 +130,9 @@ private slots:
     int taskStopServo();
     int taskQuitServo();
     int taskClearWait();
-    int taskClearWarn();
+    int taskCheckSave();
     int taskStartSave();
+    int taskClearWarn();
     int taskStartBeep();
     int taskClearBeep();
     int taskResetTest();
@@ -155,7 +154,6 @@ private slots:
     QVariantMap taskSerial(QString taskname, QString taskwork, QVariant taskdata);
     void showTester();
     void showBarCode();
-    void showBoxPop(QString text, int t);
     void saveConfig(QTmpMap msg);
     void clickButtons();
     bool checkAction(QString msg);
@@ -173,7 +171,7 @@ private slots:
     void recvAppMsg(QTmpMap msg);
     void recvXmlMap(QVariantMap msg);
     void recvAppMap(QVariantMap msg);
-    void recvUdpMsg(QByteArray msg);
+    void recvSocket(QByteArray msg);
     void sendUdpStr(QByteArray msg);
     void recvNewMsg(QString msg);
     void recvStaMsg(QString msg);
@@ -190,7 +188,8 @@ private:
     QVBoxLayout *btnLayout;
     QFrame *btnFrame;
     QList<QPushButton*> buttons;
-    BoxDialog *boxbar;
+    QProgressDialog *boxbar;
+    QMessageBox *boxsave;
 
     QThread *sql;
 

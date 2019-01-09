@@ -276,7 +276,7 @@ void AppTester::initButtonBar()
 
     QLabel *btnLogo = new QLabel(this);
     blayout->addWidget(btnLogo);
-    btnLogo->setPixmap(QPixmap(":/icon_aip.png"));
+    btnLogo->setPixmap(QPixmap("./qrc/icon_aip.png"));
     btnLogo->setScaledContents(true);
     btnLogo->setFixedHeight(66);
 
@@ -1255,7 +1255,8 @@ void AppTester::updateShow()
 void AppTester::updateTime()
 {
     if (tmpTime != 0) {
-        testText->setText(strSW.arg(tr("测试时间:%1s").arg((ms.elapsed() - tmpTime)/1000.0)));
+        QString tt = QString::number((ms.elapsed() - tmpTime)/1000.0, 'f', 1);
+        testText->setText(strSW.arg(tr("测试时间:%1s").arg(tt)));
     }
     QString strA = tr("当前日期:") + QDate::currentDate().toString("yy-MM-dd");
     dateText->setText(strSW.arg(strA));
@@ -1324,7 +1325,8 @@ void AppTester::recvLedMsg(QTmpMap msg)
         str = (c == DATANG) ? strLR.arg(tr("NG")) : str;
         realText->setText(str);
         int t = ms.elapsed() - tmpTime;
-        testText->setText(strSW.arg(tr("测试时间:%1s").arg(t/1000.0)));
+        QString tt = QString::number(t/1000.0, 'f', 1);
+        testText->setText(strSW.arg(tr("测试时间:%1s").arg(tt)));
         initQuality();
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);

@@ -55,7 +55,7 @@ void AppSignin::initTitleBar()
     title->setLayout(layout);
 
     QLabel *icon  = new QLabel(this);
-    icon->setPixmap(QPixmap(":/icon_link.ico"));
+    icon->setPixmap(QPixmap("./qrc/icon_link.ico"));
     icon->setScaledContents(true);
     icon->setMaximumSize(30, 30);
     layout->addWidget(icon);
@@ -77,7 +77,7 @@ void AppSignin::initLoginBar()
     layout->setColumnStretch(2, 1);
     layout->setColumnStretch(3, 1);
     QLabel *content = new QLabel(this);
-    content->setPixmap(QPixmap(":/logo_aip.png"));
+    content->setPixmap(QPixmap("./qrc/logo_aip.png"));
     content->setScaledContents(true);
     content->setFixedSize(425, 96);
     layout->addWidget(content, 0, 0, 1, 4);

@@ -77,7 +77,7 @@ void TypSetLod::initViewBar()
     pname << tr("参数");
     QStringList parms;
     parms << tr("启动延时(s)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
-          << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("外驱转向");
+          << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("Vcc内外置");
     pMode = new BoxQModel(this);
     pMode->setRowCount(parms.size());
     pMode->setColumnCount(pname.size());
@@ -96,7 +96,7 @@ void TypSetLod::initViewBar()
     QStringList mname;
     mname << tr("参数");
     QStringList pwms;
-    pwms << tr("PWM:0; Vsp:1") << tr("PWM电压(V)") << tr("PWM频率(kHz)") << tr("PWM占空比(%)")
+    pwms << tr("驱动方式") << tr("PWM电压(V)") << tr("PWM频率(Hz)") << tr("PWM占空比(%)")
          << tr("采样频率(kHz)") << tr("采样长度");
     mMode = new BoxQModel(this);
     mMode->setRowCount(parms.size());
@@ -178,8 +178,10 @@ void TypSetLod::initItemDelegate()
     isInit = false;
     turns  << "不测试" << "逆时针" << "顺时针";
     speeds << "FG" << "伺服";
-    drivers << tr("内置驱动") << tr("外置驱动") << tr("磁旋驱动") << tr("旋变驱动");
+    drivers << tr("内置") << tr("外置");
     sources << tr("工控蓝仪") << tr("菊水电源") << tr("天宏电源") << tr("蓝仪电源");
+    modes << "PWM" << "Vsp";
+    freqs << "1K" << "8K" << "10K" << "20K";
 
     BoxDouble *curr = new BoxDouble;
     iView->setItemDelegateForRow(0, curr);
@@ -213,9 +215,12 @@ void TypSetLod::initItemDelegate()
     pView->setItemDelegateForRow(0, curr);
     pView->setItemDelegateForRow(1, poff);
     pView->setItemDelegateForRow(2, poff);
-    //    pView->setItemDelegateForRow(3, toff);
     pView->setItemDelegateForRow(4, new BoxQItems);
     pView->setItemDelegateForRow(5, new BoxQItems);
+
+    mView->setItemDelegateForRow(0, new BoxQItems);
+    mView->setItemDelegateForRow(1, voff);
+    mView->setItemDelegateForRow(2, new BoxQItems);
 }
 
 void TypSetLod::initSettings()
@@ -229,9 +234,9 @@ void TypSetLod::initSettings()
     for (int i=0; i < iMode->rowCount()*2; i++) {
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
         if (i == 8)
-            str = turns.at(str.toInt() % turns.size());
+            str = turns.at(abs(str.toInt()) % turns.size());
         if (i == 9)
-            str = speeds.at(str.toInt() % speeds.size());
+            str = speeds.at(abs(str.toInt()) % speeds.size());
         iMode->setData(iMode->index(i/2, i%2), str, Qt::DisplayRole);
     }
     row++;
@@ -243,9 +248,9 @@ void TypSetLod::initSettings()
     for (int i=0; i < pMode->rowCount(); i++) {
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
         if (i == 4)
-            str = sources.at(str.toInt() % sources.size());
+            str = sources.at(abs(str.toInt()) % sources.size());
         if (i == 5)
-            str = turns.at((qMax(1, str.toInt())) % turns.size());
+            str = drivers.at(abs(str.toInt()) % drivers.size());
         pMode->setData(pMode->index(i, 0), str, Qt::DisplayRole);
     }
     row++;
@@ -256,6 +261,10 @@ void TypSetLod::initSettings()
     row++;
     for (int i=0; i < mMode->rowCount(); i++) {
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
+        if (i == 0)
+            str = modes.at(abs(str.toInt()) % modes.size());
+        if (i == 2)
+            str = freqs.at(abs(str.toInt()) % freqs.size());
         mMode->setData(mMode->index(i, 0), str, Qt::DisplayRole);
     }
     isInit = (this->isHidden()) ? false : true;
@@ -289,7 +298,7 @@ void TypSetLod::saveSettings()
         if (i == 4)
             str = QString::number(sources.indexOf(str));
         if (i == 5)
-            str = QString::number(turns.indexOf(str));
+            str = QString::number(drivers.indexOf(str));
         tmpMsg.insert(addr + CACHELOD*0x02 + i, str);
     }
     for (int i=0; i < tMode->columnCount(); i++) {
@@ -298,6 +307,10 @@ void TypSetLod::saveSettings()
     }
     for (int i=0; i < mMode->rowCount(); i++) {
         QString str = mMode->index(i, 0).data().toString();
+        if (i == 0)
+            str = QString::number(modes.indexOf(str));
+        if (i == 2)
+            str = QString::number(freqs.indexOf(str));
         tmpMsg.insert(addr + CACHELOD*0x04 + i, str);
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
@@ -326,7 +339,7 @@ void TypSetLod::confSettings()
         tmpMap.insert(tmpStr.at(i), str);
     }
     tmpStr.clear();
-    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset" << "power" << "turn_out";
+    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset" << "power" << "vcc_driver";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
         if (i == 0)
@@ -334,7 +347,7 @@ void TypSetLod::confSettings()
         if (i == 4)
             str = QString::number(sources.indexOf(str));
         if (i == 5)
-            str = QString::number(turns.indexOf(str));
+            str = QString::number(drivers.indexOf(str));
         tmpMap.insert(tmpStr.at(i), str);
     }
     tmpStr.clear();
@@ -349,10 +362,14 @@ void TypSetLod::confSettings()
            << "pwm_duty" << "sample_freq" << "sample_lenth";
     for (int i=0; i < mMode->rowCount(); i++) {
         QString str = mMode->index(i, 0).data().toString();
+        if (i == 0)
+            str = QString::number(modes.indexOf(str));
+        if (i == 2)
+            str = QString::number(freqs.indexOf(str) + 1);
         tmpMap.insert(tmpStr.at(i), str);
     }
+
     tmpMap.insert("freq_std", 1000);
-    tmpMap.insert("vcc_driver", 0);
     tmpMap.insert("baudrate", 6);
 
     QString str = QString("LOAD");
@@ -398,9 +415,22 @@ void TypSetLod::autoChange()
             }
             if (r == 5) {
                 tmpStr = pMode->index(r, 0).data().toString();
-                int t = qMax(1, (turns.indexOf(tmpStr) + 1) % turns.size());
-                tmpStr = turns.at(t);
+                tmpStr = drivers.at((drivers.indexOf(tmpStr) + 1) % drivers.size());
                 pMode->setData(pMode->index(r, 0), tmpStr, Qt::DisplayRole);
+            }
+        }
+        if (mView->hasFocus()) {
+            QString tmpStr;
+            int r = mView->currentIndex().row();
+            if (r == 0) {
+                tmpStr = mMode->index(r, 0).data().toString();
+                tmpStr = modes.at((modes.indexOf(tmpStr) + 1) % modes.size());
+                mMode->setData(mMode->index(r, 0), tmpStr, Qt::DisplayRole);
+            }
+            if (r == 2) {
+                tmpStr = mMode->index(r, 0).data().toString();
+                tmpStr = freqs.at((freqs.indexOf(tmpStr) + 1) % freqs.size());
+                mMode->setData(mMode->index(r, 0), tmpStr, Qt::DisplayRole);
             }
         }
     }

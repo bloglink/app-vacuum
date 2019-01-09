@@ -71,6 +71,8 @@ private:
     QStringList sources;
     QStringList speeds;
     QStringList turns;
+    QStringList modes;
+    QStringList freqs;
     QVariantMap config;
     QVariantMap tmpMap;
     BoxQImage *wave;

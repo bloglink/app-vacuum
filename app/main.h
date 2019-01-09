@@ -36,5 +36,42 @@ const int DataSave = 22003;  // 日志输出
 const int DataType = 22004;  // 当前型号
 const int DataSoft = 22015;  // 软件版本
 
+#define YY0E 0x004000  // 总合格
+#define YY07 0x000002  // 转向不合格
+#define YY08 0x008000  // 测试中
+#define YY09 0x000004  // RFID未读到
+#define YY10 0x000001  // 总不合格
+#define YY11 0x000008  // 空载不合格
+#define YY12 0x000010  // PG不合格
+#define YY13 0x000080  // 负载不合格
+#define YY14 0x000020  // 移除连轴器
+#define YY15 0x010000  // 故障输出
+
+#define XX20 0x010000  // 启动
+#define XX21 0x020000  // 轴对接完成
+#define XX22 0x040000  // 停止
+#define XX23 0x080000  // 轴移除完成
+
+#define Y00 0x000001  // 右启动
+#define Y01 0x000008  // 右抽气
+#define Y02 0x000002  // 右回气
+#define Y03 0x000010  // 左启动
+#define Y04 0x000004  // 左抽气
+#define Y05 0x000020  // 左回气
+#define Y06 0x000040  // 右罩上
+#define Y07 0x000200  // 右罩下
+
+#define X00 0x000001  // 右启动
+#define X01 0x000002
+#define X02 0x000004  // 右光幕
+#define X03 0x000008  // 左启动
+#define X04 0x000010
+#define X05 0x000020  // 左光幕
+#define X06 0x000040
+#define X07 0x000080
+#define X08 0x000100  // 右到位
+#define X11 0x000800  // 左到位
+#define X14 0x004000
+
 #endif // APPDEFINE
 
