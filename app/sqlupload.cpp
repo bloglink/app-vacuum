@@ -122,6 +122,16 @@ void SqlUpload::saveSettings()
 
 void SqlUpload::recvOpen()
 {
+    bool isExist = false;
+    if (1) {
+        QStringList strs = QSqlDatabase::connectionNames();
+        if (strs.contains("upload")) {
+            isExist = true;
+            QSqlDatabase::database("upload").close();
+        }
+    }
+    if (isExist)
+        QSqlDatabase::removeDatabase("upload");
     int addr = tmpSet.value(2000 + Qt::Key_3).toInt();
     int mode = tmpSet.value(addr + 0x00).toInt();
     QString host = tmpSet.value(addr + 0x01).toString();
@@ -159,7 +169,7 @@ void SqlUpload::recvOpen()
         QMessageBox::warning(this, "", db.lastError().text(), QMessageBox::Ok);
         qDebug() << db.lastError();
     } else {
-        if (mode == 2 || mode == 3) {
+        if (mode == 2 || mode == 3 || mode == 4) {
             isConnected = true;
             QTimer *timer = new QTimer(this);
             connect(timer, SIGNAL(timeout()), this, SLOT(recvRead()));
@@ -172,23 +182,43 @@ void SqlUpload::recvOpen()
 
 void SqlUpload::recvRead()
 {
-    int addr = tmpSet.value(2000 + Qt::Key_4).toInt();
-    QString hostline = tmpSet.value(addr + 0x02).toString();
-    QSqlQuery query(QSqlDatabase::database("upload"));
-    QString ppn;
-    if (!query.exec(tr("select PPN from V_WIP_ID_LINE where LINE_ID = '%1'").arg(hostline))) {
-        qDebug() << "sql read:" << query.lastError();
-        isConnected = false;
-        return;
+    int conf = tmpSet.value(2000 + Qt::Key_3).toInt();
+    int mode = tmpSet.value(conf + 0x00).toInt();
+    if (mode == 2 || mode == 3) {
+        int addr = tmpSet.value(2000 + Qt::Key_4).toInt();
+        QString hostline = tmpSet.value(addr + 0x02).toString();
+        QSqlQuery query(QSqlDatabase::database("upload"));
+        QString ppn;
+        if (!query.exec(tr("select PPN from V_WIP_ID_LINE where LINE_ID = '%1'").arg(hostline))) {
+            qDebug() << "sql read:" << query.lastError();
+            isConnected = false;
+            return;
+        }
+        if (query.next()) {
+            ppn = query.value(0).toString();
+        }
+        if (ppn.isEmpty())
+            return;
+        if (ppn != tmpSet.value(DataType).toString()) {  // 切换型号
+            qDebug() << ppn;
+            reload(ppn);
+        }
     }
-    if (query.next()) {
-        ppn = query.value(0).toString();
+    if (mode == 4) {
+        QSqlQuery query(QSqlDatabase::database("upload"));
+        if (!query.exec(tr("select 1 from hwms.HME_PERFORMANCE_MACHINE_TEST"))) {
+            qDebug() << "sql read:" << query.lastError();
+            isConnected = false;
+            return;
+        }
     }
-    if (ppn.isEmpty())
-        return;
-    if (ppn != tmpSet.value(DataType).toString()) {  // 切换型号
-        qDebug() << ppn;
-        reload(ppn);
+    if (!isConnected) {
+        QString str = tr("连接中断,是否重连?");
+        int ret = QMessageBox::warning(this, "", str, QMessageBox::Yes | QMessageBox::No);
+        if (ret == QMessageBox::Yes) {
+            QTimer::singleShot(10, this, SLOT(recvOpen()));
+        }
+        text->setText("连接中断");
     }
 }
 

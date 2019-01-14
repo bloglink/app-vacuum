@@ -225,8 +225,11 @@ void AppTester::initTypeBar()
     typeText->setEditable(true);
     typeText->setView(new QListView);
     typeText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(typeText, SIGNAL(currentIndexChanged(int)), this, SLOT(clickType()));
+    connect(typeText, SIGNAL(currentIndexChanged(QString)), this, SLOT(clickType()));
     typeText->setStyleSheet("font:18pt;color:yellow");
+
+    QCompleter *pCompleter = new QCompleter(typeText->model(), this);
+    typeText->setCompleter(pCompleter);
 
     QHBoxLayout *lay = new QHBoxLayout;
     lay->setMargin(0);
@@ -1113,17 +1116,29 @@ void AppTester::clickType()
     if (isInit) {
         this->setFocus();
         btnTest->setEnabled(false);
+        int row = typeText->currentIndex();
         QString name = typeText->currentText();
         QString numb = tmpTyp.value(name).toString();
         if (tmpSet.value(DataType).toString() != name) {
-            tmpMsg.insert(DataFile, numb);
-            tmpMsg.insert(DataType, name);
-            tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
-            tmpMsg.insert(Qt::Key_1, "aip_reload");
-            emit sendAppMsg(tmpMsg);
-            tmpMsg.clear();
-            QTimer::singleShot(2000, this, SLOT(updateTest()));
-            initSettings();
+            if (row < tmpBuf.value("type").toInt()) {
+                QString str = tr("型号更改为%1?").arg(name);
+                int ret = QMessageBox::warning(this, "", str, QMessageBox::Ok | QMessageBox::No);
+                if (ret == QMessageBox::Ok) {
+                    tmpMsg.insert(DataFile, numb);
+                    tmpMsg.insert(DataType, name);
+                    tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
+                    tmpMsg.insert(Qt::Key_1, "aip_reload");
+                    emit sendAppMsg(tmpMsg);
+                    tmpMsg.clear();
+                    QTimer::singleShot(2000, this, SLOT(updateTest()));
+                    initSettings();
+                } else {
+                    updateType();
+                }
+            } else {
+                QMessageBox::warning(this, "", tr("型号不存在"), QMessageBox::Ok);
+                updateType();
+            }
         }
     }
 }
@@ -1187,6 +1202,7 @@ void AppTester::updateType()
         tmpTyp.insert(name, numb);
         typeText->addItem(name);
     }
+    tmpBuf.insert("type", typeText->count());
     typeText->setCurrentText(tmpSet.value(DataType).toString());
     isInit = true;
 }

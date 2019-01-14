@@ -179,6 +179,8 @@ void SqlImport::saveOracle(QTmpMap msg)
     for (int i=0; i < 6; i++) {
         if (!msg.value(addr + i*0x10 + 2).isNull()) {
             QString tmp = msg.value(addr + i*0x10 + 2).toString();
+            QStringList xxx = tmp.split(" ",QString::SkipEmptyParts);
+            tmp = xxx.last();
             tmp = tmp.remove(">").remove("m").remove("k").remove("Ω");
             query.addBindValue(tmp);
             isok = (msg.value(addr + i*0x10 + 3).toString() == "NG") ? "NG" : isok;

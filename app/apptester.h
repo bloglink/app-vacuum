@@ -21,6 +21,7 @@
 #include <QHeaderView>
 #include <QTableWidget>
 #include <QRadioButton>
+#include <QCompleter>
 
 #include "main.h"
 #include "appsignin.h"
@@ -155,6 +156,7 @@ private:
     QTmpMap tmpParm;
     QVariantMap tmpMap;
     QVariantMap tmpTyp;
+    QVariantMap tmpBuf;
     bool isInit;
     QString strv;
 };
