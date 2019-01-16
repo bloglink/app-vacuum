@@ -969,12 +969,15 @@ int AppWindow::taskStartBeep()
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
     if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动,松开夹紧气缸
-        int downaddr = ((station == WORKL) ? 0x08 : 0x09) + back + 0x40;  // 下压动作左/右地址
-        int beepaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
+        int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
+        int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
+        int beepaddr = ((station == WORKL) ? 0x08 : 0x09) + back + 0x40;  // 下压动作左/右地址
         int saveaddr = 0x0A + back + 0x40;
         int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
+        int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
         int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
         int beep = tmpSet.value(beepaddr).toString().toInt(NULL, 16);  // 内驱保持
+        down = (grab == 0) ? 0 : down;  // 没有夹紧动作则下压不复位
         sendUdpStr(tr("6036 %1").arg(down + save + beep).toUtf8());
     }  // 外置驱动无动作
     int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
@@ -1102,14 +1105,18 @@ int AppWindow::testToolIocan()
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
     bool isDriv = (currItem == nSetINR || currItem == nSetACW);  // 高压项目
     if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+        int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
+        int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
         int voltaddr = ((station == WORKL) ? 0x06 : 0x07) + back + 0x40;  // 低压动作左/右地址
         int testaddr = (isDriv) ? highaddr : voltaddr;
         int saveaddr = 0x0A + back + 0x40;
-        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
+        int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
+        int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
         int test = tmpSet.value(testaddr).toString().toInt(NULL, 16);
+        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
         if (test != 0)
-            sendUdpStr(tr("6036 %1").arg(test + save).toUtf8());
+            sendUdpStr(tr("6036 %1").arg(test + down + grab + save).toUtf8());
     }
     return Qt::Key_Away;
 }
@@ -1125,14 +1132,18 @@ int AppWindow::testStopIocan()
     bool isNext = (nextitem == nSetINR || nextitem == nSetACW);  // 下一项目为高压项目
     bool isMove = (isDriv && !isNext) || (!isDriv && isNext);
     if (mode == 2 && driv == 0 && isMove) {  // 高压变低压动作
+        int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
+        int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
         int voltaddr = ((station == WORKL) ? 0x06 : 0x07) + back + 0x40;  // 低压动作左/右地址
         int testaddr = (isDriv) ? highaddr : voltaddr;
         int saveaddr = 0x0A + back + 0x40;
-        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
+        int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
+        int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
         int test = tmpSet.value(testaddr).toString().toInt(NULL, 16);
+        int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
         if (test != 0)
-            sendUdpStr(tr("6036 %1").arg(save).toUtf8());
+            sendUdpStr(tr("6036 %1").arg(save + down + grab).toUtf8());
     }
     return Qt::Key_Away;
 }

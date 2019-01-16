@@ -212,7 +212,7 @@ void TypSetLod::initItemDelegate()
 
     BoxDouble *poff = new BoxDouble;
     poff->setMininum(-30);
-    pView->setItemDelegateForRow(0, curr);
+    pView->setItemDelegateForRow(0, poff);
     pView->setItemDelegateForRow(1, poff);
     pView->setItemDelegateForRow(2, poff);
     pView->setItemDelegateForRow(4, new BoxQItems);
@@ -336,6 +336,10 @@ void TypSetLod::confSettings()
     tmpStr << "volt" << "vcc_volt" << "vsp_volt" << "torque" << "time" << "freq";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = vMode->index(i, 0).data().toString();
+        if (i == 0) {
+            double v = pMode->index(0, 0).data().toString().toDouble();
+            str = QString::number(str.toDouble() + v);
+        }
         tmpMap.insert(tmpStr.at(i), str);
     }
     tmpStr.clear();
@@ -540,6 +544,10 @@ void TypSetLod::recvShowEvent()
     if (this->objectName() != "setlod") {
         vView->hideRow(3);
         pView->hideRow(3);
+        QStringList parms;
+        parms << tr("Vm补偿(V)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
+              << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("Vcc内外置");
+        pMode->setVerticalHeaderLabels(parms);
     }
     tmpMap.insert("enum", Qt::Key_View);
     tmpMap.insert("text", QString("6004 %1").arg(str));
