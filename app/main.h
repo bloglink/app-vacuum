@@ -73,5 +73,11 @@ const int DataSoft = 22015;  // 软件版本
 #define X11 0x000800  // 左到位
 #define X14 0x004000
 
+const int mName = 0x00;
+const int mPass = 0x01;
+const int mRole = 0x02;
+const int mLast = 0x03;
+const int mSave = 0x04;
+
 #endif // APPDEFINE
 

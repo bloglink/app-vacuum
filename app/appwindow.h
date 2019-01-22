@@ -29,7 +29,6 @@
 #include "appsignin.h"
 #include "appsystem.h"
 #include "appbackup.h"
-#include "appmaster.h"
 #include "apppermit.h"
 #include "apprepair.h"
 #include "typconfig.h"
@@ -72,7 +71,7 @@ signals:
     void sendReady(QByteArray msg);
 private slots:
     int initUI();
-    int initTitle();
+    int initCreate();
     int initLayout();
     int initAuthor();
     int initDevice();
@@ -169,6 +168,7 @@ private slots:
     void warnningString(QString dat);
     void recvSqlMsg(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
+    void recvLibMsg(QVariantMap msg);
     void recvXmlMap(QVariantMap msg);
     void recvAppMap(QVariantMap msg);
     void recvSocket(QByteArray msg);
@@ -217,7 +217,8 @@ private:
     QTimer *scanner;
     quint8 station;
     QList<QVariantMap> bufwin;
-    quint32 ioHex;
+    quint32 ioHexL;
+    quint32 ioHexR;
     int turnBuff;
     quint16 ioSave;
     QString strLoad;

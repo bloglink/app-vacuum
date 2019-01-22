@@ -29,7 +29,7 @@ AppWindow::~AppWindow()
 
 int AppWindow::initUI()
 {
-    initTitle();
+    initCreate();
     initLayout();
     initSqlDir();
     initAuthor();
@@ -37,7 +37,7 @@ int AppWindow::initUI()
     return Qt::Key_Away;
 }
 
-int AppWindow::initTitle()
+int AppWindow::initCreate()
 {
     char s_month[5];
     static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
@@ -51,11 +51,13 @@ int AppWindow::initTitle()
     QString ver = QString("V-2.3.%1").arg(mDateTime.toString("yyMMdd-hhmm"));
     this->setWindowTitle(tr("电机综合测试仪%1").arg(ver));
     taskparm.insert("tasksoft", ver);
+    qWarning() << QString("app create:V-2.3.%1").arg(mDateTime.toString("yyMMdd-hhmm"));
     return Qt::Key_Away;
 }
 
 int AppWindow::initLayout()
 {
+    this->setWindowFlags(Qt::FramelessWindowHint);
     preindex = 0;
     stack = new QStackedWidget(this);
     btnLayout = new QVBoxLayout;
@@ -231,8 +233,7 @@ int AppWindow::initIoCtrl()
 
 int AppWindow::initMaster()
 {
-    AppMaster *app = new AppMaster(this);
-    return initWidget(nMaster, 1, "master", tr("用户管理"), app);
+    return initLibWidget(nMaster, 1, "master", tr("用户管理"), "./lib/libMaster");
 }
 
 int AppWindow::initPermit()
@@ -514,7 +515,8 @@ int AppWindow::initThread()
     connect(tasks, SIGNAL(timeout()), this, SLOT(taskThread()));
     tasks->start(10);
 
-    ioHex = 0;
+    ioHexL = 0;
+    ioHexR = 0;
     ioSave = 0;
     currTask = 0;
     station = 0x13;
@@ -561,6 +563,10 @@ int AppWindow::initLibWidget(int numb, int form, QString name, QString mark, QSt
     typedef QWidget* (*LibWidget)();
     LibWidget fun = (LibWidget)tmplib->resolve("init");
     QWidget *app = fun();
+    app->setObjectName(name);
+    stack->addWidget(app);
+    connect(app, SIGNAL(sendAppMsg(QVariantMap)), this, SLOT(recvLibMsg(QVariantMap)));
+
     QVariantMap tmpMap;
     tmpMap.insert("numb", numb);
     tmpMap.insert("form", form);
@@ -568,9 +574,6 @@ int AppWindow::initLibWidget(int numb, int form, QString name, QString mark, QSt
     tmpMap.insert("mark", mark);
     bufwin.append(tmpMap);
     tmpMap.clear();
-
-    app->setObjectName(name);
-    stack->addWidget(app);
 
     QPushButton *btnTester = new QPushButton(mark, this);
     btnTester->setFlat(true);
@@ -794,7 +797,7 @@ int AppWindow::taskClearCtrl()
         if (itemctrl % 100 == 1) {
             sendUdpStr(tr("6077 %1").arg(YY14 | YY08).toUtf8());
         }
-        ret = (ioHex & XX23) ? Qt::Key_Away : ret;
+        ret = (ioHexL & XX23) ? Qt::Key_Away : ret;
         ret = (itemctrl > 500) ? Qt::Key_Away : ret;
         if (itemctrl > 500) {
             warnningString(tr("警告:轴移除超时!"));
@@ -1452,17 +1455,24 @@ int AppWindow::recvIoCtrl(int key, int work)
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int addr = tmpSet.value(2000 + Qt::Key_1).toInt();
     int have = tmpSet.value(addr + SystHave).toInt();  // 产品检测
+    work = (ioHexL & X03) ? WORKL : work;  // 左启动被按下
+    work = (ioHexR & X03) ? WORKR : work;  // 右启动被按下
+    quint32 hex = (ioHexR != 0 && work == WORKR) ? ioHexR : ioHexL;
+    QString pos = (ioHexR != 0 && work == WORKR) ? tr("右") : tr("左");
     QString str;
-    if (mode == 1) {  // 真空模式
-        bool sl = (key == Qt::Key_Play && work == 0x13) || ((ioHex & X03) && ((ioHex & X11) == 0));
-        bool sr = (key == Qt::Key_Play && work == 0x14) || ((ioHex & X00) && ((ioHex & X08) == 0));
-        if (sl && (ioHex & X05) && ((ioHex & X11) == 0)) {
-            str = tr("警告:左光幕遮挡!");
+    if (mode == 1) {  // 真空模式 启动 && 光幕 && 非到位
+        bool sl = (key == Qt::Key_Play && work == WORKL) || ((hex & X03) && ((hex & X11) == 0));
+        bool sr = (key == Qt::Key_Play && work == WORKR) || ((hex & X00) && ((hex & X08) == 0));
+        if (ioHexR != 0 && work == WORKR) {
+            sl = (key == Qt::Key_Play && work == WORKR) || ((hex & X03) && ((hex & X11) == 0));
         }
-        if (sr && (ioHex & X02) && ((ioHex & X08) == 0)) {
-            str = tr("警告:右光幕遮挡!");
+        if (sl && (hex & X05) && ((hex & X11) == 0)) {
+            str = tr("警告:%1光幕遮挡!").arg(pos);
         }
-        if ((have == 1) && sl && ((ioHex & X14) == 0)) {
+        if (sr && (hex & X02) && ((hex & X08) == 0)) {
+            str = tr("警告:%1光幕遮挡!").arg(pos);
+        }
+        if ((have == 1) && sl && ((hex & X14) == 0)) {
             str = tr("警告:产品未放置!");
         }
         if (!str.isEmpty()) {
@@ -1477,20 +1487,20 @@ int AppWindow::recvIoCtrl(int key, int work)
         int play = tmpSet.value(playaddr).toString().toInt(NULL, 16);
         int stop = tmpSet.value(stopaddr).toString().toInt(NULL, 16);
         int prod = tmpSet.value(prodaddr).toString().toInt(NULL, 16);
-        bool isPlay = (key == Qt::Key_Play || (play & ioHex));
-        if (stop & ioHex) {
+        bool isPlay = (key == Qt::Key_Play || (play & ioHexL));
+        if (stop & ioHexL) {
             taskCheckStop();
         }
-        if (isPlay && (stop & ioHex)) {
+        if (isPlay && (stop & ioHexL)) {
             str = tr("警告:光幕被遮挡!");
         }
-        if (isPlay && have == 1 && prod != 0 && ((ioHex & prod) == 0))
+        if (isPlay && have == 1 && prod != 0 && ((ioHexL & prod) == 0))
             str = tr("警告:产品未放置!");
         if (!str.isEmpty()) {
             warnningString(str);
             return Qt::Key_Meta;
         }
-        if ((play & ioHex) && !(stop & ioHex)) {  // 启动测试
+        if ((play & ioHexL) && !(stop & ioHexL)) {  // 启动测试
             taskShift = Qt::Key_Play;
         }
     }
@@ -1550,6 +1560,7 @@ void AppWindow::saveConfig(QTmpMap msg)
         tmpSave = msg;
         return;
     }
+    btnFrame->setEnabled(false);
     QString tabName = (name == "aip_reload") ? "aip_system" : name;  // 重新加载
     QString sqlName = tabName.mid(4, 6);
     QString numb = tr("%1").arg(tmpSet.value(DataFile).toInt(), 4, 10, QChar('0'));
@@ -1585,9 +1596,9 @@ void AppWindow::saveConfig(QTmpMap msg)
         boxbar->setValue(i*50/uuids.size());
     }
     QSqlDatabase::database(sqlName).commit();
+    wait(500);
     boxbar->setValue(100);
     boxbar->hide();
-    wait(500);
     query.clear();
 
     if (name == "aip_reload") {  // 重新加载参数
@@ -1597,6 +1608,8 @@ void AppWindow::saveConfig(QTmpMap msg)
     } else {
         sendSqlite();
     }
+    wait(50);
+    btnFrame->setEnabled(true);
     qDebug() << "app save:" << name << sqlName << tabName;
 }
 
@@ -1995,6 +2008,25 @@ void AppWindow::recvAppMsg(QTmpMap msg)
     }
 }
 
+void AppWindow::recvLibMsg(QVariantMap msg)
+{
+    int c = msg.value("enum").toInt();
+    switch (c) {
+    case Qt::Key_Save: {
+        QProgressDialog *tmpbox = new QProgressDialog(tr("正在保存"), tr("隐藏"), 0, 100, this);
+        tmpbox->setWindowTitle(tr("保存进度框"));
+        tmpbox->show();
+        for (int i=0; i < 101; i++) {
+            tmpbox->setValue(i);
+            wait(5);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 void AppWindow::recvXmlMap(QVariantMap msg)
 {
     QStringList keys = msg.keys();
@@ -2167,7 +2199,7 @@ void AppWindow::recvSocket(QByteArray msg)
     case 6033:  // 负载启动完成
         break;
     case 6037:  // IO板输入状态
-        ioHex = hex;
+        ioHexL = hex;
         recvIoCtrl(Qt::Key_Meta, station);
     case 6086:  // 上传采样转向
     case 6059:  // IO板输出状态
@@ -2178,6 +2210,10 @@ void AppWindow::recvSocket(QByteArray msg)
         tmpMsg.insert(Qt::Key_5, dat);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
+        break;
+    case 6099:
+        ioHexR = hex;
+        recvIoCtrl(Qt::Key_Meta, station);
         break;
     case 6040:  // 反嵌测试波形
         tmpMsg.insert(Qt::Key_0, Qt::Key_News);
@@ -2405,7 +2441,7 @@ void AppWindow::recvStaMsg(QString msg)
             err += tr("未知异常") + QString::number(cmd) + "\n";
         }
         if (cmd <= errs.size()) {
-            if ((cmd != 18) || (cmd == 18 && (ioHex & 0x004000) != 0))
+            if ((cmd != 18) || (cmd == 18 && (ioHexL & 0x004000) != 0))
                 err += errs.at(cmd) + "\n";
         }
     }
@@ -2758,5 +2794,3 @@ double AppWindow::calcNoun(QList<double> volts)
         tmp = (max - min) * 100 / avr;
     return tmp;
 }
-
-

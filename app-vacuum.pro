@@ -18,7 +18,6 @@ RC_FILE += qrc/appsource.rc
 HEADERS += \
     app/appauthor.h \
     app/appbackup.h \
-    app/appmaster.h \
     app/appsignin.h \
     app/appsystem.h \
     app/apptester.h \
@@ -52,7 +51,6 @@ HEADERS += \
 SOURCES += \
     app/appauthor.cpp \
     app/appbackup.cpp \
-    app/appmaster.cpp \
     app/appsignin.cpp \
     app/appsystem.cpp \
     app/apptester.cpp \

@@ -149,7 +149,7 @@ void TypConfig::initItemBar()
     QString strSW = "<p style='font:11pt;color:#FFFFFF;' align='left'>%1</p>";
     QString str;
     str += strSW.arg(tr("真空下推荐的测试顺序为:"));
-    str += strSW.arg(tr("绝缘->交耐->"));
+    str += strSW.arg(tr("交耐->绝缘->"));
     str += strSW.arg(tr("电阻->反嵌(转向)/电参(转向)->电感->"));
     str += strSW.arg(tr("匝间->交耐2"));
 

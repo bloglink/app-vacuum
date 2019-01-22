@@ -27,7 +27,6 @@
 
 #include "main.h"
 #include "appbackup.h"
-#include "appmaster.h"
 #include "boxqmodel.h"
 #include "boxdouble.h"
 #include "boxqitems.h"

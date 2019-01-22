@@ -29,7 +29,6 @@
 
 #include "main.h"
 
-#include "appmaster.h"
 #include "apppermit.h"
 
 #define TEMPSIGN  0x00  // 登录状态

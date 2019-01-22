@@ -21,7 +21,6 @@
 
 #include "main.h"
 
-#include "appmaster.h"
 #include "apppermit.h"
 #include "typconfig.h"
 #include "typsetdcr.h"
