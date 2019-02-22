@@ -232,8 +232,8 @@ void SqlCreate::initBack(QSqlQuery query)
     for (int i=parm.size(); i < 0x10; i++) {
         parm << "";
     }
-    parm << "1" << "1" << "1" << "1" << "0"
-         << "1" << "0" << "0" << "0" << "0"
+    parm << "2" << "2" << "2" << "2" << "0"
+         << "2" << "0" << "0" << "0" << "0"
          << "0" << "0" << "0" << "0" << "0";
     for (int i=parm.size(); i < 0x80; i++) {
         parm << "";
@@ -460,7 +460,7 @@ void SqlCreate::initConf(QSqlQuery query)
 {
     int addr = tmpSet.value((4000 + Qt::Key_0)).toInt();
     QStringList parm;
-    parm << "4,3,1,2,6"
+    parm << "1"
          << "ABC-Y"
          << "#000000,#000000,#000000,#000000,#000000,#000000,#000000,#000000";  // 综合配置
     for (int i=parm.size(); i < PSIZE; i++) {

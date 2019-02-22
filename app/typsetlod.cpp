@@ -188,11 +188,12 @@ void TypSetLod::initItemDelegate()
     iView->setItemDelegateForRow(1, curr);
     iView->setItemDelegateForRow(2, curr);
     BoxDouble *rate = new BoxDouble;
+    rate->setMaxinum(99999);
     iView->setItemDelegateForRow(3, rate);
     iView->setItemDelegateForRow(4, new BoxQItems);
 
     BoxDouble *volt = new BoxDouble;
-    volt->setDecimals(0);
+    volt->setDecimals(1);
     volt->setMaxinum(500);
     vView->setItemDelegateForRow(0, volt);
     BoxDouble *voff = new BoxDouble;
@@ -228,7 +229,7 @@ void TypSetLod::initSettings()
     int row = 0;
     int item = Qt::Key_C;
     item = (this->objectName() == "setnld") ? Qt::Key_D : item;
-    item = (this->objectName() == "setlvs") ? Qt::Key_F : item;
+    item = (this->objectName() == "setlph") ? Qt::Key_F : item;
     int addr = tmpSet.value(4000 + item).toInt();  // 负载配置地址
 
     for (int i=0; i < iMode->rowCount()*2; i++) {
@@ -275,7 +276,7 @@ void TypSetLod::saveSettings()
     confSettings();
     int item = Qt::Key_C;
     item = (this->objectName() == "setnld") ? Qt::Key_D : item;
-    item = (this->objectName() == "setlvs") ? Qt::Key_F : item;
+    item = (this->objectName() == "setlph") ? Qt::Key_F : item;
     int addr = tmpSet.value(4000 + item).toInt();  // 负载配置地址
     for (int i=0; i < iMode->rowCount()*2; i++) {
         QString str = iMode->index(i/2, i%2).data().toString();
@@ -378,7 +379,7 @@ void TypSetLod::confSettings()
 
     QString str = QString("LOAD");
     str = (this->objectName() == "setnld") ? QString("NOLOAD") : str;
-    str = (this->objectName() == "setlvs") ? QString("LPH") : str;
+    str = (this->objectName() == "setlph") ? QString("LPH") : str;
 
     config.insert(str, tmpMap);
     config.insert("enum", Qt::Key_Save);
@@ -540,7 +541,7 @@ void TypSetLod::recvShowEvent()
 {
     QString str = QString("LOAD");
     str = (this->objectName() == "setnld") ? QString("NOLOAD") : str;
-    str = (this->objectName() == "setlvs") ? QString("LPH") : str;
+    str = (this->objectName() == "setlph") ? QString("LPH") : str;
     if (this->objectName() != "setlod") {
         vView->hideRow(3);
         pView->hideRow(3);

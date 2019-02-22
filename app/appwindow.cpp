@@ -336,7 +336,7 @@ int AppWindow::initSetBmf()
 int AppWindow::initSetLvs()
 {
     TypSetLod *app = new TypSetLod(this);
-    return initWidget(0x0F, 2, "setlvs", tr("缺相配置"), app);
+    return initWidget(0x0F, 2, "setlph", tr("缺相配置"), app);
 }
 
 int AppWindow::initImport()
@@ -1421,7 +1421,7 @@ int AppWindow::taskConfig()
     QStringList names;
     names << "setdcr" << "setmag" << "setinr" << "setacw" << "setdcw"
           << "setimp" << "setpwr" << "setind" << "setlvs" << "setlck"
-          << "sethal" << "setlod" << "setnld" << "setbmf" << "setlvs";
+          << "sethal" << "setlod" << "setnld" << "setbmf" << "setlph";
     QProgressDialog dialog(tr("配置下发进度"), tr("隐藏"), 0, names.size()*3, this);
     dialog.setWindowTitle(tr("进度对话框"));
     dialog.setWindowModality(Qt::WindowModal);

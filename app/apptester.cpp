@@ -1343,7 +1343,10 @@ void AppTester::recvLedMsg(QTmpMap msg)
         int t = ms.elapsed() - tmpTime;
         QString tt = QString::number(t/1000.0, 'f', 1);
         testText->setText(strSW.arg(tr("测试时间:%1s").arg(tt)));
-        initQuality();
+        if (c == DATADC)
+            tmpNG.clear();
+        else
+            initQuality();
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);
         btnTest->setEnabled(true);
