@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>libLogger.dll</file>
+        <file>libMaster.dll</file>
+        <file>libSerial.dll</file>
+        <file>libSocket.dll</file>
+        <file>libOutput.dll</file>
+    </qresource>
+</RCC>

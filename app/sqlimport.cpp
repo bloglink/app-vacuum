@@ -11,6 +11,7 @@
 SqlImport::SqlImport(QObject *parent) : QObject(parent)
 {
     loop = 0;
+    com == NULL;
 }
 
 void SqlImport::initUpload()
@@ -65,6 +66,10 @@ void SqlImport::saveRecord(QTmpMap msg)
         qDebug() << query.lastError();
     QSqlDatabase::database("record").commit();
 
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    if (!tmpSet.value(back + 0x20 + 0x0C).toString().isEmpty()) {  // 常州多维SPC上传
+        saveSerial(tmpMap);
+    }
     int conf = tmpSet.value(2000 + Qt::Key_3).toInt();
     int mode = tmpSet.value(conf + 0x00).toInt();
     if (mode == 3) {
@@ -74,6 +79,74 @@ void SqlImport::saveRecord(QTmpMap msg)
         saveOracle(tmpMap);
     }
     tmpMap.clear();
+}
+
+void SqlImport::saveSerial(QTmpMap msg)
+{
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    if (com == NULL) {
+        QString name = tmpSet.value(back + 0x20 + 0x0C).toString();
+        com = new QSerialPort(name);
+        if (com->open(QIODevice::ReadWrite)) {
+            com->setBaudRate(9600);
+            com->setRequestToSend(false);
+            com->setDataTerminalReady(true);
+            com->setDataBits(QSerialPort::Data8);
+            com->setParity(QSerialPort::NoParity);
+            com->setStopBits(QSerialPort::OneStop);
+            com->setFlowControl(QSerialPort::NoFlowControl);
+        }
+    }
+    QString str = "{";
+    int addr = tmpSet.value((3000 + Qt::Key_0)).toInt();
+    str += msg.value(addr + TEMPCODE).toString();
+
+    addr = tmpSet.value(3000 + Qt::Key_1).toInt();  // 电阻结果地址
+    for (int i=0; i < 3; i++) {
+        str += ",";
+        if (!msg.value(addr + i*0x10 + 2).isNull()) {
+            QString tmp = msg.value(addr + i*0x10 + 2).toString();
+            QStringList xxx = tmp.split(" ",QString::SkipEmptyParts);
+            tmp = xxx.last();
+            tmp = tmp.remove(">").remove("m").remove("k").remove("Ω");
+            tmp = tmp.remove(tr("折算前:")).remove(tr("折算后:"));
+            str += tmp;
+        }
+    }
+
+    addr = tmpSet.value(3000 + Qt::Key_3).toInt();  // 绝缘结果地址
+    str += ",";
+    if (!msg.value(addr + 3).isNull()) {
+        QString curr = msg.value(addr+2).toString().remove(">").remove("M").remove("Ω");
+        str += curr;
+    }
+
+    addr = tmpSet.value(3000 + Qt::Key_4).toInt();  // 交耐结果地址
+    str += ",";
+    if (!msg.value(addr + 3).isNull()) {
+        QString curr = msg.value(addr+2).toString().remove(">").remove("mA");
+        str += curr;
+    }
+
+    addr = tmpSet.value(3000 + Qt::Key_5).toInt();  // 直耐结果地址
+    str += ",";
+    if (!msg.value(addr + 3).isNull()) {
+        QString curr = msg.value(addr+2).toString().remove(">").remove("mA");
+        str += curr;
+    }
+
+    addr = tmpSet.value(3000 + Qt::Key_6).toInt();  // 匝间结果地址
+    for (int i=0; i < 6; i++) {
+        str += ",";
+        if (!msg.value(addr + i*0x10 + 0x02).isNull()) {
+            str += "," + msg.value(addr + i*0x10 + 0x08).toString();  // 电晕
+            str += "," + msg.value(addr + i*0x10 + 0x0B).toString();  // 相位
+            str += "," + msg.value(addr + i*0x10 + 0x02).toString();  // 面积
+            str += "," + msg.value(addr + i*0x10 + 0x05).toString();  // 差积
+        }
+    }
+    str += "}";
+    com->write(str.toUtf8());
 }
 
 void SqlImport::saveUpload(QTmpMap msg)
@@ -182,6 +255,7 @@ void SqlImport::saveOracle(QTmpMap msg)
             QStringList xxx = tmp.split(" ",QString::SkipEmptyParts);
             tmp = xxx.last();
             tmp = tmp.remove(">").remove("m").remove("k").remove("Ω");
+            tmp = tmp.remove(tr("折算前:")).remove(tr("折算后:"));
             query.addBindValue(tmp);
             isok = (msg.value(addr + i*0x10 + 3).toString() == "NG") ? "NG" : isok;
         } else {
@@ -200,7 +274,7 @@ void SqlImport::saveOracle(QTmpMap msg)
         QString curr = msg.value(addr+2).toString().remove(">").remove("M").remove("Ω");
         query.addBindValue(volt.toInt());
         query.addBindValue(curr);
-        query.addBindValue(msg.value(addr + 3).toString() == "OK" ? "NG" : "PASS");
+        query.addBindValue(msg.value(addr + 3).toString() == "NG" ? "NG" : "PASS");
     } else {
         query.addBindValue("");
         query.addBindValue("");

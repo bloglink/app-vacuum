@@ -80,6 +80,9 @@ private:
     QRadioButton *btnWorkL;
     QRadioButton *btnWorkR;
     QComboBox *turnBox;
+    QComboBox *modeBox;
+    QDoubleSpinBox *voltBox;
+    QDoubleSpinBox *freqBox;
 
     QTmpMap areasL;
     QTmpMap freqsL;

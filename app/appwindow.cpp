@@ -39,6 +39,8 @@ int AppWindow::initUI()
 
 int AppWindow::initCreate()
 {
+    libExport *app = new libExport(this);
+
     char s_month[5];
     static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
     int month, day, year;
@@ -57,7 +59,6 @@ int AppWindow::initCreate()
 
 int AppWindow::initLayout()
 {
-    this->setWindowFlags(Qt::FramelessWindowHint);
     preindex = 0;
     stack = new QStackedWidget(this);
     btnLayout = new QVBoxLayout;
@@ -674,8 +675,10 @@ int AppWindow::taskCheckCode()
     int rfid = tmpSet.value(syst + SystRFID).toInt();
     int testtime = testparm.value("testtime").toInt() + 1;
     testparm.insert("testtime", testtime);
-    if (mode == 3 && rfid != 0) {  // 产线模式,控石产线专用
-        if (testtime % 100 == 1) {
+    if (rfid != 0) {  // 产线模式,控石产线专用
+        QString str = tr("警告:条码未检到");
+        if (mode == 3 && testtime % 100 == 1) {
+            str = tr("警告:RFID未检到");
             sendUdpStr("6075");  // 读取RFID
         }
         if (codeShift == Qt::Key_Away) {
@@ -683,7 +686,7 @@ int AppWindow::taskCheckCode()
             ret = Qt::Key_Away;
         } else {
             if (testtime > 300) { // 重复3次后未检到RFID,显示警告,下发停止
-                warnningString(tr("警告:RFID未检到"));
+                warnningString(str);
                 currTask = taskBuf.indexOf(&AppWindow::taskStartSave);
                 sendUdpStr(tr("6022 %1").arg(station).toUtf8());
                 taskShift = Qt::Key_Stop;
@@ -2227,6 +2230,7 @@ void AppWindow::recvSocket(QByteArray msg)
     case 6042:  // 匝间采样波形
     case 6055:  // 匝间采样结果
     case 6085:
+    case 6105:  // 匝间直线
         tmpMsg.insert(Qt::Key_0, Qt::Key_News);
         tmpMsg.insert(Qt::Key_1, cmd);
         tmpMsg.insert(Qt::Key_5, dat);
@@ -2323,6 +2327,8 @@ void AppWindow::recvNewMsg(QString dat)
     if (currItem >= 0x0B && currItem != 0x10)  // BLDC不显示
         return;
     if (currItem == 0)
+        return;
+    if (taskShift == Qt::Key_Stop)
         return;
     int testisok = DATAOK;
     QString err;

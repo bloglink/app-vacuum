@@ -106,6 +106,33 @@ void TypSetMag::initButtonBar()
     connect(turnBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
     btnLayout->addWidget(new QLabel(tr("旋向"), this));
     btnLayout->addWidget(turnBox);
+
+    modeBox = new QComboBox(this);
+    modeBox->addItem(tr("常规1"));
+    modeBox->addItem(tr("常规2"));
+    modeBox->addItem(tr("常规3"));
+    modeBox->setMinimumSize(97, 44);
+    modeBox->setView(new QListView);
+    connect(modeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
+    btnLayout->addWidget(new QLabel(tr("旋向方式"), this));
+    btnLayout->addWidget(modeBox);
+
+    voltBox = new QDoubleSpinBox(this);
+    voltBox->setDecimals(1);
+    voltBox->setFixedSize(81, 40);
+    voltBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    connect(voltBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
+    btnLayout->addWidget(new QLabel(tr("电压"), this));
+    btnLayout->addWidget(voltBox);
+
+    freqBox = new QDoubleSpinBox(this);
+    freqBox->setDecimals(1);
+    freqBox->setFixedSize(81, 40);
+    freqBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    connect(freqBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
+    btnLayout->addWidget(new QLabel(tr("频率"), this));
+    btnLayout->addWidget(freqBox);
+
     btnLayout->addStretch();
 
     btnWorkL = new QRadioButton(tr("左工位"), this);
@@ -147,6 +174,9 @@ void TypSetMag::initSettings()
     int addr = tmpSet.value(4000 + Qt::Key_2).toInt();  // 反嵌配置地址
     int wmag = tmpSet.value(4000 + Qt::Key_G).toInt();  // 波形存储地址
     turnBox->setCurrentIndex(tmpSet.value(addr + 0).toInt());
+    modeBox->setCurrentIndex(tmpSet.value(addr + 1).toInt());
+    voltBox->setValue(tmpSet.value(addr + 2).toDouble());
+    freqBox->setValue(tmpSet.value(addr + 3).toDouble());
 
     addr += CACHEMAG;
     for (int i=0; i < checks.size(); i++) {
@@ -214,6 +244,10 @@ void TypSetMag::saveSettings()
     int wmag = tmpSet.value(4000 + Qt::Key_G).toInt();  // 波形存储地址
 
     tmpMsg.insert(addr + 0, turnBox->currentIndex());
+    tmpMsg.insert(addr + 1, modeBox->currentIndex());
+    tmpMsg.insert(addr + 2, voltBox->value());
+    tmpMsg.insert(addr + 3, freqBox->value());
+
     addr += CACHEMAG;
     for (int i=0; i < checks.size(); i++) {
         tmpMsg.insert(addr + i, checks.at(i)->isChecked() ? "1" : "0");
@@ -264,6 +298,10 @@ void TypSetMag::confSettings()
 {
     int wmag = tmpSet.value(4000 + Qt::Key_G).toInt();  // 波形存储地址
     tmpMap.insert("dir", turnBox->currentIndex());
+    tmpMap.insert("mode", modeBox->currentIndex());
+    tmpMap.insert("volt", voltBox->value());
+    tmpMap.insert("freq", freqBox->value());
+
     QStringList tmp;
     QStringList wl;
     for (int i=0; i < checks.size(); i++) {

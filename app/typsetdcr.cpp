@@ -201,6 +201,7 @@ void TypSetDcr::initSettings()
             QString str = QString::number(tmpSet.value(20000 + i + CACHEDCR).toDouble());
             mView->setData(mView->index(i, COMPDCR2), str, Qt::DisplayRole);
         }
+        inputs.value("comp")->setValue(tmpSet.value(20000 + 2*CACHEDCR).toDouble());
     }
     isInit = (this->isHidden()) ? false : true;
 }
@@ -251,6 +252,10 @@ void TypSetDcr::saveSettings()
         for (int i=0; i < mView->rowCount(); i++) {
             QString str = QString::number(mView->index(i, COMPDCR2).data().toDouble());
             tmpMsg.insert(20000 + i + CACHEDCR, str);
+        }
+        if (1) {
+            QString str = QString::number(inputs.value("comp")->value());
+            tmpMsg.insert(20000 + 2*CACHEDCR, str);
         }
         tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
         tmpMsg.insert(Qt::Key_1, "aip_system");

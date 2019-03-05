@@ -228,7 +228,7 @@ void TypSetImp::initSettings()
     volt->setDecimals(0);
     view->setItemDelegateForColumn(VOLTIMP1, volt);
     vacuoBox->setVisible(mode == 1 ? true : false);
-    earthBox->setVisible(grnd == 1 ? true : false);
+    earthBox->setVisible((grnd == 1 || grnd == 2) ? true : false);
     earthBox->setEnabled((grnd == 1 && !issupper) ? false : true);
     powerBox->setVisible(grnd == 1 ? true : false);
     powerBox->setEnabled((grnd == 1 && !issupper) ? false : true);

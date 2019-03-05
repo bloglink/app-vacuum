@@ -18,6 +18,8 @@
 #include <QSqlError>
 #include <QElapsedTimer>
 
+#include <QSerialPort>
+
 #include "sqlsnowid.h"
 #include "main.h"
 #include "typsetimp.h"
@@ -48,6 +50,7 @@ signals:
 private slots:
     void initUpload();
     void saveRecord(QTmpMap msg);
+    void saveSerial(QTmpMap msg);
     void saveUpload(QTmpMap msg);
     void saveOracle(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
@@ -61,6 +64,7 @@ private:
     QString prev;
     int loop;
     QList<int> keys;
+    QSerialPort *com;
 };
 
 #endif // SQLIMPORT_H

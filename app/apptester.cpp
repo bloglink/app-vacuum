@@ -1460,7 +1460,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
             tmpStr = msg.value(Qt::Key_5).toString();
         }
     }
-    if (item == nSetIMP && numb < 6 && grnd != 1) {  // 更新匝间结果
+    if ((item == nSetIMP || item == 6105) && numb < 6 && grnd != 1) {  // 更新匝间结果
         if (!msg.value(Qt::Key_3).isNull()) {
             QString str = msg.value(Qt::Key_3).toString();
             QStringList imp = str.split(",");
@@ -1475,6 +1475,17 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 if (i == 3)
                     impText.at(numb*5 + 1 + i)->setText(strSW.arg(tr("相位: ") + pp.last()));
             }
+        }
+        if (item == 6105) {
+            numb = msg.value(Qt::Key_5).toInt() % 6;
+            QStringList tmp;
+            tmp.append(QString::number(numb));
+            for (int i=0; i < 400; i++) {
+                tmp.append(QString::number(512));
+            }
+            tmpStr = tmp.join(" ");
+
+            msg.insert(Qt::Key_4, "NG");
         }
         if (!msg.value(Qt::Key_4).isNull()) {
             QString str = msg.value(Qt::Key_4).toString();

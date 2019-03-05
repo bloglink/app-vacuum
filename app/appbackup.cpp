@@ -156,7 +156,8 @@ void AppBackup::initDevText()
     QStringList names;
     names << tr("一代气缸左") << tr("一代气缸右") << tr("横河电参左") << tr("横河电参右");
     names << tr("松下伺服左") << tr("松下伺服右") << tr("松下PLC左") << tr("松下PLC右");
-    names << tr("蓝仪电源左") << tr("安川变频器") << tr("温度传感器") << tr("扭矩传感器");
+    names << tr("蓝仪电源左") << tr("安川变频器") << tr("温度传感器") << tr("扭矩传感器")
+          << tr("多维SPC上传");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *ll = new QHBoxLayout;

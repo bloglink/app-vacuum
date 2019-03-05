@@ -25,6 +25,7 @@
 #include <QDomText>
 #include <QProgressBar>
 
+#include "libexport.h"
 #include "appauthor.h"
 #include "appsignin.h"
 #include "appsystem.h"
