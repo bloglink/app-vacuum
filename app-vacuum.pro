@@ -47,7 +47,8 @@ HEADERS += \
     app/typsetind.h \
     app/apprepair.h \
     app/typsetpwr.h \
-    app/libexport.h
+    app/libexport.h \
+    app/typsetlvs.h
 
 SOURCES += \
     app/appauthor.cpp \
@@ -81,7 +82,8 @@ SOURCES += \
     app/typsetind.cpp \
     app/apprepair.cpp \
     app/typsetpwr.cpp \
-    app/libexport.cpp
+    app/libexport.cpp \
+    app/typsetlvs.cpp
 
 RESOURCES += \
     lib/lib.qrc

@@ -64,6 +64,7 @@ private slots:
     void autoInput();
     void sample();
     void change();
+    void visibleChange();
     void recvShowEvent();
     void recvNewMsg(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
@@ -83,6 +84,9 @@ private:
     QComboBox *modeBox;
     QDoubleSpinBox *voltBox;
     QDoubleSpinBox *freqBox;
+    QLabel *modeLbl;
+    QLabel *voltLbl;
+    QLabel *freqLbl;
 
     QTmpMap areasL;
     QTmpMap freqsL;

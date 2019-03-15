@@ -135,6 +135,7 @@ private slots:
     int taskClearWarn();
     int taskStartBeep();
     int taskClearBeep();
+    int taskWaitReset();
     int taskResetTest();
     int taskCheckStop();
     int testThread();
@@ -220,6 +221,7 @@ private:
     QList<QVariantMap> bufwin;
     quint32 ioHexL;
     quint32 ioHexR;
+    quint32 prvHex;
     int turnBuff;
     quint16 ioSave;
     QString strLoad;

@@ -11,7 +11,7 @@
 SqlImport::SqlImport(QObject *parent) : QObject(parent)
 {
     loop = 0;
-    com == NULL;
+    com = NULL;
 }
 
 void SqlImport::initUpload()
@@ -54,8 +54,8 @@ void SqlImport::saveRecord(QTmpMap msg)
     query.prepare("insert into aip_sqlite values(?,?,?,?,?,?,?,?,?,?)");
     query.addBindValue(uuid);
     query.addBindValue(tmpMap.value(addr + TEMPDATE).toString());  // 日期
-    query.addBindValue(tmpMap.value(addr + TEMPPLAY));  // 启动时间
-    query.addBindValue(tmpMap.value(addr + TEMPSTOP));  // 完成时间
+    query.addBindValue(tmpMap.value(addr + TEMPPLAY).toTime().toString("hh:mm:ss"));  // 启动时间
+    query.addBindValue(tmpMap.value(addr + TEMPSTOP).toTime().toString("hh:mm:ss"));  // 完成时间
     query.addBindValue(tmpMap.value(addr + TEMPTYPE).toString());  // 型号
     query.addBindValue(tmpMap.value(addr + TEMPCODE).toString());  // 条码
     query.addBindValue(tmpMap.value(addr + TEMPUSER).toString());  // 用户
@@ -106,7 +106,7 @@ void SqlImport::saveSerial(QTmpMap msg)
         str += ",";
         if (!msg.value(addr + i*0x10 + 2).isNull()) {
             QString tmp = msg.value(addr + i*0x10 + 2).toString();
-            QStringList xxx = tmp.split(" ",QString::SkipEmptyParts);
+            QStringList xxx = tmp.split(" ", QString::SkipEmptyParts);
             tmp = xxx.last();
             tmp = tmp.remove(">").remove("m").remove("k").remove("Ω");
             tmp = tmp.remove(tr("折算前:")).remove(tr("折算后:"));
@@ -218,7 +218,8 @@ void SqlImport::saveOracle(QTmpMap msg)
     QString cmd = "insert into hwms.HME_PERFORMANCE_MACHINE_TEST (";
     cmd += "CODE,PROD_LINE,WORK_LOC,TEST_TIME,";
     cmd += "MOTOR_TYPE,OPERATOR,TOTAL_RESULT,";
-    cmd += "RESISTANCE_1,RESISTANCE_2,RESISTANCE_3,RESISTANCE_4,RESISTANCE_5,RESISTANCE_6,RES_RESULT,";
+    cmd += "RESISTANCE_1,RESISTANCE_2,RESISTANCE_3,RESISTANCE_4,RESISTANCE_5,RESISTANCE_6,";
+    cmd += "RES_RESULT,";
     cmd += "ISOL_VOLT,ISOL_RESIS,ISOL_RESULT,";
     cmd += "WT_VOLT,WT_CURR,PRES_ARC_DETEC,WT_VOLT_RESULT,";
     cmd += "ZJZS_VOLT,ZJZS_COR,ZJZS_PHASE,ZJZS_AREA,ZJZS_DIFFPROD,";
@@ -252,7 +253,7 @@ void SqlImport::saveOracle(QTmpMap msg)
     for (int i=0; i < 6; i++) {
         if (!msg.value(addr + i*0x10 + 2).isNull()) {
             QString tmp = msg.value(addr + i*0x10 + 2).toString();
-            QStringList xxx = tmp.split(" ",QString::SkipEmptyParts);
+            QStringList xxx = tmp.split(" ", QString::SkipEmptyParts);
             tmp = xxx.last();
             tmp = tmp.remove(">").remove("m").remove("k").remove("Ω");
             tmp = tmp.remove(tr("折算前:")).remove(tr("折算后:"));

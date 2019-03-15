@@ -108,13 +108,15 @@ void TypSetMag::initButtonBar()
     btnLayout->addWidget(turnBox);
 
     modeBox = new QComboBox(this);
-    modeBox->addItem(tr("常规1"));
-    modeBox->addItem(tr("常规2"));
-    modeBox->addItem(tr("常规3"));
+    modeBox->addItem(tr("反嵌"));
+    modeBox->addItem(tr("感应"));
+    modeBox->addItem(tr("混合"));
     modeBox->setMinimumSize(97, 44);
     modeBox->setView(new QListView);
     connect(modeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("旋向方式"), this));
+    connect(modeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(visibleChange()));
+    modeLbl = new QLabel(tr("旋向方式"));
+    btnLayout->addWidget(modeLbl);
     btnLayout->addWidget(modeBox);
 
     voltBox = new QDoubleSpinBox(this);
@@ -122,7 +124,8 @@ void TypSetMag::initButtonBar()
     voltBox->setFixedSize(81, 40);
     voltBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     connect(voltBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("电压"), this));
+    voltLbl = new QLabel(tr("电压"));
+    btnLayout->addWidget(voltLbl);
     btnLayout->addWidget(voltBox);
 
     freqBox = new QDoubleSpinBox(this);
@@ -130,7 +133,8 @@ void TypSetMag::initButtonBar()
     freqBox->setFixedSize(81, 40);
     freqBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     connect(freqBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("频率"), this));
+    freqLbl = new QLabel(tr("频率"));
+    btnLayout->addWidget(freqLbl);
     btnLayout->addWidget(freqBox);
 
     btnLayout->addStretch();
@@ -177,6 +181,8 @@ void TypSetMag::initSettings()
     modeBox->setCurrentIndex(tmpSet.value(addr + 1).toInt());
     voltBox->setValue(tmpSet.value(addr + 2).toDouble());
     freqBox->setValue(tmpSet.value(addr + 3).toDouble());
+    modeBox->setVisible(tmpSet.value(back + 12).toInt() == 3 ? true : false);
+    modeLbl->setVisible(tmpSet.value(back + 12).toInt() == 3 ? true : false);
 
     addr += CACHEMAG;
     for (int i=0; i < checks.size(); i++) {
@@ -235,6 +241,8 @@ void TypSetMag::initSettings()
         freqsR.insert(i, tmpSet.value(addr + i).toString());
     }
     isInit = (this->isHidden()) ? false : true;
+
+    visibleChange();
 }
 
 void TypSetMag::saveSettings()
@@ -387,6 +395,21 @@ void TypSetMag::change()
         tmpMsg.insert(Qt::Key_1, this->objectName());
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
+    }
+}
+
+void TypSetMag::visibleChange()
+{
+    if (modeBox->currentText() == tr("反嵌")) {
+        voltBox->setVisible(false);
+        freqBox->setVisible(false);
+        voltLbl->setVisible(false);
+        freqLbl->setVisible(false);
+    } else {
+        voltBox->setVisible(true);
+        freqBox->setVisible(true);
+        voltLbl->setVisible(true);
+        freqLbl->setVisible(true);
     }
 }
 

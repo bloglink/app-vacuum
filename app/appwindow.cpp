@@ -496,7 +496,8 @@ int AppWindow::initThread()
             << &AppWindow::taskClearWait << &AppWindow::taskCheckSave
             << &AppWindow::taskStartSave
             << &AppWindow::taskClearWarn << &AppWindow::taskStartBeep
-            << &AppWindow::taskClearBeep << &AppWindow::taskResetTest;
+            << &AppWindow::taskClearBeep << &AppWindow::taskWaitReset
+            << &AppWindow::taskResetTest;
 
     testBuf << &AppWindow::testClearData << &AppWindow::testToolIocan
             << &AppWindow::testToolServo << &AppWindow::testToolInvrt
@@ -518,6 +519,7 @@ int AppWindow::initThread()
 
     ioHexL = 0;
     ioHexR = 0;
+    prvHex = 0;
     ioSave = 0;
     currTask = 0;
     station = 0x13;
@@ -723,7 +725,7 @@ int AppWindow::taskToolIobrd()
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+    if (mode != 1 && driv == 0) {  // 无刷模式,内置驱动
         int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 下压动作左/右地址
         int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int saveaddr = 0x0A + back + 0x40;
@@ -890,6 +892,22 @@ int AppWindow::taskCheckSave()
             testparm.insert("tasksave", (ret == QMessageBox::Yes) ? 0 : 1);
         }
     }
+    if (mode == 5 && taskShift != Qt::Key_Stop) {
+        if (boxsave == NULL) {
+            boxsave = new QMessageBox(this);
+            boxsave->addButton(QMessageBox::Yes);
+            boxsave->addButton(QMessageBox::No);
+            boxsave->setText(tr("测试不合格,是否保存?"));
+        }
+        if (boxsave->isHidden())
+            testparm.remove("tasksave");
+        if (isok == DATANG) {
+            int ret = boxsave->exec();
+            testparm.insert("tasksave", (ret == QMessageBox::Yes) ? 0 : 1);
+            if (ret == QMessageBox::No)
+                taskShift = Qt::Key_Stop;
+        }
+    }
     return Qt::Key_Away;
 }
 
@@ -974,7 +992,7 @@ int AppWindow::taskStartBeep()
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
-    if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动,松开夹紧气缸
+    if (mode != 1 && driv == 0) {  // 无刷模式,内置驱动,松开夹紧气缸
         int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
         int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int beepaddr = ((station == WORKL) ? 0x08 : 0x09) + back + 0x40;  // 下压动作左/右地址
@@ -1012,7 +1030,7 @@ int AppWindow::taskClearBeep()
     int testbeep = testparm.value("testbeep").toInt() + 1;
     testparm.insert("testbeep", testbeep);
     if (testbeep >= tt) {
-        if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+        if (mode != 1 && driv == 0) {  // 无刷模式,内置驱动
             int saveaddr = 0x0A + back + 0x40;
             int freeaddr = 0x0C + back + 0x40;
             int free = tmpSet.value(freeaddr).toString().toInt(NULL, 16);  //
@@ -1027,6 +1045,33 @@ int AppWindow::taskClearBeep()
         qDebug() <<"app wait:" << tr("%1ms").arg(t.elapsed(), 4, 10, QChar('0')) << tt;
     }
     return ret;
+}
+
+int AppWindow::taskWaitReset()
+{
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();
+    int warn = tmpSet.value(syst + SystItem).toInt();
+    if (isok == DATANG && warn == 2) {
+        if (testparm.value("testwarn").isNull()) {
+            sendUdpStr("6094 1");  // 启用防呆
+            testparm.insert("testwarn", 2);
+            boxbar->setLabelText(tr("等待不合格品放置"));
+            boxbar->setValue(2);
+            boxbar->show();
+        }
+        int testwarn = testparm.value("testwarn").toInt() + 1;
+        testparm.insert("testwarn", testwarn);
+        boxbar->setValue((testwarn/100)%99);
+        if ((prvHex & 0x01) && ((ioHexL & 0x01) == 0)) {  // X00接光电开关
+            prvHex = ioHexL;
+            sendUdpStr("6094 0");  // 停用防呆
+            boxbar->hide();
+            return Qt::Key_Away;
+        }
+        prvHex = ioHexL;
+        return Qt::Key_Meta;
+    }
+    return Qt::Key_Away;
 }
 
 int AppWindow::taskResetTest()
@@ -1110,7 +1155,7 @@ int AppWindow::testToolIocan()
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
     bool isDriv = (currItem == nSetINR || currItem == nSetACW);  // 高压项目
-    if (mode == 2 && driv == 0) {  // 无刷模式,内置驱动
+    if (mode != 1 && driv == 0) {  // 无刷模式,内置驱动
         int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
         int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
@@ -1137,7 +1182,7 @@ int AppWindow::testStopIocan()
     int nextitem = getNextItem();
     bool isNext = (nextitem == nSetINR || nextitem == nSetACW);  // 下一项目为高压项目
     bool isMove = (isDriv && !isNext) || (!isDriv && isNext);
-    if (mode == 2 && driv == 0 && isMove) {  // 高压变低压动作
+    if (mode != 1 && driv == 0 && isMove) {  // 高压变低压动作
         int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
         int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
@@ -1265,7 +1310,6 @@ int AppWindow::testWaitServo()
 
 void AppWindow::test()
 {
-
 }
 
 int AppWindow::testStopServo()
@@ -1365,7 +1409,7 @@ int AppWindow::testStartTest()
                     if (buffrate.size() > 5)
                         buffrate.removeFirst();
                     int sum = 0;
-                    foreach (int tmp, buffrate)
+                    foreach(int tmp, buffrate)
                         sum += tmp;
                     sum /= buffrate.size();
                     testparm.insert("taskrate", sum);
@@ -1482,6 +1526,9 @@ int AppWindow::recvIoCtrl(int key, int work)
             warnningString(str);
             return Qt::Key_Meta;
         }
+        if (boxsave != NULL && (ioHexL & 0x10)) {
+            boxsave->button(QMessageBox::Yes)->click();
+        }
     }
     if (mode == 2) {
         int playaddr = back + 0x40 + ((work == WORKL) ? 0x14 : 0x15);  // 按钮启动信号地址
@@ -1552,6 +1599,7 @@ void AppWindow::showBarCode()
         tmpSet.insert(tAddr + TEMPCODE, tmpcode);
         sendSqlite();
         scanner->stop();
+        codeShift = Qt::Key_Away;
     }
     tmpcode.clear();
 }

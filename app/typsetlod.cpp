@@ -344,7 +344,8 @@ void TypSetLod::confSettings()
         tmpMap.insert(tmpStr.at(i), str);
     }
     tmpStr.clear();
-    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset" << "power" << "vcc_driver";
+    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset"
+           << "power" << "vcc_driver";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
         if (i == 0)

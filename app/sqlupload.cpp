@@ -141,7 +141,7 @@ void SqlUpload::recvOpen()
     QString port = tmpSet.value(addr + 0x05).toString();
     QString dsn;
     QString driver;
-    if (mode == 0) {
+    if (mode == 0 || mode >= 5) {
         // 存本地,不上传
         return;
     }
