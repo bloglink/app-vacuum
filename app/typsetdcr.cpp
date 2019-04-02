@@ -190,6 +190,7 @@ void TypSetDcr::initSettings()
         if (user == name) {
             view->setColumnHidden(COMPDCR1, role.toInt() >= 2 ? true : false);
             view->setColumnHidden(COMPDCR2, role.toInt() >= 2 ? true : false);
+            inputs.value("comp")->setEnabled(role.toInt() >= 2 ? false : true);
         }
     }
     if (test & 0x01) {
@@ -202,6 +203,14 @@ void TypSetDcr::initSettings()
             mView->setData(mView->index(i, COMPDCR2), str, Qt::DisplayRole);
         }
         inputs.value("comp")->setValue(tmpSet.value(20000 + 2*CACHEDCR).toDouble());
+    }
+    if (test & 0x04) {
+        BoxDouble *port = new BoxDouble;
+        port->setDecimals(0);
+        port->setMininum(1);
+        port->setMaxinum(16);
+        view->setItemDelegateForColumn(PORTDCR1, port);
+        view->setItemDelegateForColumn(PORTDCR2, port);
     }
     isInit = (this->isHidden()) ? false : true;
 }

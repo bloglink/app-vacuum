@@ -546,10 +546,6 @@ void TypSetLod::recvShowEvent()
     if (this->objectName() != "setlod") {
         vView->hideRow(3);
         pView->hideRow(3);
-        QStringList parms;
-        parms << tr("Vm补偿(V)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
-              << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("Vcc内外置");
-        pMode->setVerticalHeaderLabels(parms);
     }
     tmpMap.insert("enum", Qt::Key_View);
     tmpMap.insert("text", QString("6004 %1").arg(str));

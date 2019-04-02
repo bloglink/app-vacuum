@@ -97,21 +97,30 @@ void TypSetMag::initButtonBar()
 {
     QHBoxLayout *btnLayout = new QHBoxLayout;
 
+    QStringList turns;
+    turns << "CW" << "CCW" << "NULL";
+
     turnBox = new QComboBox(this);
-    turnBox->addItem(tr("CW"));
-    turnBox->addItem(tr("CCW"));
-    turnBox->addItem(tr("NULL"));
-    turnBox->setMinimumSize(97, 44);
+    turnBox->addItems(turns);
+    turnBox->setMinimumSize(80, 44);
     turnBox->setView(new QListView);
     connect(turnBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
     btnLayout->addWidget(new QLabel(tr("旋向"), this));
     btnLayout->addWidget(turnBox);
 
+    turnBox2 = new QComboBox(this);
+    turnBox2->addItems(turns);
+    turnBox2->setMinimumSize(80, 44);
+    turnBox2->setView(new QListView);
+    connect(turnBox2, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
+    btnLayout->addWidget(new QLabel(tr("旋向2"), this));
+    btnLayout->addWidget(turnBox2);
+
     modeBox = new QComboBox(this);
     modeBox->addItem(tr("反嵌"));
     modeBox->addItem(tr("感应"));
     modeBox->addItem(tr("混合"));
-    modeBox->setMinimumSize(97, 44);
+    modeBox->setMinimumSize(80, 44);
     modeBox->setView(new QListView);
     connect(modeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(change()));
     connect(modeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(visibleChange()));
@@ -119,9 +128,12 @@ void TypSetMag::initButtonBar()
     btnLayout->addWidget(modeLbl);
     btnLayout->addWidget(modeBox);
 
+    modeBox2 = new QCheckBox(tr("Y型切换"), this);
+    btnLayout->addWidget(modeBox2);
+
     voltBox = new QDoubleSpinBox(this);
     voltBox->setDecimals(1);
-    voltBox->setFixedSize(81, 40);
+    voltBox->setFixedSize(80, 40);
     voltBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     connect(voltBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
     voltLbl = new QLabel(tr("电压"));
@@ -130,7 +142,7 @@ void TypSetMag::initButtonBar()
 
     freqBox = new QDoubleSpinBox(this);
     freqBox->setDecimals(1);
-    freqBox->setFixedSize(81, 40);
+    freqBox->setFixedSize(80, 40);
     freqBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     connect(freqBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
     freqLbl = new QLabel(tr("频率"));
@@ -141,11 +153,11 @@ void TypSetMag::initButtonBar()
 
     btnWorkL = new QRadioButton(tr("左工位"), this);
     btnWorkL->setChecked(true);
-    btnWorkL->setMinimumSize(97, 44);
+    btnWorkL->setMinimumSize(80, 44);
     btnLayout->addWidget(btnWorkL);
 
     btnWorkR = new QRadioButton(tr("右工位"), this);
-    btnWorkR->setMinimumSize(97, 44);
+    btnWorkR->setMinimumSize(80, 44);
     btnLayout->addWidget(btnWorkR);
 
     QPushButton *btnWaveL = new QPushButton(tr("采集"), this);
@@ -181,8 +193,10 @@ void TypSetMag::initSettings()
     modeBox->setCurrentIndex(tmpSet.value(addr + 1).toInt());
     voltBox->setValue(tmpSet.value(addr + 2).toDouble());
     freqBox->setValue(tmpSet.value(addr + 3).toDouble());
+    turnBox2->setCurrentIndex(tmpSet.value(addr + 4).toInt());
     modeBox->setVisible(tmpSet.value(back + 12).toInt() == 3 ? true : false);
     modeLbl->setVisible(tmpSet.value(back + 12).toInt() == 3 ? true : false);
+    modeBox2->setChecked((tmpSet.value(addr + 5).toInt() == 0) ? false : true);
 
     addr += CACHEMAG;
     for (int i=0; i < checks.size(); i++) {
@@ -255,6 +269,8 @@ void TypSetMag::saveSettings()
     tmpMsg.insert(addr + 1, modeBox->currentIndex());
     tmpMsg.insert(addr + 2, voltBox->value());
     tmpMsg.insert(addr + 3, freqBox->value());
+    tmpMsg.insert(addr + 4, turnBox2->currentIndex());
+    tmpMsg.insert(addr + 5, modeBox2->isChecked() ? 1 : 0);
 
     addr += CACHEMAG;
     for (int i=0; i < checks.size(); i++) {
@@ -309,6 +325,8 @@ void TypSetMag::confSettings()
     tmpMap.insert("mode", modeBox->currentIndex());
     tmpMap.insert("volt", voltBox->value());
     tmpMap.insert("freq", freqBox->value());
+    tmpMap.insert("dir2", turnBox2->currentIndex());
+    tmpMap.insert("mode2", modeBox2->isChecked() ? 1 : 0);
 
     QStringList tmp;
     QStringList wl;

@@ -130,6 +130,15 @@ void TypSetInr::initSettings()
     view->setRowHidden(4, (vacu == 2));
     view->setFixedHeight((vacu == 2) ? 240 : 120);
 
+    int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    if (test & 0x04) {
+        BoxDouble *port = new BoxDouble;
+        port->setDecimals(0);
+        port->setMininum(1);
+        port->setMaxinum(16);
+        view->setItemDelegateForColumn(PORTINR2, port);
+    }
+
     isInit = (this->isHidden()) ? false : true;
 }
 

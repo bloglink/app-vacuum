@@ -348,6 +348,12 @@ void AppTester::initHistogram()
     tmp.insert("point", testOK);
     bodys->setBodys(tmp);
     tmpQua.append(tmp);
+
+    connect(bodys, SIGNAL(clicked()), this, SLOT(clickView()));
+
+    viewClickCount = 0;
+    viewClickTimer = new QTimer(this);
+    connect(viewClickTimer, SIGNAL(timeout()), this, SLOT(clearView()));
 }
 
 void AppTester::initWorkState()
@@ -630,10 +636,16 @@ void AppTester::initSetCCW()
 {
     int addr = tmpSet.value(4000 + Qt::Key_2).toInt();  // 反嵌配置地址
     int turn = tmpSet.value(addr + 0).toInt();
+    int turn2 = tmpSet.value(addr + 4).toInt();
     if (turn != 2) {
         tmpItem.insert(tmpRow, tr("转向"));
         tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW")));
         insertItem(nSetMAG, 0x08);
+    }
+    if (turn2 != 2) {
+        tmpItem.insert(tmpRow, tr("转向2"));
+        tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW")));
+        insertItem(nSetMAG, 0x09);
     }
 }
 
@@ -1111,6 +1123,35 @@ void AppTester::initQuality()
     bodys->update();
 }
 
+void AppTester::clickView()
+{
+    viewClickCount++;
+    if (viewClickCount >= 2) {
+        QString str = tr("将清除统计数据,确定吗?");
+        int ret = QMessageBox::warning(this, "", str, QMessageBox::Ok | QMessageBox::Cancel);
+        if (ret == QMessageBox::Ok) {
+            testQu = 0;
+            testOK = 0;
+            tmpNG.clear();
+            for (int i=0; i < tmpQua.size(); i++) {
+                QVariantMap tmp = tmpQua.at(i);
+                tmp.insert("point", 0);
+                tmpQua[i] = tmp;
+            }
+            initQuality();
+        }
+        viewClickTimer->stop();
+        viewClickCount = 0;
+    } else {
+        viewClickTimer->start(500);
+    }
+}
+
+void AppTester::clearView()
+{
+    viewClickCount = 0;
+}
+
 void AppTester::clickType()
 {
     if (isInit) {
@@ -1285,10 +1326,10 @@ void AppTester::updateTest()
     btnTest->setEnabled(true);
     typeText->setEnabled(true);
 
-    //    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
-    //    int grnd = tmpSet.value(back + backGrnd).toInt();
-    //    if (grnd == 1)
-    //        impWave.at(0)->clicked();
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int grnd = tmpSet.value(back + backGrnd).toInt();
+    if (grnd == 1)
+        impWave.at(0)->clicked();
 }
 
 void AppTester::recvErrMsg(QTmpMap msg)
@@ -1576,12 +1617,12 @@ void AppTester::recvNewMsg(QTmpMap msg)
             labels.value("prod")->setStyleSheet("color:white;background:#121919");
         }
     }
-    //    if (item == 6042) {  // 手动波形
-    //        recvManual(msg);
-    //    }
-    //    if (item == 6087) {  // 匝间电压
-    //        strv = msg.value(Qt::Key_5).toString();
-    //    }
+    if (item == 6042) {  // 手动波形
+        recvManual(msg);
+    }
+    if (item == 6087) {  // 匝间电压
+        strv = msg.value(Qt::Key_5).toString();
+    }
     tmpMap.clear();
 }
 

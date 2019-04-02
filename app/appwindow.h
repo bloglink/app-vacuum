@@ -55,7 +55,7 @@
 #define BTN_WIDTH 240
 #define BTN_LENTH 72
 #else
-#define BTN_WIDTH 240
+#define BTN_WIDTH 200
 #define BTN_LENTH 72
 #endif
 

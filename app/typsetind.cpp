@@ -208,7 +208,7 @@ void TypSetInd::initSettings()
     tempBox->setCurrentIndex(tmpSet.value(addr + 4).toInt());
     smaxBox->setValue(tmpSet.value(addr + 5).toDouble());
     sminBox->setValue(tmpSet.value(addr + 6).toDouble());
-    voltBox->setCurrentIndex(tmpSet.value(addr + 7).toInt());
+    voltBox->setCurrentIndex(qMax(0, tmpSet.value(addr + 7).toInt()));
 
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_8)).toInt() + CACHEIND;

@@ -83,6 +83,7 @@ private slots:
     void sampleCalc();
     void sampleOver();
     void sampleWait();
+    void sampleSwitch();
     void recvWarn();
     void recvOver();
     void recvParm(QString dat);
@@ -98,6 +99,7 @@ private:
     BoxQModel *mView;
     QTableWidget *wView;
     QList<BoxQLabel*> waves;
+    QCheckBox *modeBox;
     QCheckBox *vacuoBox;
     QCheckBox *earthBox;
     QCheckBox *powerBox;

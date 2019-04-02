@@ -83,6 +83,8 @@ private slots:
     void initSetLVS();
     void insertItem(int item, int numb);
     void initQuality();
+    void clickView();
+    void clearView();
     void clickType();
     void clickTest();
     void clickStop();
@@ -159,6 +161,8 @@ private:
     QVariantMap tmpBuf;
     bool isInit;
     QString strv;
+    int viewClickCount;
+    QTimer *viewClickTimer;
 };
 
 #endif // APPTESTER_H

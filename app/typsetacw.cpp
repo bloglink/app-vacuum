@@ -174,6 +174,15 @@ void TypSetAcw::initSettings()
     view->setItemDelegateForColumn(UPPERACW, curr);
     view->setItemDelegateForColumn(LOWERACW, curr);
 
+    int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    if (test & 0x04) {
+        BoxDouble *port = new BoxDouble;
+        port->setDecimals(0);
+        port->setMininum(1);
+        port->setMaxinum(16);
+        view->setItemDelegateForColumn(PORTACW2, port);
+    }
+
     isInit = (this->isHidden()) ? false : true;
 }
 

@@ -81,7 +81,9 @@ private:
     QRadioButton *btnWorkL;
     QRadioButton *btnWorkR;
     QComboBox *turnBox;
+    QComboBox *turnBox2;
     QComboBox *modeBox;
+    QCheckBox *modeBox2;
     QDoubleSpinBox *voltBox;
     QDoubleSpinBox *freqBox;
     QLabel *modeLbl;

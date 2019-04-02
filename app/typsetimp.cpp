@@ -105,6 +105,10 @@ void TypSetImp::initButtonBar()
     connect(powerBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
     blayout->addWidget(powerBox);
 
+    modeBox = new QCheckBox(tr("Y型切换"), this);
+    blayout->addWidget(modeBox);
+    connect(modeBox, SIGNAL(clicked(bool)), this, SLOT(sampleSwitch()));
+
     blayout->addStretch();
 
     textBox = new QLabel(tr("缓升步长(V)"), this);
@@ -217,6 +221,7 @@ void TypSetImp::initSettings()
     earthBox->setChecked(tmpSet.value(addr + 0x01).toInt() == 0 ? false : true);
     powerBox->setChecked(tmpSet.value(addr + 0x02).toInt() == 0 ? false : true);
     stepBox->setValue(tmpSet.value(addr + 0x03).toInt());
+    modeBox->setChecked(tmpSet.value(addr + 0x04).toInt() == 0 ? false : true);
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
@@ -275,6 +280,7 @@ void TypSetImp::saveSettings()
     tmpMsg.insert(addr + 0x01, QString::number(earthBox->isChecked() ? 1 : 0));
     tmpMsg.insert(addr + 0x02, QString::number(powerBox->isChecked() ? 1 : 0));
     tmpMsg.insert(addr + 0x03, QString::number(stepBox->value()));
+    tmpMsg.insert(addr + 0x04, QString::number(modeBox->isChecked() ? 1 : 0));
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_6)).toInt() + CACHEIMP;
         for (int i=0; i < mView->rowCount(); i++) {
@@ -326,6 +332,7 @@ void TypSetImp::confSettings()
     tmpMap.insert("earth", QString::number(earthBox->isChecked() ? 1 : 0));
     tmpMap.insert("power", QString::number(powerBox->isChecked() ? 1 : 0));
     tmpMap.insert("step", QString::number(stepBox->value()));
+    tmpMap.insert("mode2", QString::number(modeBox->isChecked() ? 1 : 0));
     if (grnd == 2) {
         for (int i=0; i < mView->rowCount(); i++) {
             int volt = mView->index(i, VOLTIMP1).data().toInt();
@@ -449,6 +456,7 @@ void TypSetImp::swapWave()
     btns.value("btncancel")->setEnabled(false);
     btns.value("btnresult")->setEnabled(false);
     btns.value("btnresult")->setText(tr("完成采集"));
+    sampleSwitch();
 }
 
 void TypSetImp::change()
@@ -572,6 +580,16 @@ void TypSetImp::sampleWait()
     btnWorkL->setEnabled(true);
     btnWorkR->setEnabled(true);
     btns.value("btnsample")->setEnabled(true);
+}
+
+void TypSetImp::sampleSwitch()
+{
+    int test = (btnWorkL->isChecked()) ? 0x01 : 0x02;
+    int swit = (modeBox->isChecked()) ? test : 0x00;
+    tmpMap.insert("enum", Qt::Key_View);
+    tmpMap.insert("text", QString("6036 %1").arg(swit));
+    emit sendAppMap(tmpMap);
+    tmpMap.clear();
 }
 
 void TypSetImp::autoInput()
@@ -726,6 +744,7 @@ void TypSetImp::showEvent(QShowEvent *e)
     emit sendAppMap(tmpMap);
     tmpMap.clear();
     this->setFocus();
+    sampleSwitch();
     e->accept();
 }
 

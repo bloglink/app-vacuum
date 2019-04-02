@@ -51,6 +51,17 @@ void AppBackup::initBoxText()
           << tr("语言支持") << tr("工位设置") << tr("最高电压") << tr("自动测试")
           << tr("测试延时") << tr("目标网络") << tr("匝间模式") << tr("测试模式")
           << tr("转向模式") << tr("波形比例") << tr("耐压模式") << tr("特殊配置");
+    QStringList tools;
+    tools << "" << "" << ""
+          << tr("0:1.0V 0.6V 0.3V\n2:1.5V 1.0V 0.5V")
+          << "" << "" << "" << ""
+          << "" << ""
+          << tr("0:常规模式\n1:单点破损\n2:设置档位")
+          << tr("0:常规模式\n1:真空模式\n2:无刷模式\n3:控石产线")
+          << tr("0:常规反嵌\n1:屏蔽反嵌\n3:感应模式")
+          << ""
+          << tr("0:常规模式\n1:真空模式\n2:相间模式\n3:二次耐压")
+          << tr("0:常规模式\n1:美芝真空\n2:旧版无刷\n4:输出扩展");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
@@ -61,6 +72,8 @@ void AppBackup::initBoxText()
         input->setFixedHeight(35);
         box->addWidget(input);
         txts.append(input);
+        input->setToolTip(tools.at(i));
+        input->setToolTipDuration(60000);
     }
     blayout->addStretch();
 }

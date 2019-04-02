@@ -732,7 +732,9 @@ int AppWindow::taskToolIobrd()
         int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
         int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
         int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
-        sendUdpStr(tr("6036 %1").arg(down + grab + save).toUtf8());
+        int test = down + grab + save;
+        if (test != 0)
+            sendUdpStr(tr("6036 %1").arg(test).toUtf8());
     }  // 外置驱动无动作
     return Qt::Key_Away;
 }
@@ -1150,6 +1152,14 @@ int AppWindow::testClearData()
 
 int AppWindow::testToolIocan()
 {
+    int itemwait = itemparm.value("itemtool").toInt() + 1;
+    itemparm.insert("itemtool", itemwait);
+    if (currItem == nSetNLD || currItem == nSetLPH) {
+        int addr = tmpSet.value(4000 + Qt::Key_D).toInt();  // 空载配置地址
+        int time = tmpSet.value(addr + CACHELOD*0x02).toDouble() * 100;
+        if (itemwait < time)
+            return Qt::Key_Meta;
+    }
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
@@ -1168,6 +1178,24 @@ int AppWindow::testToolIocan()
         int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);
         if (test != 0)
             sendUdpStr(tr("6036 %1").arg(test + down + grab + save).toUtf8());
+    }
+    if (currItem == nSetMAG) {
+        int addr = tmpSet.value(4000 + Qt::Key_2).toInt();  // 反嵌配置地址
+        int swit = tmpSet.value(addr + 5).toInt();  // Y型切换
+        int test = (station == WORKL) ? 0x01 : 0x02;
+        if (swit != 0) {
+            sendUdpStr(tr("6036 %1").arg(test).toUtf8());
+            wait(500);
+        }
+    }
+    if (currItem == nSetIMP) {
+        int addr = tmpSet.value(4000 + Qt::Key_6).toInt();  // 反嵌配置地址
+        int swit = tmpSet.value(addr + 4).toInt();  // Y型切换
+        int test = (station == WORKL) ? 0x01 : 0x02;
+        if (swit != 0) {
+            sendUdpStr(tr("6036 %1").arg(test).toUtf8());
+            wait(500);
+        }
     }
     return Qt::Key_Away;
 }
@@ -1196,6 +1224,12 @@ int AppWindow::testStopIocan()
         if (test != 0)
             sendUdpStr(tr("6036 %1").arg(save + down + grab).toUtf8());
     }
+    isDriv = (currItem == nSetMAG) || (currItem == nSetIMP);  // 当前项目为Y型切换
+    isNext = (nextitem == nSetMAG || nextitem == nSetIMP);  // 下一项目为Y型切换
+    if (isDriv && !isNext) {
+        sendUdpStr(tr("6036 %1").arg(0x00).toUtf8());
+    }
+
     return Qt::Key_Away;
 }
 
@@ -1739,7 +1773,7 @@ bool AppWindow::screensSave(QString msg)
 
 void AppWindow::screensShow(QString msg)
 {
-    qDebug() << "app show:" << msg;
+    qDebug() << "app show:" << msg << this->size();
     for (int i=0; i < stack->count(); i++) {
         if (stack->widget(i)->objectName() == msg) {
             if (preindex == i)
@@ -2401,9 +2435,13 @@ void AppWindow::recvNewMsg(QString dat)
             if (xml == "Test_Data_Result") {
                 timeRsl = ((currItem == 0x01) && (!temp.contains("Ω")) ? 0x08 : timeRsl);
             }
-            timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("正转")))) ? 0x08 : timeRsl;
-            timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("反转")))) ? 0x08 : timeRsl;
-            timeRsl = ((currItem == nSetMAG) && (temp.contains(tr("不转")))) ? 0x08 : timeRsl;
+            bool isTurn = false;
+            isTurn = ((currItem == nSetMAG) && (temp.contains(tr("正转")))) ? true : isTurn;
+            isTurn = ((currItem == nSetMAG) && (temp.contains(tr("反转")))) ? true : isTurn;
+            isTurn = ((currItem == nSetMAG) && (temp.contains(tr("不转")))) ? true : isTurn;
+            if (isTurn) {
+                timeRsl = (timeRsl == 0x09) ? 0x09 : 0x08;
+            }
             timeRsl = ((currItem == nSetPWR) && (temp.contains(tr("正转")))) ? 0x03 : timeRsl;
             timeRsl = ((currItem == nSetPWR) && (temp.contains(tr("反转")))) ? 0x03 : timeRsl;
             timeRsl = ((currItem == nSetPWR) && (temp.contains(tr("不转")))) ? 0x03 : timeRsl;
