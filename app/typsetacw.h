@@ -19,6 +19,7 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QRadioButton>
 
 #include "main.h"
 #include "appbackup.h"
@@ -57,6 +58,7 @@ private slots:
     void saveSettings();
     void confSettings();
     void autoChange(QModelIndex index);
+    void autoCheck();
     void autoInput();
     void change();
     void recvShowEvent();
@@ -67,7 +69,8 @@ private:
     QVBoxLayout *layout;
     QTableView *view;
     BoxQModel *mView;
-    QCheckBox *vacuoBox;
+    QGroupBox *buttonL;
+    QList<QCheckBox*> checkboxs;
 
     QStringList freqs;
     QStringList ports;

@@ -185,15 +185,21 @@ void TypConfig::initConfigBar()
     autoPixmap(typeNames.at(0));
     layout->addWidget(typePixmap);
 
-    layout->addWidget(new QLabel(textConf.arg(tr("线夹颜色")), this));
+    QString tstr = textConf.arg(tr("线夹颜色&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;线夹名称"));
+    layout->addWidget(new QLabel(tstr, this));
 
     QGridLayout *cLayout = new QGridLayout;
     for (int i=0; i < 8; i++) {
         QPushButton *btn = new QPushButton(QString::number(i+1));
         colors.append(btn);
-        cLayout->addWidget(btn, i/2, i%2);
+        cLayout->addWidget(btn, i, 0);
         connect(btn, SIGNAL(clicked(bool)), this, SLOT(selectColor()));
+        QLineEdit *txt = new QLineEdit(this);
+        buttons.append(txt);
+        cLayout->addWidget(txt, i, 1);
     }
+    cLayout->setColumnStretch(0, 1);
+    cLayout->setColumnStretch(1, 2);
     layout->addLayout(cLayout);
 
     testAutoBox = new QCheckBox(tr("感应启动"), this);
@@ -327,11 +333,15 @@ void TypConfig::initOtherBar()
     int test = tmpSet.value(back + backTest).toInt();
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();
 
-    testTypeBox->setCurrentText(tmpSet.value(conf + ADDRTYPE).toString());
-    autoPixmap(tmpSet.value(conf + ADDRTYPE).toString());
+    testTypeBox->setCurrentText(tmpSet.value(conf + 0x01).toString());  // 电机类型
+    autoPixmap(tmpSet.value(conf + 0x01).toString());  // 自动显示电机类型图片
     QStringList wireColor = tmpSet.value(conf + ADDRWIRE).toString().split(",");
-    for (int t=0; t < wireColor.size(); t++)
+    for (int t=0; t < qMin(colors.size(), wireColor.size()); t++)
         colors.at(t)->setStyleSheet(QString("background-color:%1").arg(wireColor.at(t)));
+    QStringList wireName = tmpSet.value(conf + 0x06).toString().split(",");
+    for (int i=0; i < qMin(buttons.size(), wireName.size()); i++) {
+        buttons.at(i)->setText(wireName.at(i));
+    }
 
     testAutoBox->setChecked((tmpSet.value(conf + ADDRAUTO).toInt() == 0) ? false : true);
     testDrivBox->setChecked((tmpSet.value(conf + ADDRDRIV).toInt() == 0) ? false : true);
@@ -363,16 +373,21 @@ void TypConfig::saveSettings()
         if (from - stop != 1)
             testItems.move(from, (from > stop) ? stop+1 : stop);
     }
-    tmpMsg.insert(r + ADDRITEM, testItems.join(","));
-    tmpMsg.insert(r + 0x05, warnItems.join(","));
-    tmpMsg.insert(r + ADDRTYPE, testTypeBox->currentText());
+    tmpMsg.insert(r + ADDRITEM, testItems.join(","));  // 测试项目
+    tmpMsg.insert(r + 0x05, warnItems.join(","));  // 防呆项目
+    tmpMsg.insert(r + 0x01, testTypeBox->currentText());  // 电机类型
 
     QStringList wireColor;
     for (int i=0; i < colors.size(); i++) {
         QPalette palette = colors.at(i)->palette();
         wireColor.append(palette.color(QPalette::Background).name());
     }
+    QStringList wireName;
+    for (int i=0; i < buttons.size(); i++) {
+        wireName.append(buttons.at(i)->text());
+    }
     tmpMsg.insert(r + ADDRWIRE, wireColor.join(","));
+    tmpMsg.insert(r + 0x06, wireName.join(","));
     tmpMsg.insert(r + ADDRAUTO, testAutoBox->isChecked() ? 1 : 0);
     tmpMsg.insert(r + ADDRDRIV, testDrivBox->isChecked() ? 1 : 0);
 

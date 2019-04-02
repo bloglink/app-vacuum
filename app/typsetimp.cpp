@@ -93,28 +93,31 @@ void TypSetImp::initButtonBar()
 {
     QHBoxLayout *blayout = new QHBoxLayout;
 
-    vacuoBox = new QCheckBox(tr("真空测试"), this);
+    vacuoBox = new QCheckBox(tr("真空"), this);
     connect(vacuoBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
     blayout->addWidget(vacuoBox);
 
-    earthBox = new QCheckBox(tr("接地测试"), this);
+    earthBox = new QCheckBox(tr("接地"), this);
     connect(earthBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
     blayout->addWidget(earthBox);
 
-    powerBox = new QCheckBox(tr("放电测试"), this);
+    powerBox = new QCheckBox(tr("放电"), this);
     connect(powerBox, SIGNAL(clicked(bool)), this, SLOT(swapVacuo()));
     blayout->addWidget(powerBox);
 
-    modeBox = new QCheckBox(tr("Y型切换"), this);
+    modeBox = new QCheckBox(tr("Y型"), this);
     blayout->addWidget(modeBox);
     connect(modeBox, SIGNAL(clicked(bool)), this, SLOT(sampleSwitch()));
+
+    modeBox2 = new QCheckBox(tr("比较模式"), this);
+    blayout->addWidget(modeBox2);
 
     blayout->addStretch();
 
     textBox = new QLabel(tr("缓升步长(V)"), this);
     blayout->addWidget(textBox);
     stepBox = new QSpinBox(this);
-    stepBox->setFixedSize(70, 40);
+    stepBox->setFixedSize(60, 40);
     stepBox->setMinimum(10);
     stepBox->setMaximum(3000);
     blayout->addWidget(stepBox);
@@ -135,35 +138,35 @@ void TypSetImp::initButtonBar()
 
     QPushButton *btnsample = new QPushButton(this);
     btnsample->setText(tr("采集"));
-    btnsample->setMinimumSize(90, 40);
+    btnsample->setMinimumSize(80, 40);
     connect(btnsample, SIGNAL(clicked(bool)), this, SLOT(sample()));
     blayout->addWidget(btnsample);
     btns.insert("btnsample", btnsample);
 
     QPushButton *btnappend = new QPushButton(this);
     btnappend->setText(tr("添加样品"));
-    btnappend->setMinimumSize(90, 40);
+    btnappend->setMinimumSize(80, 40);
     connect(btnappend, SIGNAL(clicked(bool)), this, SLOT(sampleAdd()));
     blayout->addWidget(btnappend);
     btns.insert("btnappend", btnappend);
 
     QPushButton *btncancel = new QPushButton(this);
     btncancel->setText(tr("取消样品"));
-    btncancel->setMinimumSize(90, 40);
+    btncancel->setMinimumSize(80, 40);
     connect(btncancel, SIGNAL(clicked(bool)), this, SLOT(sampleDel()));
     blayout->addWidget(btncancel);
     btns.insert("btncancel", btncancel);
 
     QPushButton *btnresult = new QPushButton(this);
     btnresult->setText(tr("完成采集"));
-    btnresult->setMinimumSize(90, 40);
+    btnresult->setMinimumSize(80, 40);
     connect(btnresult, SIGNAL(clicked(bool)), this, SLOT(sampleCalc()));
     blayout->addWidget(btnresult);
     btns.insert("btnresult", btnresult);
 
     QPushButton *btnsqlite = new QPushButton(this);
     btnsqlite->setText(tr("保存"));
-    btnsqlite->setMinimumSize(90, 40);
+    btnsqlite->setMinimumSize(80, 40);
     connect(btnsqlite, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
     blayout->addWidget(btnsqlite);
     btns.insert("btnsqlite", btnsqlite);
@@ -222,6 +225,7 @@ void TypSetImp::initSettings()
     powerBox->setChecked(tmpSet.value(addr + 0x02).toInt() == 0 ? false : true);
     stepBox->setValue(tmpSet.value(addr + 0x03).toInt());
     modeBox->setChecked(tmpSet.value(addr + 0x04).toInt() == 0 ? false : true);
+    modeBox2->setChecked(tmpSet.value(addr + 0x05).toInt() == 0 ? false : true);
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
@@ -267,6 +271,9 @@ void TypSetImp::initSettings()
             mView->setData(mView->index(i, t), str, Qt::DisplayRole);
         }
     }
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int snap = tmpSet.value(syst + SystRate).toInt();  // 启动方式
+    btns.value("btnsample")->setEnabled(snap != 1);  // 滑罩启动
     isInit = (this->isHidden()) ? false : true;
     timer->stop();
 }
@@ -281,6 +288,7 @@ void TypSetImp::saveSettings()
     tmpMsg.insert(addr + 0x02, QString::number(powerBox->isChecked() ? 1 : 0));
     tmpMsg.insert(addr + 0x03, QString::number(stepBox->value()));
     tmpMsg.insert(addr + 0x04, QString::number(modeBox->isChecked() ? 1 : 0));
+    tmpMsg.insert(addr + 0x05, QString::number(modeBox2->isChecked() ? 1 : 0));
     for (int t=0; t < mView->columnCount(); t++) {
         int addr = tmpSet.value((4000 + Qt::Key_6)).toInt() + CACHEIMP;
         for (int i=0; i < mView->rowCount(); i++) {
@@ -332,7 +340,8 @@ void TypSetImp::confSettings()
     tmpMap.insert("earth", QString::number(earthBox->isChecked() ? 1 : 0));
     tmpMap.insert("power", QString::number(powerBox->isChecked() ? 1 : 0));
     tmpMap.insert("step", QString::number(stepBox->value()));
-    tmpMap.insert("mode2", QString::number(modeBox->isChecked() ? 1 : 0));
+    tmpMap.insert("mode", QString::number(modeBox->isChecked() ? 1 : 0));
+    tmpMap.insert("mode2", QString::number(modeBox2->isChecked() ? 1 : 0));
     if (grnd == 2) {
         for (int i=0; i < mView->rowCount(); i++) {
             int volt = mView->index(i, VOLTIMP1).data().toInt();
@@ -449,9 +458,11 @@ void TypSetImp::swapWave()
             waves.at(i)->update();
         }
     }
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int snap = tmpSet.value(syst + SystRate).toInt();  // 启动方式
     btnWorkL->setEnabled(true);
     btnWorkR->setEnabled(true);
-    btns.value("btnsample")->setEnabled(true);
+    btns.value("btnsample")->setEnabled((snap != 1));
     btns.value("btnappend")->setEnabled(false);
     btns.value("btncancel")->setEnabled(false);
     btns.value("btnresult")->setEnabled(false);
@@ -577,9 +588,13 @@ void TypSetImp::sampleOver()
 
 void TypSetImp::sampleWait()
 {
-    btnWorkL->setEnabled(true);
-    btnWorkR->setEnabled(true);
-    btns.value("btnsample")->setEnabled(true);
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int snap = tmpSet.value(syst + SystRate).toInt();  // 启动方式
+    if (snap != 1) {  // 滑罩启动
+        btnWorkL->setEnabled(true);
+        btnWorkR->setEnabled(true);
+        btns.value("btnsample")->setEnabled(true);
+    }
 }
 
 void TypSetImp::sampleSwitch()
@@ -723,6 +738,20 @@ void TypSetImp::recvAppMsg(QTmpMap msg)
         if (!this->isHidden())
             saveSettings();
         break;
+    case Qt::Key_Play: {
+        if (this->isHidden())
+            return;
+        btns.value("btnsample")->setEnabled(true);
+        btns.value("btnappend")->setEnabled(true);
+        break;
+    }
+    case Qt::Key_Stop: {
+        if (this->isHidden()) {
+            return;
+        }
+        btns.value("btnsample")->setEnabled(false);
+        btns.value("btnappend")->setEnabled(false);
+    }
     default:
         break;
     }

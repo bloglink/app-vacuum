@@ -51,6 +51,7 @@ private slots:
     void saveSettings();
     void confSettings();
     void autoInput(QModelIndex index);
+    void autoCheck();
     void change();
     void recvShowEvent();
     void recvAppMsg(QTmpMap msg);
@@ -62,6 +63,8 @@ private:
     BoxQModel *mView;
     QVariantMap config;
     QVariantMap tmpMap;
+    QGroupBox *buttonL;
+    QList<QCheckBox*> checkboxs;
 
     QStringList volts;
     QStringList ports;

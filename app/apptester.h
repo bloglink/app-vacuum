@@ -91,6 +91,7 @@ private slots:
     void clickWave();
     void clickReset();
     void clickButton();
+    void updateCode();
     void updateType();
     void updateWave();
     void updateShow();
@@ -130,12 +131,13 @@ private:
     QComboBox *typeText;
     QLabel *userText;
     QLabel *signText;
-    QLabel *codeText;
+    QLineEdit *codeText;
     QLabel *testText;
     QLabel *dateText;
     QLabel *timeText;
     QLabel *tempText;
     QLabel *warnText;
+    QLabel *title;
 
     quint32 tmpRow;
     quint32 testOK;
@@ -146,6 +148,7 @@ private:
     QTmpMap tmpSet;
     QList<QTmpMap> tmpView;
     QString tmpStr;
+    QString stdStr;
     QElapsedTimer ms;
 
     BoxQImage *bWave;

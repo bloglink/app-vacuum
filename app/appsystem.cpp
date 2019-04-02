@@ -40,7 +40,7 @@ void AppSystem::initSystem()
     group->setLayout(boxLayout);
 
     QStringList names;
-    names << tr("语言设置") << tr("维护提示") << tr("弹线方式") << tr("亮度设定")
+    names << tr("语言设置") << tr("维护提示") << tr("弹线方式") << tr("启动方式")
           << tr("音量设定") << tr("条码起始") << tr("条码长度") << tr("合格报警")
           << tr("报警提示") << tr("测试延时") << tr("产品检测") << tr("条码检测")
           << tr("匝间报警") << tr("启用防呆");
@@ -129,9 +129,12 @@ void AppSystem::initDelegate()
     texts.at(2)->addItems(tmp2);
 
     QStringList tmp3;
-    tmp3 << "0" << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8" << "9";
+    tmp3 << tr("按钮启动") << tr("滑罩启动");
     texts.at(3)->addItems(tmp3);
-    texts.at(4)->addItems(tmp3);
+
+    QStringList tmp4;
+    tmp4 << "0" << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8" << "9";
+    texts.at(4)->addItems(tmp4);
 }
 
 void AppSystem::initSettings()

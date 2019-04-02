@@ -79,11 +79,7 @@ void TypSetInr::initItemDelegate()
     ports << "PE" << "1" << "4" << "7";
     view->setItemDelegateForColumn(CHECKINR, new BoxQItems);
     view->setItemDelegateForColumn(PORTINR1, new BoxQItems);
-    BoxDouble *port = new BoxDouble;
-    port->setDecimals(0);
-    port->setMininum(1);
-    port->setMaxinum(8);
-    view->setItemDelegateForColumn(PORTINR2, port);
+    view->setItemDelegateForColumn(PORTINR2, new BoxQItems);
     view->setItemDelegateForColumn(VOLTINR1, new BoxQItems);
 
     BoxDouble *real = new BoxDouble;
@@ -95,6 +91,28 @@ void TypSetInr::initItemDelegate()
     doubleSpinBox->setMininum(0.5);
     doubleSpinBox->setMaxinum(999.9);
     view->setItemDelegateForColumn(TIMEINR1, doubleSpinBox);
+
+    QStringList nameL;
+    nameL  << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8"
+           << "A" << "B" << "C" << "D" << "E" << "F" << "G" << "H";
+
+    buttonL = new QGroupBox(tr("端口"), this);
+    QGridLayout *btnlayoutL = new QGridLayout;
+    buttonL->setLayout(btnlayoutL);
+    for (int i=0; i < nameL.size(); i++) {
+        QCheckBox *box = new QCheckBox(nameL.at(i), this);
+        checkboxs.append(box);
+        connect(box, SIGNAL(clicked(bool)), this, SLOT(autoCheck()));
+        if (i == 0) {
+            btnlayoutL->addWidget(box, 0, 0);
+        } else {
+            btnlayoutL->addWidget(box, i/8, i%8);
+        }
+        if (i % 3 == 0)
+            box->setEnabled(false);
+    }
+    buttonL->resize(560, 150);
+    buttonL->hide();
 }
 
 void TypSetInr::initSettings()
@@ -130,13 +148,11 @@ void TypSetInr::initSettings()
     view->setRowHidden(4, (vacu == 2));
     view->setFixedHeight((vacu == 2) ? 240 : 120);
 
-    int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
-    if (test & 0x04) {
-        BoxDouble *port = new BoxDouble;
-        port->setDecimals(0);
-        port->setMininum(1);
-        port->setMaxinum(16);
-        view->setItemDelegateForColumn(PORTINR2, port);
+    int test = tmpSet.value(back + backTest).toInt();  // 特殊配置
+    buttonL->setFixedHeight((test&0x04) ? 150 : 100);
+    checkboxs.at(7)->setText((test&0x04) ? "PE" : "8");
+    for (int i=8; i < checkboxs.size(); i++) {
+        checkboxs.at(i)->setVisible(test&0x04);  // 输出扩展
     }
 
     isInit = (this->isHidden()) ? false : true;
@@ -144,6 +160,7 @@ void TypSetInr::initSettings()
 
 void TypSetInr::saveSettings()
 {
+    buttonL->hide();
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_3)).toInt();
     for (int t=0; t < mView->columnCount(); t++) {
@@ -181,6 +198,11 @@ void TypSetInr::confSettings()
             if (t == PORTINR1 || t == PORTINR2) {
                 str = mView->index(i, t).data().toString();
             }
+            if (t == PORTINR2) {
+                if (str.contains("PE")) {
+                    str.replace("PE", "8");
+                }
+            }
             if (t == VOLTINR1) {
                 str = QString::number(volts.indexOf(mView->index(i, t).data().toString()));
             }
@@ -199,11 +221,26 @@ void TypSetInr::confSettings()
 void TypSetInr::autoInput(QModelIndex index)
 {
     if (isInit) {
+        buttonL->hide();
         int c = index.column();
         if (c == PORTINR1) {
             QString dat = index.data().toString();
             int x = ports.indexOf(dat);
             mView->setData(index, ports.at((x+1)%ports.size()), Qt::DisplayRole);
+        }
+        if (c == PORTINR2) {
+            buttonL->raise();
+            buttonL->show();
+            int x = view->x();
+            int y = view->y() + view->height() + 24;
+            buttonL->move(x, y);
+            QString dat = index.data().toString();
+            QString str = mView->index(index.row(), 1).data().toString();
+            for (int i=0; i < checkboxs.size(); i++) {
+                checkboxs.at(i)->setChecked((dat.contains(checkboxs.at(i)->text())));
+                if (checkboxs.at(i)->text() == str && checkboxs.at(i)->isChecked())
+                    checkboxs.at(i)->setChecked(false);
+            }
         }
         if (c == VOLTINR1) {
             QString dat = index.data().toString();
@@ -211,6 +248,17 @@ void TypSetInr::autoInput(QModelIndex index)
             change();
         }
     }
+}
+
+void TypSetInr::autoCheck()
+{
+    int row = view->currentIndex().row();
+    QString str;
+    for (int i=0; i < checkboxs.size(); i++) {
+        if (checkboxs.at(i)->isChecked())
+            str.append(checkboxs.at(i)->text());
+    }
+    mView->setData(mView->index(row, 2), str, Qt::DisplayRole);
 }
 
 void TypSetInr::change()
@@ -256,6 +304,7 @@ void TypSetInr::recvAppMsg(QTmpMap msg)
 void TypSetInr::showEvent(QShowEvent *e)
 {
     this->setFocus();
+    buttonL->hide();
     recvShowEvent();
     e->accept();
 }

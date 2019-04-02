@@ -50,6 +50,8 @@
 #include "sqlexport.h"
 #include "apptester.h"
 
+#include "devdirver.h"
+
 #include "main.h"
 #ifdef __arm__
 #define BTN_WIDTH 240
@@ -194,6 +196,8 @@ private:
     QMessageBox *boxsave;
 
     QThread *sql;
+
+    DevDirver div;
 
     int preindex;
     int currTask;

@@ -61,7 +61,7 @@ void AppBackup::initBoxText()
           << tr("0:常规反嵌\n1:屏蔽反嵌\n3:感应模式")
           << ""
           << tr("0:常规模式\n1:真空模式\n2:相间模式\n3:二次耐压")
-          << tr("0:常规模式\n1:美芝真空\n2:旧版无刷\n4:输出扩展");
+          << tr("0:常规模式\n1:美芝真空\n2:旧版无刷\n4:输出扩展\n8:刹车功能");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
@@ -199,8 +199,8 @@ void AppBackup::initActText()
     names << tr("下压动作左") << tr("下压动作右") << tr("夹紧动作左") << tr("夹紧动作右")
           << tr("高压动作左") << tr("高压动作右") << tr("低压动作左") << tr("低压动作右")
           << tr("弹开动作左") << tr("弹开动作右") << tr("内驱时保持") << tr("外驱时保持")
-          << tr("待机时保持") << tr("备用动作左") << tr("备用动作左") << tr("备用动作左")
-          << tr("夹紧到位左") << tr("夹紧到位右") << tr("夹紧归位左") << tr("夹紧归位右")
+          << tr("待机时保持") << tr("合格时保持") << tr("不良时保持") << tr("备用动作左")
+          << tr("夹紧到位左") << tr("夹紧到位右") << tr("下压到位左") << tr("下压到位右")
           << tr("启动信号左") << tr("启动信号右") << tr("停止信号左") << tr("停止信号右")
           << tr("产品到位左") << tr("产品到位右");
 
@@ -208,9 +208,10 @@ void AppBackup::initActText()
     actView->setColumnCount(1);
     actView->setRowCount(names.size());
     actView->setVerticalHeaderLabels(names);
+    actView->verticalHeader()->setFixedWidth(90);
+    actView->verticalHeader()->setMinimumSectionSize(15);
     actView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     actView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    actView->verticalHeader()->setFixedWidth(90);
     actView->horizontalHeader()->setVisible(false);
     for (int i=0; i < names.size(); i++) {
         QTableWidgetItem *item = new QTableWidgetItem;

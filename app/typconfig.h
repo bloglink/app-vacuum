@@ -41,7 +41,6 @@
 #define NAME_SIZE 50
 
 #define ADDRITEM 0x00
-#define ADDRTYPE 0x01
 #define ADDRWIRE 0x02
 #define ADDRAUTO 0x03
 #define ADDRDRIV 0x04
@@ -101,7 +100,7 @@ private:
     QCheckBox *testDrivBox;
     QLabel *typePixmap;
 
-    QList<QPushButton *> buttons;
+    QList<QLineEdit *> buttons;
     QList<QPushButton *> colors;
 
     QStringList itemNams;

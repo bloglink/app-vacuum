@@ -103,6 +103,7 @@ private:
     QCheckBox *vacuoBox;
     QCheckBox *earthBox;
     QCheckBox *powerBox;
+    QCheckBox *modeBox2;
     QLabel *textBox;
     QSpinBox *stepBox;
     QRadioButton *btnWorkL;

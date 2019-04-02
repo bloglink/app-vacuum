@@ -26,6 +26,7 @@
 #include <QMessageBox>
 #include <QShowEvent>
 #include <QDateTimeEdit>
+#include <QTableWidget>
 
 #include <QSqlQuery>
 #include <QSqlDatabase>
@@ -50,6 +51,7 @@ private slots:
     void initViewBar();
     void initTextBar();
     void initSettings();
+    void clickView(QModelIndex index);
     void clickDelete();
     void clickSelect();
     void clickExport();
@@ -62,6 +64,7 @@ private:
     QSqlTableModel *mView;
     QTableView *item;
     QSqlTableModel *mItem;
+    QTableWidget *tItem;
     QComboBox *type;
     QDateTimeEdit *from;
     QDateTimeEdit *stop;

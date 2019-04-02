@@ -32,7 +32,7 @@ void TypSetAcw::initViewBar()
     QStringList headers;
     headers << tr("交耐") << tr("高端") << tr("低端") << tr("电压(V)")
             << tr("电流上限(mA)") << tr("电流下限(mA)") << tr("时间(s)") << tr("频率(Hz)")
-            << tr("ARC") << tr("真空");
+            << tr("ARC") << tr("真空") << tr("补偿");
     mView = new BoxQModel();
     mView->setRowCount(ACW_ROW);
     mView->setColumnCount(headers.size());
@@ -81,11 +81,7 @@ void TypSetAcw::initItemDelegate()
     ports << "PE" << "1" << "4" << "7";
     view->setItemDelegateForColumn(CHECKACW, new BoxQItems);
     view->setItemDelegateForColumn(PORTACW1, new BoxQItems);
-    BoxDouble *port = new BoxDouble;
-    port->setDecimals(0);
-    port->setMininum(1);
-    port->setMaxinum(8);
-    view->setItemDelegateForColumn(PORTACW2, port);
+    view->setItemDelegateForColumn(PORTACW2, new BoxQItems);
 
     BoxDouble *curr = new BoxDouble;
     curr->setMaxinum(20);
@@ -107,6 +103,29 @@ void TypSetAcw::initItemDelegate()
     view->setItemDelegateForColumn(ADDRACWA, darc);
 
     view->setItemDelegateForColumn(0x09, new BoxQItems);
+    view->setItemDelegateForColumn(0x0A, curr);
+
+    QStringList nameL;
+    nameL  << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8"
+           << "A" << "B" << "C" << "D" << "E" << "F" << "G" << "H";
+
+    buttonL = new QGroupBox(tr("端口"), this);
+    QGridLayout *btnlayoutL = new QGridLayout;
+    buttonL->setLayout(btnlayoutL);
+    for (int i=0; i < nameL.size(); i++) {
+        QCheckBox *box = new QCheckBox(nameL.at(i), this);
+        checkboxs.append(box);
+        connect(box, SIGNAL(clicked(bool)), this, SLOT(autoCheck()));
+        if (i == 0) {
+            btnlayoutL->addWidget(box, 0, 0);
+        } else {
+            btnlayoutL->addWidget(box, i/8 , i%8);
+        }
+        if (i % 3 == 0)
+            box->setEnabled(false);
+    }
+    buttonL->resize(560, 150);
+    buttonL->hide();
 }
 
 void TypSetAcw::initSettings()
@@ -174,13 +193,11 @@ void TypSetAcw::initSettings()
     view->setItemDelegateForColumn(UPPERACW, curr);
     view->setItemDelegateForColumn(LOWERACW, curr);
 
-    int test = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
-    if (test & 0x04) {
-        BoxDouble *port = new BoxDouble;
-        port->setDecimals(0);
-        port->setMininum(1);
-        port->setMaxinum(16);
-        view->setItemDelegateForColumn(PORTACW2, port);
+    int test = tmpSet.value(back + backTest).toInt();  // 特殊配置
+    buttonL->setFixedHeight((test&0x04) ? 150 : 100);
+    checkboxs.at(7)->setText((test&0x04) ? "PE" : "8");
+    for (int i=8; i < checkboxs.size(); i++) {
+        checkboxs.at(i)->setVisible(test&0x04);  // 输出扩展
     }
 
     isInit = (this->isHidden()) ? false : true;
@@ -188,6 +205,7 @@ void TypSetAcw::initSettings()
 
 void TypSetAcw::saveSettings()
 {
+    buttonL->hide();
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
     addr = (this->objectName() == "setdcw") ? tmpSet.value(4000 + Qt::Key_5).toInt() : addr;
@@ -222,8 +240,9 @@ void TypSetAcw::confSettings()
     int row = (vacu == 2 || vacu == 3) ? 6 : 5;
     QStringList names;
     names << "test" << "port1" << "port2" << "volt" << "max" << "min"
-          << "time" << "freq" << "arc" << "isvacuo";
+          << "time" << "freq" << "arc" << "isvacuo" << "comp";
     QStringList tmp;
+    QStringList cmp;
     for (int t=0; t < names.size(); t++) {
         for (int i=0; i < row; i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());
@@ -234,6 +253,11 @@ void TypSetAcw::confSettings()
             if (t == PORTACW1 || t == PORTACW2) {
                 str = mView->index(i, t).data().toString();
             }
+            if (t == PORTACW2) {
+                if (str.contains("PE")) {
+                    str.replace("PE", "8");
+                }
+            }
             if (t == FREQACW1) {
                 str = QString::number(freqs.indexOf(mView->index(i, t).data().toString()));
             }
@@ -241,13 +265,15 @@ void TypSetAcw::confSettings()
                 str = mView->item(i, t)->text();
                 str = (str == "非真空") ? "0" : "1";
             }
+            if (t == 0x0A) {
+                cmp.append(str.toDouble() == 0 ? "0" : "1");
+            }
             tmp.append(str);
         }
         tmpMap.insert(names.at(t), tmp.join(","));
         tmp.clear();
     }
-    tmpMap.insert("comp", "0,0,0,0,0,0");
-    tmpMap.insert("comp_enable", "0,0,0,0,0,0");
+    tmpMap.insert("comp_enable", cmp.join(","));
     config.insert(this->objectName() == "setdcw" ? "DCW" : "ACW", tmpMap);
     config.insert("enum", Qt::Key_Save);
     emit sendAppMap(config);
@@ -259,11 +285,26 @@ void TypSetAcw::autoChange(QModelIndex index)
 {
     change();
     if (isInit) {
+        buttonL->hide();
         int c = index.column();
         if (c == PORTACW1) {
             QString dat = index.data().toString();
             int x = ports.indexOf(dat);
             mView->setData(index, ports.at((x+1)%ports.size()), Qt::DisplayRole);
+        }
+        if (c == PORTACW2) {
+            buttonL->raise();
+            buttonL->show();
+            int x = view->x();
+            int y = view->y() + view->height() + 24;
+            buttonL->move(x, y);
+            QString dat = index.data().toString();
+            QString str = mView->index(index.row(), 1).data().toString();
+            for (int i=0; i < checkboxs.size(); i++) {
+                checkboxs.at(i)->setChecked((dat.contains(checkboxs.at(i)->text())));
+                if (checkboxs.at(i)->text() == str && checkboxs.at(i)->isChecked())
+                    checkboxs.at(i)->setChecked(false);
+            }
         }
         if (c == FREQACW1) {
             QString next = index.data().toString();
@@ -274,6 +315,17 @@ void TypSetAcw::autoChange(QModelIndex index)
             mView->setData(index, (next == "真空" ? "非真空" : "真空"), Qt::DisplayRole);
         }
     }
+}
+
+void TypSetAcw::autoCheck()
+{
+    int row = view->currentIndex().row();
+    QString str;
+    for (int i=0; i < checkboxs.size(); i++) {
+        if (checkboxs.at(i)->isChecked())
+            str.append(checkboxs.at(i)->text());
+    }
+    mView->setData(mView->index(row, 2), str, Qt::DisplayRole);
 }
 
 void TypSetAcw::autoInput()
@@ -348,6 +400,7 @@ void TypSetAcw::recvAppMsg(QTmpMap msg)
 void TypSetAcw::showEvent(QShowEvent *e)
 {
     this->setFocus();
+    buttonL->hide();
     recvShowEvent();
     e->accept();
 }

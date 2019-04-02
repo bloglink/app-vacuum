@@ -46,7 +46,21 @@ void SqlRecord::initViewBar()
     tView->setModel(mView);
     tView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     tView->hideColumn(0);
+    connect(tView, SIGNAL(clicked(QModelIndex)), this, SLOT(clickView(QModelIndex)));
     layout->addWidget(tView);
+
+    mItem = new QSqlTableModel(this, QSqlDatabase::database("record"));
+    mItem->setTable("aip_record");
+    mItem->select();
+
+    QStringList titles;
+    titles << tr("项目") << tr("参数") << tr("结果") << tr("判定");
+    tItem = new QTableWidget(this);
+    tItem->setColumnCount(titles.size());
+    tItem->setFixedSize(600, 200);
+    tItem->setHorizontalHeaderLabels(titles);
+    tItem->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    layout->addWidget(tItem);
 }
 
 void SqlRecord::initTextBar()
@@ -108,6 +122,42 @@ void SqlRecord::initSettings()
         QString numb = t.mid(1, 4);
         tmpTyp.insert(numb.toInt(), t.mid(6, 50));
         type->addItem(t.mid(6, 50));
+    }
+}
+
+void SqlRecord::clickView(QModelIndex index)
+{
+    int row = index.row();
+    quint64 uuid = mView->index(row, 0).data().toLongLong();
+    mItem->setFilter(QString("R_UUID=%1").arg(uuid));
+    mItem->select();
+
+    row = 0;
+    QMap<int, QString> tmp;
+    for (int i=0; i < mItem->rowCount(); i++) {
+        int index = mItem->index(i, 1).data().toInt();
+        QString str = mItem->index(i, 3).data().toString();
+        if (index >= 30256 && index < 65535) {
+            tmp.insert(index, str);
+            if (index % 4 == 0)
+                row++;
+        }
+    }
+    tItem->setRowCount(row);
+    row = 0;
+    foreach(int index, tmp.keys()) {
+        if (index % 4 == 0) {
+            int add = 0;
+            if (index >= 31536 && index < 31536 + 256)
+                add = (index % 16 == 0) ? 0 : 1;
+            for (int i=0; i < 4-add; i++) {
+                QTableWidgetItem *item = new QTableWidgetItem;
+                item->setText(tmp.value(index + i));
+                item->setTextAlignment(Qt::AlignCenter);
+                tItem->setItem(row, i+add, item);
+            }
+            row++;
+        }
     }
 }
 

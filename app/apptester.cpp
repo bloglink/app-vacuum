@@ -99,7 +99,7 @@ void AppTester::initTestBar()
 
 void AppTester::initLogoBar()
 {
-    QLabel *title = new QLabel(this);
+    title = new QLabel(this);
     title->setText(strMB.arg(tr("青岛艾普智能仪器有限公司")));
     wView->setCellWidget(0, 4, title);
     wView->setSpan(0, 4, 1, 2);
@@ -231,19 +231,29 @@ void AppTester::initTypeBar()
     QCompleter *pCompleter = new QCompleter(typeText->model(), this);
     typeText->setCompleter(pCompleter);
 
-    QHBoxLayout *lay = new QHBoxLayout;
-    lay->setMargin(0);
-    lay->addWidget(new QLabel(strMY.arg(tr("当前型号:")), this));
-    lay->addWidget(typeText);
+    QHBoxLayout *tlayout = new QHBoxLayout;
+    tlayout->setMargin(0);
+    tlayout->addWidget(new QLabel(strMY.arg(tr("当前型号:")), this));
+    tlayout->addWidget(typeText);
 
-    QFrame *frm = new QFrame(this);
-    frm->setLayout(lay);
-    wView->setCellWidget(3, 4, frm);
+    QFrame *tframe = new QFrame(this);
+    tframe->setLayout(tlayout);
+    wView->setCellWidget(3, 4, tframe);
     wView->setSpan(3, 4, 1, 2);
 
-    codeText = new QLabel(this);
-    codeText->setText(strMY.arg(tr("当前编码:178912013X")));
-    wView->setCellWidget(4, 4, codeText);
+    codeText = new QLineEdit(this);
+    codeText->setStyleSheet("font:18pt;color:yellow");
+    codeText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    connect(codeText, SIGNAL(editingFinished()), this, SLOT(updateCode()));
+
+    QHBoxLayout *clayout = new QHBoxLayout;
+    clayout->setMargin(0);
+    clayout->addWidget(new QLabel(strMY.arg(tr("当前序号:")), this));
+    clayout->addWidget(codeText);
+
+    QFrame *cframe = new QFrame(this);
+    cframe->setLayout(clayout);
+    wView->setCellWidget(4, 4, cframe);
     wView->setSpan(4, 4, 1, 2);
 }
 
@@ -380,7 +390,6 @@ void AppTester::initWireColor()
         QLabel *color = new QLabel(QString::number(i+1));
         color->setFixedHeight(25);
         colorLayout->addWidget(color, i/2, i%2);
-        color->setAlignment(Qt::AlignCenter);
         colors.append(color);
     }
     blayout->addLayout(colorLayout);
@@ -431,6 +440,9 @@ void AppTester::initSettings()
     int mode = tmpSet.value(back + backMode).toInt();
     int test = tmpSet.value(back + backTest).toInt();
     int work = tmpSet.value(back + backWork).toInt();
+    QString titleStr = tmpSet.value(back).toString();
+    if (titleStr.size() > 7)
+        title->setText(strMB.arg(titleStr));
     wFrame->setVisible((work == 2) ? true : false);
     workText->setText(strLY.arg((work == 0) ? "右" : "左"));
     labels.value("stop")->setVisible((mode == 1 && (test & 0x01)) ? true : false);
@@ -513,8 +525,14 @@ void AppTester::initSettings()
         }
         mView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
         QStringList wireColor = tmpSet.value(r + ADDRWIRE).toString().split(",");
-        for (int t=0; t < wireColor.size(); t++)
+        QStringList wireNames = tmpSet.value(r + 0x06).toString().split(",");
+        for (int t=0; t < wireColor.size(); t++) {
             colors.at(t)->setStyleSheet(QString("background-color:%1").arg(wireColor.at(t)));
+            if (t < wireNames.size()) {
+                QString s = wireNames.at(t);
+                colors.at(t)->setText(QString("%1->%2").arg(t+1).arg(s));
+            }
+        }
     }
 
     if (Qt::Key_1) {
@@ -547,6 +565,12 @@ void AppTester::initSettings()
     tmpSave.insert(Qt::Key_1, "aip_tester");
     emit sendAppMsg(tmpSave);
     tmpSave.clear();
+
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int snap = tmpSet.value(syst + SystRate).toInt();  // 启动方式
+    if (snap == 1) {  // 滑罩启动
+        btnTest->setEnabled(false);
+    }
     isInit = true;
 }
 
@@ -762,14 +786,16 @@ void AppTester::initSetACW2()
 
 void AppTester::initSetDCW()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int vacu = tmpSet.value(back + backVacu).toInt();
     int save = tmpSet.value(3000 + Qt::Key_5).toInt();  // 直耐结果地址
     int addr = tmpSet.value(4000 + Qt::Key_5).toInt();  // 直耐配置地址
-    int numb = 4;
-    double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
-    double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
-    double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
-    double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
-    if (1) {
+    if (vacu != 2) {  // 非真空/真空
+        int numb = 4;
+        double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + numb).toDouble();
+        double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + numb).toDouble();
+        double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + numb).toDouble();
+        double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + numb).toDouble();
         QString item = tr("直耐");
         QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
         tmpItem.insert(tmpRow, item);
@@ -777,6 +803,27 @@ void AppTester::initSetDCW()
         insertItem(nSetDCW, 0x00);
         tmpSave.insert(save + 0x00, item);  // 项目
         tmpSave.insert(save + 0x01, parm);  // 参数
+    }
+
+    if (vacu == 2) {  // 相间
+        int row = 0;
+        for (int i=0; i < 4; i++) {
+            double test = tmpSet.value(addr + CACHEACW + CACHEACW*CHECKACW + i).toDouble();
+            double volt = tmpSet.value(addr + CACHEACW + CACHEACW*VOLTACW1 + i).toDouble();
+            double smax = tmpSet.value(addr + CACHEACW + CACHEACW*UPPERACW + i).toDouble();
+            double smin = tmpSet.value(addr + CACHEACW + CACHEACW*LOWERACW + i).toDouble();
+            double time = tmpSet.value(addr + CACHEACW + CACHEACW*TIMEACW1 + i).toDouble();
+            if (test == 1) {
+                QString item = tr("直耐%1").arg(row+1);
+                QString parm = tr("%1V %2-%3mA %4s").arg(volt).arg(smin).arg(smax).arg(time);
+                tmpItem.insert(tmpRow, item);
+                tmpParm.insert(tmpRow, parm);
+                insertItem(nSetDCW, row);
+                row++;
+                tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
+                tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+            }
+        }
     }
 }
 
@@ -1074,7 +1121,7 @@ void AppTester::insertItem(int item, int numb)
 
 void AppTester::initQuality()
 {
-    codeText->setText(strMY.arg(tr("当前编码:")));
+    codeText->setText("");
     QStringList itemNams;
     itemNams << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
              << "匝间" << "电参" << "电感" << "堵转" << "低启"
@@ -1229,6 +1276,14 @@ void AppTester::clickButton()
     tmpMsg.clear();
 }
 
+void AppTester::updateCode()
+{
+    tmpMsg.insert(Qt::Key_0, Qt::Key_Down);
+    tmpMsg.insert(Qt::Key_1, codeText->text());
+    emit sendAppMsg(tmpMsg);
+    tmpMsg.clear();
+}
+
 void AppTester::updateType()
 {
     isInit = false;
@@ -1323,7 +1378,11 @@ void AppTester::updateTime()
 
 void AppTester::updateTest()
 {
-    btnTest->setEnabled(true);
+    int syst = tmpSet.value(2000 + Qt::Key_1).toInt();  // 系统设置地址
+    int snap = tmpSet.value(syst + SystRate).toInt();  // 启动方式
+    if (snap != 1) {  // 滑罩启动
+        btnTest->setEnabled(true);
+    }
     typeText->setEnabled(true);
 
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
@@ -1390,7 +1449,6 @@ void AppTester::recvLedMsg(QTmpMap msg)
             initQuality();
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);
-        btnTest->setEnabled(true);
         tmpTime = 0;
     }
 }
@@ -1525,24 +1583,29 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 tmp.append(QString::number(512));
             }
             tmpStr = tmp.join(" ");
-
             msg.insert(Qt::Key_4, "NG");
         }
         if (!msg.value(Qt::Key_4).isNull()) {
             QString str = msg.value(Qt::Key_4).toString();
             QStringList ws = tmpStr.split(" ");
+            stdStr = (numb == 0) ? tmpStr : stdStr;
+            QStringList wt = stdStr.split(" ");
             if (ws.size() > 200) {
                 ws.removeFirst();
+                wt.removeFirst();
                 int addr = tmpSet.value(4000 + Qt::Key_6).toInt() + CACHEIMP;  // 匝间配置地址
                 int from = tmpSet.value(addr + CACHEIMP*FROMIMP1 + numb).toInt();
                 int stop = tmpSet.value(addr + CACHEIMP*STOPIMP1 + numb).toInt();
                 int wimp = tmpSet.value(4000 + Qt::Key_H).toInt();  // 匝间标准波形地址
+                int iscp = tmpSet.value(addr + 0x05 - CACHEIMP).toInt();
                 QStringList mp1, mp0;
                 int ss = (work == 0x13) ? 0 : 1;
                 for (int i=from; i < qMin(stop, ws.size()); i++) {
                     double p1 = ws.at(i).toInt() * 100.0 / 1024;
                     mp1.append(QString::number(p1));
                     double p2 = tmpSet.value(wimp + IMP_SIZE*(numb*2 + ss) + i).toInt()*100.0/1024;
+                    if (iscp)
+                        p2 = wt.at(i).toInt() * 100.0 / 1024;
                     mp0.append(QString::number(p2));
                 }
                 tmpMap.insert("index", 0);
@@ -1634,8 +1697,7 @@ void AppTester::recvAppMsg(QTmpMap msg)
         tmpSet = msg;
         addr = tmpSet.value(3000 + Qt::Key_0).toInt();  // 临时参数地址
         if (!msg.value(addr + TEMPCODE).isNull()) {
-            QString str = tr("当前编码:%1").arg(msg.value(addr + TEMPCODE).toString());
-            codeText->setText(strMY.arg(str));
+            codeText->setText(msg.value(addr + TEMPCODE).toString());
         }
         break;
     case Qt::Key_Shop:
@@ -1658,6 +1720,12 @@ void AppTester::recvAppMsg(QTmpMap msg)
         break;
     case Qt::Key_Word:
         recvErrMsg(msg);
+        break;
+    case Qt::Key_Play:
+        btnTest->setEnabled(true);
+        break;
+    case Qt::Key_Stop:
+        btnTest->setEnabled(false);
         break;
     default:
         break;

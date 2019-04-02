@@ -217,7 +217,7 @@ void SqlCreate::initBack(QSqlQuery query)
 {  // 后台设置
     int from = tmpSet.value((1000 + Qt::Key_0)).toInt();
     QStringList parm;
-    parm << "AIP8900";      // 产品型号
+    parm << "青岛艾普智能仪器有限公司";      // 产品型号
     parm << "189912001X";   // 产品编号
     parm << "G201801001";   // 评审编号
     parm << "2018-03";      // 出厂日期
