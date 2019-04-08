@@ -94,7 +94,7 @@ void TypSetInr::initItemDelegate()
 
     QStringList nameL;
     nameL  << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8"
-           << "A" << "B" << "C" << "D" << "E" << "F" << "G" << "H";
+           << "A(9)" << "B(10)" << "C(11)" << "D(12)" << "E(13)" << "F(14)" << "G(15)" << "H(16)";
 
     buttonL = new QGroupBox(tr("端口"), this);
     QGridLayout *btnlayoutL = new QGridLayout;
@@ -108,10 +108,8 @@ void TypSetInr::initItemDelegate()
         } else {
             btnlayoutL->addWidget(box, i/8, i%8);
         }
-        if (i % 3 == 0)
-            box->setEnabled(false);
     }
-    buttonL->resize(560, 150);
+    buttonL->resize(700, 150);
     buttonL->hide();
 }
 
@@ -150,7 +148,6 @@ void TypSetInr::initSettings()
 
     int test = tmpSet.value(back + backTest).toInt();  // 特殊配置
     buttonL->setFixedHeight((test&0x04) ? 150 : 100);
-    checkboxs.at(7)->setText((test&0x04) ? "PE" : "8");
     for (int i=8; i < checkboxs.size(); i++) {
         checkboxs.at(i)->setVisible(test&0x04);  // 输出扩展
     }
@@ -234,12 +231,11 @@ void TypSetInr::autoInput(QModelIndex index)
             int x = view->x();
             int y = view->y() + view->height() + 24;
             buttonL->move(x, y);
-            QString dat = index.data().toString();
-            QString str = mView->index(index.row(), 1).data().toString();
+            QString dat = index.data().toString();  // 当前选中的端口
             for (int i=0; i < checkboxs.size(); i++) {
-                checkboxs.at(i)->setChecked((dat.contains(checkboxs.at(i)->text())));
-                if (checkboxs.at(i)->text() == str && checkboxs.at(i)->isChecked())
-                    checkboxs.at(i)->setChecked(false);
+                QString tmp = checkboxs.at(i)->text();
+                tmp = (tmp == "PE") ? tmp : tmp.mid(0, 1);
+                checkboxs.at(i)->setChecked((dat.contains(tmp)));
             }
         }
         if (c == VOLTINR1) {
@@ -253,10 +249,16 @@ void TypSetInr::autoInput(QModelIndex index)
 void TypSetInr::autoCheck()
 {
     int row = view->currentIndex().row();
+    QString dat = mView->index(row, 1).data().toString();
     QString str;
     for (int i=0; i < checkboxs.size(); i++) {
-        if (checkboxs.at(i)->isChecked())
-            str.append(checkboxs.at(i)->text());
+        if (checkboxs.at(i)->isChecked()) {
+            QString txt = checkboxs.at(i)->text();
+            if (txt != "PE")
+                txt = txt.mid(0, 1);
+            if (txt != dat)
+                str.append(txt);
+        }
     }
     mView->setData(mView->index(row, 2), str, Qt::DisplayRole);
 }

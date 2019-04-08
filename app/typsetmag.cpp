@@ -184,6 +184,7 @@ void TypSetMag::initItemDelegate()
 void TypSetMag::initSettings()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int mode = tmpSet.value(back + 0x0B).toInt();  // 测试模式
     int works = tmpSet.value(back + 0x05).toInt();
     btnWorkL->setVisible((works == 2) ? true : false);
     btnWorkR->setVisible((works == 2) ? true : false);
@@ -197,6 +198,7 @@ void TypSetMag::initSettings()
     modeBox->setVisible(tmpSet.value(back + 12).toInt() == 3 ? true : false);
     modeLbl->setVisible(tmpSet.value(back + 12).toInt() == 3 ? true : false);
     modeBox2->setChecked((tmpSet.value(addr + 5).toInt() == 0) ? false : true);
+    modeBox2->setVisible(mode == 1 ? false : true);
 
     addr += CACHEMAG;
     for (int i=0; i < checks.size(); i++) {

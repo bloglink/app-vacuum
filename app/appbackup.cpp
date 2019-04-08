@@ -61,7 +61,7 @@ void AppBackup::initBoxText()
           << tr("0:常规反嵌\n1:屏蔽反嵌\n3:感应模式")
           << ""
           << tr("0:常规模式\n1:真空模式\n2:相间模式\n3:二次耐压")
-          << tr("0:常规模式\n1:美芝真空\n2:旧版无刷\n4:输出扩展\n8:刹车功能");
+          << tr("00:常规模式\n01:美芝真空\n02:旧版无刷\n04:输出扩展\n08:刹车功能\n10:真空换档");
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;

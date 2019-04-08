@@ -816,7 +816,7 @@ int AppWindow::taskClearCtrl()
         return (ioHexL & XX23) ? Qt::Key_Away : Qt::Key_Meta;
     }
     int test = tmpSet.value(back + backTest).toInt();  // 特殊配置
-    if (test & 0x08) {  // G201901037无锡寰宇刹车功能,下压+夹紧+测试+刹车
+    if (mode != 1 && (test & 0x08)) {  // G201901037无锡寰宇刹车功能,下压+夹紧+测试+刹车
         int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
         int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
         int saveaddr = 0x0A + back + 0x40;
@@ -1252,10 +1252,12 @@ int AppWindow::testStopIocan()
         if (test != 0)
             sendUdpStr(tr("6036 %1").arg(save + down + grab).toUtf8());
     }
-    isDriv = (currItem == nSetMAG) || (currItem == nSetIMP);  // 当前项目为Y型切换
-    isNext = (nextitem == nSetMAG || nextitem == nSetIMP);  // 下一项目为Y型切换
-    if (isDriv && !isNext) {
-        sendUdpStr(tr("6036 %1").arg(0x00).toUtf8());
+    if (mode != 1) {
+        isDriv = (currItem == nSetMAG) || (currItem == nSetIMP);  // 当前项目为Y型切换
+        isNext = (nextitem == nSetMAG) || (nextitem == nSetIMP);  // 下一项目为Y型切换
+        if (isDriv && !isNext) {
+            sendUdpStr(tr("6036 %1").arg(0x00).toUtf8());
+        }
     }
 
     return Qt::Key_Away;
@@ -1586,7 +1588,7 @@ int AppWindow::recvIoCtrl(int key, int work)
             str = tr("警告:%1光幕遮挡!").arg(pos);
         }
         if (sr && (hex & X02) && ((hex & X08) == 0)) {
-            str = tr("警告:%1光幕遮挡!").arg(pos);
+            str = tr("警告:右光幕遮挡!");
         }
         if ((have == 1) && sl && ((hex & X14) == 0)) {
             str = tr("警告:产品未放置!");

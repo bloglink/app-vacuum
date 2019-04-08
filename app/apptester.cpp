@@ -581,7 +581,7 @@ void AppTester:: initSetDCR()
     int addr = tmpSet.value(4000 + Qt::Key_1).toInt();  // 电阻配置地址
     double noun = tmpSet.value(addr + 2).toDouble();  // 不平衡度
     int temp = tmpSet.value(addr + 3).toInt();  // 温度折算
-    for (int numb=0; numb < 8; numb++) {
+    for (int numb=0; numb < DCR_SIZE; numb++) {
         double test = tmpSet.value(addr + CACHEDCR + CACHEDCR*CHECKDCR + numb).toDouble();
         double from = tmpSet.value(addr + CACHEDCR + CACHEDCR*PORTDCR1 + numb).toDouble();
         double stop = tmpSet.value(addr + CACHEDCR + CACHEDCR*PORTDCR2 + numb).toDouble();
@@ -598,9 +598,9 @@ void AppTester:: initSetDCR()
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
             insertItem(nSetDCR, row);
-            row++;
             tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
             tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+            row++;
         }
     }
     if (noun != 0) {  // 不平衡度
@@ -708,9 +708,9 @@ void AppTester::initSetINR()
                 tmpItem.insert(tmpRow, item);
                 tmpParm.insert(tmpRow, parm);
                 insertItem(nSetINR, row);
-                row++;
                 tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
                 tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+                row++;
             }
         }
     }
@@ -754,9 +754,9 @@ void AppTester::initSetACW()
                 tmpItem.insert(tmpRow, item);
                 tmpParm.insert(tmpRow, parm);
                 insertItem(nSetACW, row);
-                row++;
                 tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
                 tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+                row++;
             }
         }
     }
@@ -819,9 +819,9 @@ void AppTester::initSetDCW()
                 tmpItem.insert(tmpRow, item);
                 tmpParm.insert(tmpRow, parm);
                 insertItem(nSetDCW, row);
-                row++;
                 tmpSave.insert(save + row*0x10 + 0x00, item);  // 项目
                 tmpSave.insert(save + row*0x10 + 0x01, parm);  // 参数
+                row++;
             }
         }
     }

@@ -38,7 +38,7 @@ void TypSetDcr::initViewBar()
     mView->setColumnCount(headers.size());
     mView->setHorizontalHeaderLabels(headers);
 
-    for (int i=0; i < 8; i++) {
+    for (int i=0; i < DCR_SIZE; i++) {
         for (int j=0; j < headers.size(); j++) {
             mView->setData(mView->index(i, j), "", Qt::DisplayRole);
         }

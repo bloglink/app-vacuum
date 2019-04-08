@@ -122,6 +122,7 @@ private:
     int isChange;
     QTimer *timer;
     QVector<int> x;
+    QVariantMap tmp;
 };
 
 #endif // TYPSETIMP_H

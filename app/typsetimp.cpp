@@ -237,6 +237,7 @@ void TypSetImp::initSettings()
     volt->setDecimals(0);
     view->setItemDelegateForColumn(VOLTIMP1, volt);
     vacuoBox->setVisible(mode == 1 ? true : false);
+    modeBox->setVisible(mode == 1 ? false : true);
     earthBox->setVisible((grnd == 1 || grnd == 2) ? true : false);
     earthBox->setEnabled((grnd == 1 && !issupper) ? false : true);
     powerBox->setVisible(grnd == 1 ? true : false);
@@ -325,7 +326,7 @@ void TypSetImp::confSettings()
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int mode = tmpSet.value(back + backMode).toInt();
     int test = tmpSet.value(back + backTest).toInt();
-    int grnd = tmpSet.value(back + backGrnd).toInt();  // 接地测试
+    int grnd = tmpSet.value(back + backGrnd).toString().toInt(NULL, 16);  // 特殊配置
 
     btns.value("btnappend")->setEnabled((waveCopys.size() == 0) ? false : true);
     wView->setEnabled(false);
@@ -342,7 +343,7 @@ void TypSetImp::confSettings()
     tmpMap.insert("step", QString::number(stepBox->value()));
     tmpMap.insert("mode", QString::number(modeBox->isChecked() ? 1 : 0));
     tmpMap.insert("mode2", QString::number(modeBox2->isChecked() ? 1 : 0));
-    if (grnd == 2) {
+    if (grnd & 0x10) {
         for (int i=0; i < mView->rowCount(); i++) {
             int volt = mView->index(i, VOLTIMP1).data().toInt();
             int gear = 1;
@@ -482,6 +483,7 @@ void TypSetImp::change()
 
 void TypSetImp::sample()
 {  // 采集标准波形,命令为6041+dat1+dat2,dat1为工位0x13/0x14,dat2为是否真空
+    tmp.insert("taskstat", 1);
     saveSettings();
     waveCopys.clear();
     wvdata.clear();
@@ -580,10 +582,13 @@ void TypSetImp::sampleCalc()
 
 void TypSetImp::sampleOver()
 {  // 升起真空罩,命令为6046,真空模式下升起真空罩
-    tmpMap.insert("enum", Qt::Key_View);
-    tmpMap.insert("text", QString("6046"));
-    emit sendAppMap(tmpMap);
-    tmpMap.clear();
+    if (tmp.value("taskstat").toInt() == 0) {
+        tmpMap.insert("enum", Qt::Key_View);
+        tmpMap.insert("text", QString("6046"));
+        emit sendAppMap(tmpMap);
+        tmpMap.clear();
+    }
+    tmp.insert("taskstat", 0);
 }
 
 void TypSetImp::sampleWait()
@@ -599,12 +604,16 @@ void TypSetImp::sampleWait()
 
 void TypSetImp::sampleSwitch()
 {
-    int test = (btnWorkL->isChecked()) ? 0x01 : 0x02;
-    int swit = (modeBox->isChecked()) ? test : 0x00;
-    tmpMap.insert("enum", Qt::Key_View);
-    tmpMap.insert("text", QString("6036 %1").arg(swit));
-    emit sendAppMap(tmpMap);
-    tmpMap.clear();
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    if (mode != 1) {
+        int test = (btnWorkL->isChecked()) ? 0x01 : 0x02;
+        int swit = (modeBox->isChecked()) ? test : 0x00;
+        tmpMap.insert("enum", Qt::Key_View);
+        tmpMap.insert("text", QString("6036 %1").arg(swit));
+        emit sendAppMap(tmpMap);
+        tmpMap.clear();
+    }
 }
 
 void TypSetImp::autoInput()
