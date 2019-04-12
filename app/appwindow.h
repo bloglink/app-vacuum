@@ -51,6 +51,7 @@
 #include "apptester.h"
 
 #include "devdirver.h"
+#include "devmservo.h"
 
 #include "main.h"
 #ifdef __arm__
@@ -72,6 +73,7 @@ public:
 signals:
     void sendAppMsg(QTmpMap msg);
     void sendReady(QByteArray msg);
+    void sendAppMap(QVariantMap map);
 private slots:
     int initUI();
     int initCreate();
@@ -197,8 +199,6 @@ private:
 
     QThread *sql;
 
-    DevDirver div;
-
     int preindex;
     int currTask;
     int codeShift;
@@ -234,6 +234,8 @@ private:
     QVariantMap testparm;
     QVariantMap itemparm;
     QList<double> tempvolt;
+
+    QStringList tmpPwr;
 };
 
 #endif // APPWINDOW_H

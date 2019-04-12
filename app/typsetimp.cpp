@@ -325,8 +325,7 @@ void TypSetImp::confSettings()
     }
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int mode = tmpSet.value(back + backMode).toInt();
-    int test = tmpSet.value(back + backTest).toInt();
-    int grnd = tmpSet.value(back + backGrnd).toString().toInt(NULL, 16);  // 特殊配置
+    int test = tmpSet.value(back + backTest).toString().toInt(NULL, 16);  // 特殊配置
 
     btns.value("btnappend")->setEnabled((waveCopys.size() == 0) ? false : true);
     wView->setEnabled(false);
@@ -343,7 +342,7 @@ void TypSetImp::confSettings()
     tmpMap.insert("step", QString::number(stepBox->value()));
     tmpMap.insert("mode", QString::number(modeBox->isChecked() ? 1 : 0));
     tmpMap.insert("mode2", QString::number(modeBox2->isChecked() ? 1 : 0));
-    if (grnd & 0x10) {
+    if (test & 0x10) {
         for (int i=0; i < mView->rowCount(); i++) {
             int volt = mView->index(i, VOLTIMP1).data().toInt();
             int gear = 1;

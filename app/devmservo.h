@@ -4,10 +4,10 @@
  *
  * version:     0.1
  * author:      zhaonanlin
- * brief:       寰宇驱动器
+ * brief:       三菱伺服配置
 *******************************************************************************/
-#ifndef DEVDIRVER_H
-#define DEVDIRVER_H
+#ifndef DEVMSERVO_H
+#define DEVMSERVO_H
 
 #include <QDebug>
 #include <QTimer>
@@ -17,26 +17,27 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 
-class DevDirver : public QObject
+class DevMServo : public QObject
 {
     Q_OBJECT
 public:
-    explicit DevDirver(QObject *parent = 0);
+    explicit DevMServo(QObject *parent = 0);
 
 signals:
     void sendAppMap(QVariantMap msg);
-public slots:
+private slots:
     void open(QString name);
     void quit(QString name);
+    bool setInit();
+    bool setData();
     bool setTest();
     bool setStop();
     void recvAppMap(QVariantMap map);
     void wait(int ms);
-    QByteArray crc16CCITT(QByteArray msg);
 private:
     QSerialPort *com;
     QVariantMap tmp;
     bool isFree;
 };
 
-#endif // DEVDIRVER_H
+#endif // DEVMSERVO_H

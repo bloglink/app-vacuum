@@ -136,7 +136,7 @@ void TypSetMag::initButtonBar()
     voltBox->setFixedSize(80, 40);
     voltBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     connect(voltBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    voltLbl = new QLabel(tr("电压"));
+    voltLbl = new QLabel(tr("电压(V)"));
     btnLayout->addWidget(voltLbl);
     btnLayout->addWidget(voltBox);
 
@@ -145,7 +145,7 @@ void TypSetMag::initButtonBar()
     freqBox->setFixedSize(80, 40);
     freqBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     connect(freqBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    freqLbl = new QLabel(tr("频率"));
+    freqLbl = new QLabel(tr("频率(kHz)"));
     btnLayout->addWidget(freqLbl);
     btnLayout->addWidget(freqBox);
 

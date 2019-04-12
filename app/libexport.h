@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QFile>
 #include <QWidget>
+#include <algorithm>
 
 class libExport : public QWidget
 {

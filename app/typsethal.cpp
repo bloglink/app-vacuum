@@ -48,7 +48,7 @@ void TypSetHal::initViewBar()
     iView->verticalHeader()->setFixedWidth(80);
 
     QHBoxLayout *blay = new QHBoxLayout;
-    blay->addWidget(new QLabel(tr("磁极数:")));
+    blay->addWidget(new QLabel(tr("极对数:")));
     line = new QSpinBox(this);
     line->setFixedHeight(35);
     blay->addWidget(line);

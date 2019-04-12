@@ -185,7 +185,11 @@ void TypConfig::initConfigBar()
     autoPixmap(typeNames.at(0));
     layout->addWidget(typePixmap);
 
-    QString tstr = textConf.arg(tr("线夹颜色&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;线夹名称"));
+    QString tmp = tr("线夹颜色");
+    for (int i=0; i < 10; i++)
+        tmp.append("&nbsp;");
+    tmp.append(tr("线夹名称"));
+    QString tstr = textConf.arg(tmp);
     layout->addWidget(new QLabel(tstr, this));
 
     QGridLayout *cLayout = new QGridLayout;

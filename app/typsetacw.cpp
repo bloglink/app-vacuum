@@ -78,7 +78,6 @@ void TypSetAcw::initItemDelegate()
 {
     isInit = false;
     freqs << "50" << "60";
-    ports << "PE" << "1" << "4" << "7";
     view->setItemDelegateForColumn(CHECKACW, new BoxQItems);
     view->setItemDelegateForColumn(PORTACW1, new BoxQItems);
     view->setItemDelegateForColumn(PORTACW2, new BoxQItems);
@@ -105,8 +104,27 @@ void TypSetAcw::initItemDelegate()
     view->setItemDelegateForColumn(0x09, new BoxQItems);
     view->setItemDelegateForColumn(0x0A, curr);
 
+    QStringList nameH;
+    nameH  << "1" << "4" << "7(6)" << "PE";
+
+    buttonH = new QGroupBox(tr("端口"), this);
+    QGridLayout *btnlayoutR = new QGridLayout;
+    buttonH->setLayout(btnlayoutR);
+    for (int i=0; i < nameH.size(); i++) {
+        QCheckBox *box = new QCheckBox(nameH.at(i), this);
+        checkboxsH.append(box);
+        connect(box, SIGNAL(clicked(bool)), this, SLOT(autoCheckH()));
+        if (i == 0) {
+            btnlayoutR->addWidget(box, 0, 0);
+        } else {
+            btnlayoutR->addWidget(box, i/8, i%8);
+        }
+    }
+    buttonH->resize(300, 100);
+    buttonH->hide();
+
     QStringList nameL;
-    nameL  << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8"
+    nameL  << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8(PE)"
            << "A(9)" << "B(10)" << "C(11)" << "D(12)" << "E(13)" << "F(14)" << "G(15)" << "H(16)";
 
     buttonL = new QGroupBox(tr("端口"), this);
@@ -114,8 +132,8 @@ void TypSetAcw::initItemDelegate()
     buttonL->setLayout(btnlayoutL);
     for (int i=0; i < nameL.size(); i++) {
         QCheckBox *box = new QCheckBox(nameL.at(i), this);
-        checkboxs.append(box);
-        connect(box, SIGNAL(clicked(bool)), this, SLOT(autoCheck()));
+        checkboxsL.append(box);
+        connect(box, SIGNAL(clicked(bool)), this, SLOT(autoCheckL()));
         if (i == 0) {
             btnlayoutL->addWidget(box, 0, 0);
         } else {
@@ -155,15 +173,10 @@ void TypSetAcw::initSettings()
     int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
     int vacu = tmpSet.value(back + backVacu).toInt();
 
-    BoxDouble *volt = new BoxDouble;
-    volt->setMaxinum(vmax);
-    volt->setMininum(300);
-    volt->setDecimals(0);
     view->setColumnHidden(0, (vacu != 2));
     view->setColumnHidden(1, (vacu != 2));
     view->setColumnHidden(2, (vacu != 2));
     view->setColumnHidden(9, (vacu != 1 && vacu != 3));
-
     view->setRowHidden(0, (vacu != 2));
     view->setRowHidden(1, (vacu != 2));
     view->setRowHidden(2, (vacu != 2));
@@ -173,28 +186,32 @@ void TypSetAcw::initSettings()
 
     view->setFixedHeight((vacu == 2) ? 240 : 120);
 
-    if (vacu == 2) {  // 相间+100mA
-        BoxDouble *curr = new BoxDouble;
-        curr->setMaxinum(100);
-        curr->setDecimals(2);
-        volt->setMininum(200);
-        view->setItemDelegateForColumn(UPPERACW, curr);
-        view->setItemDelegateForColumn(LOWERACW, curr);
-    }
-
-    view->setItemDelegateForColumn(VOLTACW1, volt);
-    view->setColumnHidden(7, (this->objectName() == "setdcw") ? true : false);
-    view->setColumnHidden(8, (this->objectName() == "setdcw") ? true : false);
+    // 电流上下限
     BoxDouble *curr = new BoxDouble;
     curr->setMaxinum((this->objectName() == "setdcw") ? 10 : 20);
     curr->setDecimals(2);
     view->setItemDelegateForColumn(UPPERACW, curr);
     view->setItemDelegateForColumn(LOWERACW, curr);
+    BoxDouble *volt = new BoxDouble;
+    volt->setMaxinum(vmax);
+    volt->setMininum(300);
+    volt->setDecimals(0);
+    if (vacu == 2) {  // 相间+30mA
+        BoxDouble *curr = new BoxDouble;
+        curr->setMaxinum(30);
+        curr->setDecimals(2);
+        volt->setMininum(200);
+        view->setItemDelegateForColumn(UPPERACW, curr);
+        view->setItemDelegateForColumn(LOWERACW, curr);
+    }
+    view->setItemDelegateForColumn(VOLTACW1, volt);
+    view->setColumnHidden(7, (this->objectName() == "setdcw") ? true : false);
+    view->setColumnHidden(8, (this->objectName() == "setdcw") ? true : false);
 
     int test = tmpSet.value(back + backTest).toInt();  // 特殊配置
     buttonL->setFixedHeight((test&0x04) ? 150 : 100);
-    for (int i=8; i < checkboxs.size(); i++) {
-        checkboxs.at(i)->setVisible(test&0x04);  // 输出扩展
+    for (int i=8; i < checkboxsL.size(); i++) {
+        checkboxsL.at(i)->setVisible(test&0x04);  // 输出扩展
     }
 
     isInit = (this->isHidden()) ? false : true;
@@ -202,6 +219,7 @@ void TypSetAcw::initSettings()
 
 void TypSetAcw::saveSettings()
 {
+    buttonH->hide();
     buttonL->hide();
     confSettings();
     int addr = tmpSet.value((4000 + Qt::Key_4)).toInt();  // 交耐配置地址
@@ -280,15 +298,22 @@ void TypSetAcw::confSettings()
 
 void TypSetAcw::autoChange(QModelIndex index)
 {
-    change();
     if (isInit) {
+        buttonH->hide();
         buttonL->hide();
         int c = index.column();
         if (c == PORTACW1) {
-            QString dat = index.data().toString();
-            int x = ports.indexOf(dat);
-            QString str = ports.at((x+1)%ports.size());
-            mView->setData(index, str, Qt::DisplayRole);
+            buttonH->raise();
+            buttonH->show();
+            int x = view->x();
+            int y = view->y() + view->height() + 24;
+            buttonH->move(x, y);
+            QString dat = index.data().toString();  // 当前选中的端口
+            for (int i=0; i < checkboxsH.size(); i++) {
+                QString tmp = checkboxsH.at(i)->text();
+                tmp = (tmp == "PE") ? tmp : tmp.mid(0, 1);
+                checkboxsH.at(i)->setChecked((dat.contains(tmp)));
+            }
         }
         if (c == PORTACW2) {
             buttonL->raise();
@@ -297,10 +322,10 @@ void TypSetAcw::autoChange(QModelIndex index)
             int y = view->y() + view->height() + 24;
             buttonL->move(x, y);
             QString dat = index.data().toString();
-            for (int i=0; i < checkboxs.size(); i++) {
-                QString tmp = checkboxs.at(i)->text();
+            for (int i=0; i < checkboxsL.size(); i++) {
+                QString tmp = checkboxsL.at(i)->text();
                 tmp = (tmp == "PE") ? tmp : tmp.mid(0, 1);
-                checkboxs.at(i)->setChecked((dat.contains(tmp)));
+                checkboxsL.at(i)->setChecked((dat.contains(tmp)));
             }
         }
         if (c == FREQACW1) {
@@ -314,17 +339,35 @@ void TypSetAcw::autoChange(QModelIndex index)
     }
 }
 
-void TypSetAcw::autoCheck()
+void TypSetAcw::autoCheckH()
 {
     int row = view->currentIndex().row();
-    QString dat = mView->index(row, 1).data().toString();
+    QString dat = mView->index(row, 2).data().toString();  // 低端
     QString str;
-    for (int i=0; i < checkboxs.size(); i++) {
-        if (checkboxs.at(i)->isChecked()) {
-            QString txt = checkboxs.at(i)->text();
+    for (int i=0; i < checkboxsH.size(); i++) {
+        if (checkboxsH.at(i)->isChecked()) {
+            QString txt = checkboxsH.at(i)->text();
             if (txt != "PE")
                 txt = txt.mid(0, 1);
-            if (txt != dat)
+            if (!dat.contains(txt))  // 低端包含此端口,不可选中
+                str.append(txt);
+        }
+    }
+    str = str.contains("PE") ? "PE" : str;
+    mView->setData(mView->index(row, 1), str, Qt::DisplayRole);
+}
+
+void TypSetAcw::autoCheckL()
+{
+    int row = view->currentIndex().row();
+    QString dat = mView->index(row, 1).data().toString();  // 高端
+    QString str;
+    for (int i=0; i < checkboxsL.size(); i++) {
+        if (checkboxsL.at(i)->isChecked()) {
+            QString txt = checkboxsL.at(i)->text();
+            if (txt != "PE")
+                txt = txt.mid(0, 1);
+            if (!dat.contains(txt))  // 高端包含此端口,不可选中
                 str.append(txt);
         }
     }
@@ -403,6 +446,7 @@ void TypSetAcw::recvAppMsg(QTmpMap msg)
 void TypSetAcw::showEvent(QShowEvent *e)
 {
     this->setFocus();
+    buttonH->hide();
     buttonL->hide();
     recvShowEvent();
     e->accept();

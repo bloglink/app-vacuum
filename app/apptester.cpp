@@ -604,9 +604,22 @@ void AppTester:: initSetDCR()
         }
     }
     if (noun != 0) {  // 不平衡度
-        tmpItem.insert(tmpRow, tr("电阻平衡"));
-        tmpParm.insert(tmpRow, tr("<%1%").arg(noun));
+        QString item = tr("电阻平衡");
+        QString parm = tr("<%1%").arg(noun);
+        tmpItem.insert(tmpRow, item);
+        tmpParm.insert(tmpRow, parm);
         insertItem(nSetDCR, 0x08);
+        tmpSave.insert(save + 0x08*0x10 + 0x00, item);  // 项目
+        tmpSave.insert(save + 0x08*0x10 + 0x01, parm);  // 参数
+
+        int r = tmpSet.value(4000 + Qt::Key_0).toInt();
+        if (tmpSet.value(r + 0x01).toString() == "YY") {
+            tmpItem.insert(tmpRow, tr("电阻平衡2"));
+            tmpParm.insert(tmpRow, tr("<%1%").arg(noun));
+            insertItem(nSetDCR, 0x09);
+            tmpSave.insert(save + 0x09*0x10 + 0x00, item);  // 项目
+            tmpSave.insert(save + 0x09*0x10 + 0x01, parm);  // 参数
+        }
     }
 }
 
@@ -632,8 +645,6 @@ void AppTester::initSetMAG()
         magText.at(numb*3 + 0)->setText(str.arg(tr("项目: ") + item));
         magText.at(numb*3 + 1)->setText(str.arg(tr("上限: ") + parm));
         magText.at(numb*3 + 2)->setText(str.arg(tr("差积: ----")));
-        tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
-        tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
         magWave.at(numb)->setEnabled((check != 0) ? true : false);
         QVariantMap tmp;
         tmp.insert("index", 0);
@@ -651,6 +662,8 @@ void AppTester::initSetMAG()
                 tmpItem.insert(tmpRow, tr("反嵌"));
                 tmpParm.insert(tmpRow, parm);
                 insertItem(nSetMAG, 0x00);
+                tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
+                tmpSave.insert(save + numb*0x10 + 0x01, parm);  // 参数
             }
         }
     }
@@ -658,18 +671,27 @@ void AppTester::initSetMAG()
 
 void AppTester::initSetCCW()
 {
+    int save = tmpSet.value(3000 + Qt::Key_2).toInt();  // 反嵌结果地址
     int addr = tmpSet.value(4000 + Qt::Key_2).toInt();  // 反嵌配置地址
     int turn = tmpSet.value(addr + 0).toInt();
     int turn2 = tmpSet.value(addr + 4).toInt();
     if (turn != 2) {
-        tmpItem.insert(tmpRow, tr("转向"));
-        tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW")));
+        QString item = tr("转向");
+        QString parm = tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW"));
+        tmpItem.insert(tmpRow, item);
+        tmpParm.insert(tmpRow, parm);
         insertItem(nSetMAG, 0x08);
+        tmpSave.insert(save + 0x08*0x10 + 0x00, item);  // 项目
+        tmpSave.insert(save + 0x08*0x10 + 0x01, parm);  // 参数
     }
     if (turn2 != 2) {
-        tmpItem.insert(tmpRow, tr("转向2"));
-        tmpParm.insert(tmpRow, tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW")));
+        QString item = tr("转向2");
+        QString parm = tr("%1").arg(turn == 0 ? tr("CW") : tr("CCW"));
+        tmpItem.insert(tmpRow, item);
+        tmpParm.insert(tmpRow, parm);
         insertItem(nSetMAG, 0x09);
+        tmpSave.insert(save + 0x09*0x10 + 0x00, item);  // 项目
+        tmpSave.insert(save + 0x09*0x10 + 0x01, parm);  // 参数
     }
 }
 
@@ -1528,6 +1550,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int grnd = tmpSet.value(back + backGrnd).toInt();
     int nmag = tmpSet.value(back + backNMag).toInt();
+    int spec = tmpSet.value(back + backTest).toString().toInt(NULL, 16);  // 特殊配置
     int item = msg.value(Qt::Key_1).toInt();  // 测试项目
     int numb = msg.value(Qt::Key_2).toInt();  // 单项数量
     int work = msg.value(Qt::Key_6).toInt();  // 工位
@@ -1588,11 +1611,8 @@ void AppTester::recvNewMsg(QTmpMap msg)
         if (!msg.value(Qt::Key_4).isNull()) {
             QString str = msg.value(Qt::Key_4).toString();
             QStringList ws = tmpStr.split(" ");
-            stdStr = (numb == 0) ? tmpStr : stdStr;
-            QStringList wt = stdStr.split(" ");
             if (ws.size() > 200) {
                 ws.removeFirst();
-                wt.removeFirst();
                 int addr = tmpSet.value(4000 + Qt::Key_6).toInt() + CACHEIMP;  // 匝间配置地址
                 int from = tmpSet.value(addr + CACHEIMP*FROMIMP1 + numb).toInt();
                 int stop = tmpSet.value(addr + CACHEIMP*STOPIMP1 + numb).toInt();
@@ -1604,15 +1624,14 @@ void AppTester::recvNewMsg(QTmpMap msg)
                     double p1 = ws.at(i).toInt() * 100.0 / 1024;
                     mp1.append(QString::number(p1));
                     double p2 = tmpSet.value(wimp + IMP_SIZE*(numb*2 + ss) + i).toInt()*100.0/1024;
-                    if (iscp)
-                        p2 = wt.at(i).toInt() * 100.0 / 1024;
                     mp0.append(QString::number(p2));
                 }
-                tmpMap.insert("index", 0);
-                tmpMap.insert("color", int(Qt::white));
-                tmpMap.insert("point", mp0);
-                impWave.at(numb)->setLines(tmpMap);
-                allWave->setLines(tmpMap);
+                if (iscp == 0) {  // 非比较模式
+                    tmpMap.insert("index", 0);
+                    tmpMap.insert("color", int(Qt::white));
+                    tmpMap.insert("point", mp0);
+                    impWave.at(numb)->setLines(tmpMap);
+                }
                 tmpMap.insert("index", 1);
                 tmpMap.insert("point", mp1);
                 tmpMap.insert("color", str == "OK" ? int(Qt::green) : int(Qt::red));
@@ -1669,7 +1688,8 @@ void AppTester::recvNewMsg(QTmpMap msg)
     }
     if (item == 6037) {
         quint32 hex = msg.value(Qt::Key_5).toString().toInt();
-        if (hex & X05) {  // 左光幕
+        bool ll = (spec & 0x20) ? ((hex & X05) == 0) : (hex & X05);  // 左光幕
+        if (ll) {  // 左光幕
             labels.value("stop")->setStyleSheet("color:black;background:#00FF00");
         } else {
             labels.value("stop")->setStyleSheet("color:white;background:#121919");

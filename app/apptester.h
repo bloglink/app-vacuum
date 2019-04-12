@@ -148,7 +148,6 @@ private:
     QTmpMap tmpSet;
     QList<QTmpMap> tmpView;
     QString tmpStr;
-    QString stdStr;
     QElapsedTimer ms;
 
     BoxQImage *bWave;

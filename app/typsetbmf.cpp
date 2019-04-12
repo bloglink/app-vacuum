@@ -53,13 +53,14 @@ void TypSetBmf::initViewBar()
 
     QGroupBox *boxTest = new QGroupBox(this);
     boxTest->setTitle(tr("测试项目"));
-    boxTest->setFixedHeight(240);
+    boxTest->setFixedHeight(300);
     boxTest->setLayout(ilay);
 
     QStringList pname;
     pname << tr("参数");
     QStringList phead;
-    phead << tr("设置转速") << tr("设置转向") << tr("设置电压") << tr("测试时间") << tr("温度补偿");
+    phead << tr("设置转速") << tr("设置转向") << tr("设置电压") << tr("测试时间") << tr("温度补偿")
+          << tr("采样频率") << tr("采样长度");
     pMode = new BoxQModel();
     pMode->setRowCount(phead.size());
     pMode->setColumnCount(pname.size());
@@ -78,7 +79,7 @@ void TypSetBmf::initViewBar()
     play->addWidget(pView);
     QGroupBox *boxParm = new QGroupBox(this);
     boxParm->setTitle(tr("设置参数"));
-    boxParm->setFixedHeight(240);
+    boxParm->setFixedHeight(300);
     boxParm->setLayout(play);
 
     QHBoxLayout *flay = new QHBoxLayout;
@@ -114,12 +115,12 @@ void TypSetBmf::initItemDelegate()
     bemf->setMaxinum(3000);
     iView->setItemDelegateForRow(0, bemf);
     iView->setItemDelegateForRow(1, bemf);
-//    BoxDouble *diff = new BoxDouble;
-//    diff->setDecimals(0);
-//    diff->setMaxinum(360);
-//    iView->setItemDelegateForRow(2, diff);
-//    BoxDouble *noun = new BoxDouble;
-//    iView->setItemDelegateForRow(3, noun);
+    //    BoxDouble *diff = new BoxDouble;
+    //    diff->setDecimals(0);
+    //    diff->setMaxinum(360);
+    //    iView->setItemDelegateForRow(2, diff);
+    //    BoxDouble *noun = new BoxDouble;
+    //    iView->setItemDelegateForRow(3, noun);
     iView->setItemDelegateForRow(2, new BoxQItems);
     iView->setItemDelegateForRow(3, new BoxQItems);
     iView->setItemDelegateForRow(4, new BoxQItems);
@@ -181,8 +182,8 @@ void TypSetBmf::saveSettings()
             str = QString::number(turns.indexOf(str));
         if (i == 4)
             str = QString::number(comps.indexOf(str));
-        if (i == 5)
-            str = "0";
+        //        if (i == 5)
+        //            str = "0";
         tmpMsg.insert(addr + CACHEBMF*0x01 + i, str);
     }
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
@@ -207,17 +208,17 @@ void TypSetBmf::confSettings()
     }
     row++;
     tmpStr.clear();
-    tmpStr << "speed" << "turn" << "volt_vcc" << "time" << "tmpcomp" << "driver";
+    tmpStr << "speed" << "turn" << "volt_vcc" << "time" << "tmpcomp"
+           << "sample_freq" << "sample_lenth";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
         if (i == tmpStr.indexOf("turn"))
             str = QString::number(turns.indexOf(str));
         if (i == tmpStr.indexOf("tmpcomp"))
             continue;
-        if (i == tmpStr.indexOf("driver"))
-            str = "0";
         tmpMap.insert(tmpStr.at(i), str);
     }
+    tmpMap.insert("driver", "0");
     config.insert("BEMF", tmpMap);
     config.insert("enum", Qt::Key_Save);
     emit sendAppMap(config);
@@ -229,16 +230,6 @@ void TypSetBmf::autoChange()
 {
     change();
     if (isInit) {
-//        if (iView->hasFocus()) {
-//            int r = iView->currentIndex().row();
-//            int c = iView->currentIndex().column();
-//            QString tmpStr;
-//            if (r == 4 && c == 0) {
-//                tmpStr = iMode->index(r, 0).data().toString();
-//                tmpStr = sques.at((sques.indexOf(tmpStr) + 1) % sques.size());
-//                iMode->setData(iMode->index(r, 0), tmpStr, Qt::DisplayRole);
-//            }
-//        }
         if (pView->hasFocus()) {
             int r = pView->currentIndex().row();
             QString tmpStr;

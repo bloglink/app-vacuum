@@ -52,6 +52,10 @@ void AppBackup::initBoxText()
           << tr("测试延时") << tr("目标网络") << tr("匝间模式") << tr("测试模式")
           << tr("转向模式") << tr("波形比例") << tr("耐压模式") << tr("特殊配置");
     QStringList tools;
+    QString spec = tr("00:常规模式\n01:美芝真空\n02:旧版无刷\n04:输出扩展");
+    spec.append("\n08:刹车功能");
+    spec.append("\n10:真空换档");
+    spec.append("\n20:转向反转");
     tools << "" << "" << ""
           << tr("0:1.0V 0.6V 0.3V\n2:1.5V 1.0V 0.5V")
           << "" << "" << "" << ""
@@ -61,7 +65,7 @@ void AppBackup::initBoxText()
           << tr("0:常规反嵌\n1:屏蔽反嵌\n3:感应模式")
           << ""
           << tr("0:常规模式\n1:真空模式\n2:相间模式\n3:二次耐压")
-          << tr("00:常规模式\n01:美芝真空\n02:旧版无刷\n04:输出扩展\n08:刹车功能\n10:真空换档");
+          << spec;
 
     for (int i=0; i < names.size(); i++) {
         QHBoxLayout *box = new QHBoxLayout;
