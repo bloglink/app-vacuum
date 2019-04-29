@@ -37,26 +37,34 @@ private slots:
     void initUI();
     void initLayout();
     void initTimeBar();
+    void initParmBar();
     void initButtonBar();
     void initSettings();
     void saveSettings();
     void testRepair();
     void stopRepair();
     void updateTime();
+    void recvLedMsg(QTmpMap msg);
     void recvAppMsg(QTmpMap msg);
     virtual void showEvent(QShowEvent *e);
     virtual void hideEvent(QHideEvent *e);
 private:
+    QFrame *frm;
     QVBoxLayout *layout;
     QLabel *warn;
     QLCDNumber *timeLess;
     QCheckBox *boxAuto;
+    QSpinBox *disperse;
     QSpinBox *boxSpeed;
+    QDoubleSpinBox *boxTorque;
+    QDoubleSpinBox *boxRatio;
     QVariantMap tmpMap;
     QTime time;
     QTimer *timer;
     QTmpMap tmpSet;
     QTmpMap tmpMsg;
+    int count;
+    double taskvolt;
 };
 
 #endif // APPREPAIR_H

@@ -49,8 +49,12 @@ HEADERS += \
     app/typsetpwr.h \
     app/libexport.h \
     app/typsetlvs.h \
-    app/devdirver.h \
-    app/devmservo.h
+    app/devmservo.h \
+    app/devnlogic.h \
+    app/devnservo.h \
+    app/devserial.h \
+    app/devwasher.h \
+    app/devinvert.h
 
 SOURCES += \
     app/appauthor.cpp \
@@ -86,8 +90,12 @@ SOURCES += \
     app/typsetpwr.cpp \
     app/libexport.cpp \
     app/typsetlvs.cpp \
-    app/devdirver.cpp \
-    app/devmservo.cpp
+    app/devmservo.cpp \
+    app/devnlogic.cpp \
+    app/devnservo.cpp \
+    app/devserial.cpp \
+    app/devwasher.cpp \
+    app/devinvert.cpp
 
 RESOURCES += \
     lib/lib.qrc

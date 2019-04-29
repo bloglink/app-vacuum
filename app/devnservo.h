@@ -4,25 +4,29 @@
  *
  * version:     0.1
  * author:      zhaonanlin
- * brief:       三菱伺服配置
+ * brief:       松下伺服配置
 *******************************************************************************/
-#ifndef DEVMSERVO_H
-#define DEVMSERVO_H
+#ifndef DEVNSERVO_H
+#define DEVNSERVO_H
 
 #include "devserial.h"
 
-class DevMServo : public DevSerial
+class DevNServo : public DevSerial
 {
     Q_OBJECT
 public:
-    explicit DevMServo(DevSerial *parent = 0);
+    explicit DevNServo(DevSerial *parent = 0);
 public slots:
     virtual QByteArray getInit(QVariantMap map);
     virtual QByteArray getData(QVariantMap map);
     virtual QByteArray getTest(QVariantMap map);
     virtual void testThread(QVariantMap map);
     virtual void stopThread(QVariantMap map);
-    virtual void recvAppMap(QVariantMap map);
+    virtual void recvAppMap(QVariantMap msg);
+private:
+    QSerialPort *com;
+    QVariantMap tmp;
+    bool isFree;
 };
 
-#endif // DEVMSERVO_H
+#endif // DEVNSERVO_H

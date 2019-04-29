@@ -176,7 +176,7 @@ void TypSetInd::initItemDelegate()
     view->setItemDelegateForColumn(UNITIND1, new BoxQItems);
     BoxDouble *real = new BoxDouble;
     real->setDecimals(3);
-    real->setMininum(0);
+    real->setMininum(-2000);
     real->setMaxinum(2000);
     view->setItemDelegateForColumn(UPPERIND, real);
     view->setItemDelegateForColumn(LOWERIND, real);

@@ -30,8 +30,9 @@ void TypSetLVS::initLayout()
 void TypSetLVS::initViewBar()
 {
     QStringList headers;
-    headers << tr("低启") << tr("电流上限") << tr("电流下限") << tr("功率上限")
-            << tr("功率下限") << tr("容压上限") << tr("容压下限") << tr("转向") << tr("时间");
+    headers << tr("电流上限") << tr("电流下限") << tr("功率上限")
+            << tr("功率下限") << tr("测试时间") << tr("输入电压")
+            << tr("输出电压") << tr("输出频率") << tr("周期");
     mView = new BoxQModel;
     mView->setRowCount(LVS_SIZE);
     mView->setColumnCount(headers.size());
@@ -41,8 +42,6 @@ void TypSetLVS::initViewBar()
         for (int j=0; j < headers.size(); j++) {
             mView->setData(mView->index(i, j), "", Qt::DisplayRole);
         }
-        mView->item(i, CHECKLVS)->setCheckable(true);
-        mView->item(i, CHECKLVS)->setText(QString("12%1").arg(i+3));
     }
     connect(mView, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(autoInput()));
 
@@ -52,50 +51,18 @@ void TypSetLVS::initViewBar()
     view->setEditTriggers(QAbstractItemView::AllEditTriggers);
     view->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    view->horizontalHeader()->setSectionResizeMode(CHECKLVS, QHeaderView::Fixed);
-    view->setColumnWidth(CHECKLVS, 96);
     view->setFixedHeight(240);
-    connect(view, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange(QModelIndex)));
     layout->addWidget(view);
-    view->hideColumn(VMAXLVS1);
-    view->hideColumn(VMINLVS1);
 }
 
 void TypSetLVS::initButtonBar()
 {
     QHBoxLayout *btnLayout = new QHBoxLayout;
 
-    int row = 0;
-    passBox = new QSpinBox(this);
-    passBox->setFixedSize(125, 40);
-    passBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    passBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(passBox, SIGNAL(valueChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("输出通道")));
-    btnLayout->addWidget(passBox);
-
-    voltBox = new QSpinBox(this);
-    voltBox->setMaximum(500);
-    voltBox->setFixedSize(125, 40);
-    voltBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    voltBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(voltBox, SIGNAL(valueChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("输出电压")));
-    btnLayout->addWidget(voltBox);
-
-    compBox = new QDoubleSpinBox(this);
-    compBox->setDecimals(1);
-    compBox->setMinimum(-99.9);
-    compBox->setFixedSize(125, 40);
-    compBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    compBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    connect(compBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("输出频率")));
-    btnLayout->addWidget(compBox);
     btnLayout->addStretch();
 
     QPushButton *btnSave = new QPushButton(tr("保存"), this);
-    btnSave->setFixedSize(125, 40);
+    btnSave->setFixedSize(80, 40);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
     btnLayout->addWidget(btnSave);
 
@@ -111,67 +78,49 @@ void TypSetLVS::initItemDelegate()
     isInit = false;
     turns << tr("NULL") << tr("CCW") << tr("CW");
 
-    view->setItemDelegateForColumn(CHECKLVS, new BoxQItems);
-
     BoxDouble *curr = new BoxDouble;
-    view->setItemDelegateForColumn(CMAXLVS1, curr);
-    view->setItemDelegateForColumn(CMINLVS1, curr);
-
-    view->setItemDelegateForColumn(PMAXLVS1, curr);
-    view->setItemDelegateForColumn(PMINLVS1, curr);
-
-    view->setItemDelegateForColumn(TURNLVS1, new BoxQItems);
-
-    view->setItemDelegateForColumn(TIMELVS1, curr);
+    curr->setDecimals(3);
+    curr->setMaxinum(5);
+    view->setItemDelegateForColumn(0x00, curr);
+    view->setItemDelegateForColumn(0x01, curr);
+    BoxDouble *pwr = new BoxDouble;
+    pwr->setDecimals(1);
+    pwr->setMaxinum(1000);
+    view->setItemDelegateForColumn(0x02, pwr);
+    view->setItemDelegateForColumn(0x03, pwr);
+    view->setItemDelegateForColumn(0x04, pwr);
+    BoxDouble *cyc = new BoxDouble;
+    cyc->setDecimals(0);
+    cyc->setMaxinum(99);
+    view->setItemDelegateForColumn(0x09, cyc);
 }
 
 void TypSetLVS::initSettings()
 {
-    int addr = tmpSet.value((4000 + Qt::Key_A)).toInt();
-    passBox->setValue(tmpSet.value(addr + 0).toDouble());
-    voltBox->setValue(tmpSet.value(addr + 4).toDouble());
-    compBox->setValue(tmpSet.value(addr + 5).toDouble());
-
+    int item = Qt::Key_A;
+    item = (this->objectName() == "setlck") ? Qt::Key_9 : item;
     for (int t=0; t < mView->columnCount(); t++) {
-        int addr = tmpSet.value((4000 + Qt::Key_A)).toInt() + CACHELVS;
+        int addr = tmpSet.value((4000 + item)).toInt() + CACHELVS;
         for (int i=0; i < mView->rowCount(); i++) {
             double real = tmpSet.value(addr + CACHELVS*t + i).toDouble();
             QString str = QString::number(real);
-            if (t == CHECKLVS) {
-                real = (real == 0) ? Qt::Unchecked : Qt::Checked;
-                mView->setData(mView->index(i, t), real, Qt::CheckStateRole);
-                continue;
-            }
-            if (t == TURNLVS1) {
-                str = turns.at(str.toInt() % turns.size());
-            }
             mView->setData(mView->index(i, t), str, Qt::DisplayRole);
         }
     }
     view->setFixedHeight(120);
+    view->setColumnHidden(0x08, (this->objectName() != "setlck"));
     isInit = (this->isHidden()) ? false : true;
 }
 
 void TypSetLVS::saveSettings()
 {
     confSettings();
-    int addr = tmpSet.value((4000 + Qt::Key_A)).toInt();
-
-    tmpMsg.insert(addr + 0, QString::number(passBox->value()));
-    tmpMsg.insert(addr + 4, QString::number(voltBox->value()));
-    tmpMsg.insert(addr + 5, QString::number(compBox->value()));
-
+    int item = Qt::Key_A;
+    item = (this->objectName() == "setlck") ? Qt::Key_9 : item;
     for (int t=0; t < mView->columnCount(); t++) {
-        int addr = tmpSet.value((4000 + Qt::Key_A)).toInt() + CACHELVS;
+        int addr = tmpSet.value((4000 + item)).toInt() + CACHELVS;
         for (int i=0; i < mView->rowCount(); i++) {
             QString str = QString::number(mView->index(i, t).data().toDouble());
-            if (t == CHECKLVS) {
-                int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
-                str = QString::number((k == 0) ? 0 : 1);
-            }
-            if (t == TURNLVS1) {
-                str = QString::number(turns.indexOf(mView->index(i, t).data().toString()));
-            }
             tmpMsg.insert(addr + CACHELVS*t + i, str);
         }
     }
@@ -184,53 +133,27 @@ void TypSetLVS::saveSettings()
 
 void TypSetLVS::confSettings()
 {
-    tmpMap.insert("pass", QString::number(passBox->value()));
-    tmpMap.insert("volt", QString::number(voltBox->value()));
-    tmpMap.insert("freq", QString::number(compBox->value()));
-
     QStringList names;
-    names << "test" << "curr_max" << "curr_min" << "pwr_max" << "pwr_min"
-          << "cap_max" << "cap_min" << "turn" << "time";
+    names << "curr_max" << "curr_min" << "pwr_max" << "pwr_min" << "time"
+          << "volt_input" << "volt" << "freq" << "point";
     QStringList tmp;
     for (int t=0; t < names.size(); t++) {
-        for (int i=0; i < mView->rowCount(); i++) {
-            QString str = QString::number(mView->index(i, t).data().toDouble());
-            if (t == CHECKLVS) {
-                int k = mView->index(i, t).data(Qt::CheckStateRole).toInt();
-                str = QString::number((k == 0) ? 0 : 1+i);
-            }
-            if (t == TURNLVS1) {
-                str = QString::number(turns.indexOf(mView->index(i, t).data().toString()));
-            }
-            tmp.append(str);
-        }
+        QString str = QString::number(mView->index(0, t).data().toDouble());
+        if (this->objectName() == "setlck" && t == 0x04)
+            str = QString::number(str.toDouble()*1000);
+        tmp.append(str);
         tmpMap.insert(names.at(t), tmp.join(","));
         tmp.clear();
     }
-    config.insert("LVS", tmpMap);
+    tmpMap.insert("pass", 1);
+    QString str = QString("LVS");
+    str = (this->objectName() == "setlck") ? QString("LCK") : str;
+
+    config.insert(str, tmpMap);
     config.insert("enum", Qt::Key_Save);
     emit sendAppMap(config);
     config.clear();
     tmpMap.clear();
-}
-
-void TypSetLVS::autoChange(QModelIndex index)
-{
-    change();
-    if (isInit) {
-        int r = index.row();
-        int c = index.column();
-        int i = 0;
-        switch (c) {
-        case TURNLVS1:
-            i = turns.indexOf(view->currentIndex().data().toString());
-            i = qMax(0, (i + 1) % turns.size());
-            mView->setData(mView->index(r, c), turns.at(i), Qt::DisplayRole);
-            break;
-        default:
-            break;
-        }
-    }
 }
 
 void TypSetLVS::autoInput()
@@ -270,8 +193,11 @@ void TypSetLVS::change()
 
 void TypSetLVS::recvShowEvent()
 {
+    QString str = QString("LVS");
+    str = (this->objectName() == "setlck") ? QString("LCK") : str;
+
     tmpMap.insert("enum", Qt::Key_View);
-    tmpMap.insert("text", QString("6004 LVS"));
+    tmpMap.insert("text", QString("6004 %1").arg(str));
     emit sendAppMap(tmpMap);
     tmpMap.clear();
     initSettings();

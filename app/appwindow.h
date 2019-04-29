@@ -40,6 +40,7 @@
 #include "typsetimp.h"
 #include "typsetpwr.h"
 #include "typsetind.h"
+#include "typsetlvs.h"
 #include "typsethal.h"
 #include "typsetlod.h"
 #include "typsetbmf.h"
@@ -50,8 +51,12 @@
 #include "sqlexport.h"
 #include "apptester.h"
 
-#include "devdirver.h"
+#include "devserial.h"
 #include "devmservo.h"
+#include "devnservo.h"
+#include "devnlogic.h"
+#include "devinvert.h"
+#include "devwasher.h"
 
 #include "main.h"
 #ifdef __arm__
@@ -100,11 +105,13 @@ private slots:
     int initSetImp();
     int initSetPwr();
     int initSetInd();
+    int initSetLck();
+    int initSetLvs();
     int initSetHal();
     int initSetLod();
     int initSetNld();
     int initSetBmf();
-    int initSetLvs();
+    int initSetLph();
     int initImport();
     int initExport();
     int initRecord();
@@ -127,12 +134,9 @@ private slots:
     int taskStartView();
     int taskToolIobrd();
     int taskStartWait();
-    int taskOpenServo();
     int taskStartTest();
     int taskClearCtrl();
-    int taskStopMotor();
     int taskStopServo();
-    int taskQuitServo();
     int taskClearWait();
     int taskCheckSave();
     int taskStartSave();
@@ -150,13 +154,14 @@ private slots:
     int testWaitServo();
     int testStopServo();
     int testToolInvrt();
-    int testStopInvrt();
     int testStartSend();
     int testStartTest();
+    int testCheckWarn();
     int getNextItem();
     int taskConfig();
     int recvIoCtrl(int key, int work);
-    QVariantMap taskSerial(QString taskname, QString taskwork, QVariant taskdata);
+    int recvNoise();
+    void noiseThread();
     void showTester();
     void showBarCode();
     void saveConfig(QTmpMap msg);
@@ -182,13 +187,13 @@ private slots:
     void recvNewMsg(QString msg);
     void recvStaMsg(QString msg);
     void recvErrMsg(QString msg);
-    void recvPwrMsg(QString msg);
+    void recvPwrMsg(QString msg, int ext);
     void wait(int ms);
     void calcHALL(QString msg);
     void calcLOAD(QString msg, int ext);
-    void calcBEMF(QString msg);
+    void calcBEMF(QString msg, int ext);
     double calcNoun(QList<double> tmp);
-    void test();
+    void clearBatch();
 private:
     QStackedWidget *stack;
     QVBoxLayout *btnLayout;
@@ -208,9 +213,11 @@ private:
     int prevShift;
     int currItem;
     int isok;
+    int ioHexS;
     qint64 timeRsl;
     qint64 timeMag;
     qint64 timeImp;
+    qint64 leek;
     QElapsedTimer t;
 
     QTmpMap tmpSet;
@@ -228,14 +235,23 @@ private:
     quint32 prvHex;
     int turnBuff;
     quint16 ioSave;
+    QString strPwr;
     QString strLoad;
     QList<int> buffrate;
     QVariantMap taskparm;
     QVariantMap testparm;
     QVariantMap itemparm;
     QList<double> tempvolt;
+    QList<double> tstrpm;
+    bool isSampling;
+    int count;
 
     QStringList tmpPwr;
+    bool stop;
+    int noisetime;
+    quint32 iotorque;
+    int buffwork;
+    QTimer *noiseTimer;
 };
 
 #endif // APPWINDOW_H

@@ -37,6 +37,7 @@
 #include "typsetimp.h"
 #include "typsetpwr.h"
 #include "typsetind.h"
+#include "typsetlvs.h"
 
 class AppTester : public QWidget
 {
@@ -76,11 +77,13 @@ private slots:
     void initSetIMP();
     void initSetPWR();
     void initSetIND();
+    void initSetLCK();
+    void initSetLVS();
     void initSetHAL();
     void initSetLOD();
     void initSetNLD();
     void initSetBMF();
-    void initSetLVS();
+    void initSetLPH();
     void insertItem(int item, int numb);
     void initQuality();
     void clickView();
@@ -165,6 +168,7 @@ private:
     QString strv;
     int viewClickCount;
     QTimer *viewClickTimer;
+    QMap<int, QStringList> bemfwaves;  // 反电动势波形
 };
 
 #endif // APPTESTER_H

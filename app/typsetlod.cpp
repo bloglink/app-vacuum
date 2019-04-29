@@ -32,7 +32,8 @@ void TypSetLod::initViewBar()
     QStringList names;
     names << tr("上限") << tr("下限");
     QStringList items;
-    items << tr("电流(mA)") << tr("功率(W)") << tr("Icc(mA)") << tr("转速(rpm)") << tr("转向");
+    items << tr("电流(mA)") << tr("功率(W)") << tr("Icc(mA)") << tr("转速(rpm)") << tr("转向")
+          << tr("缺相") << tr("端盖电阻(mΩ)");
     iMode = new BoxQModel(this);
     iMode->setRowCount(items.size());
     iMode->setColumnCount(names.size());
@@ -45,14 +46,14 @@ void TypSetLod::initViewBar()
     iView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->horizontalHeader()->setFixedHeight(30);
-    iView->verticalHeader()->setFixedWidth(90);
+    iView->verticalHeader()->setFixedWidth(128);
     connect(iView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QVBoxLayout *play = new QVBoxLayout;
     play->addWidget(iView);
     QGroupBox *boxTest = new QGroupBox(this);
     boxTest->setTitle(tr("测试项目"));
-    boxTest->setFixedHeight(240);
+    boxTest->setFixedHeight(300);
     boxTest->setLayout(play);
 
     QStringList vname;
@@ -119,7 +120,7 @@ void TypSetLod::initViewBar()
     vlay->addWidget(mView);
     QGroupBox *boxParm = new QGroupBox(this);
     boxParm->setTitle(tr("设置参数"));
-    boxParm->setFixedHeight(240);
+    boxParm->setFixedHeight(300);
     boxParm->setLayout(vlay);
 
     QHBoxLayout *flay = new QHBoxLayout;
@@ -161,14 +162,22 @@ void TypSetLod::initTimeBar()
 
 void TypSetLod::initButtonBar()
 {
+    QHBoxLayout *btnLayout = new QHBoxLayout;
+    modeBox = new QCheckBox(tr("批量模式"), this);
+    btnLayout->addWidget(modeBox);
+    btnLayout->addWidget(new QLabel(tr("设定转速"), this));
+    speedBox = new QSpinBox(this);
+    speedBox->setFixedSize(97, 35);
+    speedBox->setMaximum(5000);
+    btnLayout->addWidget(speedBox);
+    btnLayout->addStretch();
+
     QPushButton *btnSave = new QPushButton(this);
     btnSave->setText(tr("保存"));
     btnSave->setFixedSize(97, 44);
     connect(btnSave, SIGNAL(clicked(bool)), this, SLOT(saveSettings()));
-
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addStretch();
     btnLayout->addWidget(btnSave);
+
     layout->addLayout(btnLayout);
     layout->addStretch();
 }
@@ -176,12 +185,16 @@ void TypSetLod::initButtonBar()
 void TypSetLod::initItemDelegate()
 {
     isInit = false;
-    turns  << "不测试" << "逆时针" << "顺时针";
+    turns  << "NULL" << "CCW" << "CW";
     speeds << "FG" << "伺服";
     drivers << tr("内置") << tr("外置");
     sources << tr("工控蓝仪") << tr("菊水电源") << tr("天宏电源") << tr("蓝仪电源");
     modes << "PWM" << "Vsp";
     freqs << "1K" << "8K" << "10K" << "20K";
+
+    BoxDouble *resistance = new BoxDouble;
+    resistance->setMaxinum(200);
+    resistance->setDecimals(3);
 
     BoxDouble *curr = new BoxDouble;
     iView->setItemDelegateForRow(0, curr);
@@ -191,6 +204,7 @@ void TypSetLod::initItemDelegate()
     rate->setMaxinum(99999);
     iView->setItemDelegateForRow(3, rate);
     iView->setItemDelegateForRow(4, new BoxQItems);
+    iView->setItemDelegateForRow(6, resistance);
 
     BoxDouble *volt = new BoxDouble;
     volt->setDecimals(1);
@@ -212,6 +226,7 @@ void TypSetLod::initItemDelegate()
     vView->setItemDelegateForRow(5, freq);
 
     BoxDouble *poff = new BoxDouble;
+    poff->setDecimals(4);
     poff->setMininum(-30);
     pView->setItemDelegateForRow(0, poff);
     pView->setItemDelegateForRow(1, poff);
@@ -231,6 +246,9 @@ void TypSetLod::initSettings()
     item = (this->objectName() == "setnld") ? Qt::Key_D : item;
     item = (this->objectName() == "setlph") ? Qt::Key_F : item;
     int addr = tmpSet.value(4000 + item).toInt();  // 负载配置地址
+    modeBox->setVisible(this->objectName() == "setlod");
+    modeBox->setChecked((tmpSet.value(addr + 0x0F).toInt()) == 0 ? false : true);
+    speedBox->setValue(tmpSet.value(addr + 0x0E).toInt());
 
     for (int i=0; i < iMode->rowCount()*2; i++) {
         QString str = tmpSet.value(addr + CACHELOD*row + i).toString();
@@ -278,6 +296,8 @@ void TypSetLod::saveSettings()
     item = (this->objectName() == "setnld") ? Qt::Key_D : item;
     item = (this->objectName() == "setlph") ? Qt::Key_F : item;
     int addr = tmpSet.value(4000 + item).toInt();  // 负载配置地址
+    tmpMsg.insert(addr + 0x0F, modeBox->isChecked() ? 1 : 0);
+    tmpMsg.insert(addr + 0x0E, speedBox->value());
     for (int i=0; i < iMode->rowCount()*2; i++) {
         QString str = iMode->index(i/2, i%2).data().toString();
         if (i < 8)
@@ -344,8 +364,7 @@ void TypSetLod::confSettings()
         tmpMap.insert(tmpStr.at(i), str);
     }
     tmpStr.clear();
-    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset"
-           << "power" << "vcc_driver";
+    tmpStr << "driver" << "vcc_offset" << "vsp_offset" << "torque_offset" << "power" << "vcc_driver";
     for (int i=0; i < tmpStr.size(); i++) {
         QString str = pMode->index(i, 0).data().toString();
         if (i == 0)
@@ -546,6 +565,10 @@ void TypSetLod::recvShowEvent()
     if (this->objectName() != "setlod") {
         vView->hideRow(3);
         pView->hideRow(3);
+        QStringList parms;
+        parms << tr("Vm补偿(V)")<< tr("Vcc补偿(V)") << tr("Vsp补偿(V)")
+              << tr("扭矩补偿(N·m)") << tr("电源选择") << tr("Vcc内外置");
+        pMode->setVerticalHeaderLabels(parms);
     }
     tmpMap.insert("enum", Qt::Key_View);
     tmpMap.insert("text", QString("6004 %1").arg(str));

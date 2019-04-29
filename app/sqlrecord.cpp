@@ -36,6 +36,7 @@ void SqlRecord::initViewBar()
 {
     mView = new QSqlTableModel(this, QSqlDatabase::database("record"));
     mView->setTable("aip_sqlite");
+    mView->setSort(0, Qt::DescendingOrder);
     mView->select();
     QStringList headers;
     headers << tr("编号") << tr("日期") << tr("启动") << tr("结束") << tr("型号")
@@ -45,6 +46,8 @@ void SqlRecord::initViewBar()
     tView = new QTableView(this);
     tView->setModel(mView);
     tView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);
+    tView->setColumnWidth(5, 200);
     tView->hideColumn(0);
     connect(tView, SIGNAL(clicked(QModelIndex)), this, SLOT(clickView(QModelIndex)));
     layout->addWidget(tView);
@@ -75,10 +78,14 @@ void SqlRecord::initTextBar()
     blayout->addWidget(new QLabel(tr("测试型号"), this));
     blayout->addWidget(type);
 
+    QDateTime fromdate = QDateTime::currentDateTime();
+    fromdate = fromdate.addDays(-1);
+
     from = new QDateTimeEdit(this);
     from->setFixedHeight(40);
     from->setCalendarPopup(true);
     from->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
+    from->setDateTime(fromdate);
     blayout->addWidget(new QLabel(tr("起始日期"), this));
     blayout->addWidget(from);
 
@@ -91,21 +98,27 @@ void SqlRecord::initTextBar()
 
     blayout->addStretch();
 
+    QPushButton *btnSigle = new QPushButton(this);
+    btnSigle->setText(tr("删除单项"));
+    btnSigle->setFixedSize(80, 44);
+    blayout->addWidget(btnSigle);
+    connect(btnSigle, SIGNAL(clicked(bool)), this, SLOT(clickSigle()));
+
     QPushButton *btnDelete = new QPushButton(this);
-    btnDelete->setText(tr("删除数据"));
-    btnDelete->setFixedSize(97, 44);
+    btnDelete->setText(tr("删除全部"));
+    btnDelete->setFixedSize(80, 44);
     blayout->addWidget(btnDelete);
     connect(btnDelete, SIGNAL(clicked(bool)), this, SLOT(clickDelete()));
 
     QPushButton *btnSelect = new QPushButton(this);
     btnSelect->setText(tr("查询数据"));
-    btnSelect->setFixedSize(97, 44);
+    btnSelect->setFixedSize(80, 44);
     blayout->addWidget(btnSelect);
     connect(btnSelect, SIGNAL(clicked(bool)), this, SLOT(clickSelect()));
 
     QPushButton *btnUpdate = new QPushButton(this);
     btnUpdate->setText(tr("导出数据"));
-    btnUpdate->setFixedSize(97, 44);
+    btnUpdate->setFixedSize(80, 44);
     blayout->addWidget(btnUpdate);
     connect(btnUpdate, SIGNAL(clicked(bool)), this, SLOT(clickExport()));
 }
@@ -157,6 +170,25 @@ void SqlRecord::clickView(QModelIndex index)
                 tItem->setItem(row, i+add, item);
             }
             row++;
+        }
+    }
+}
+
+void SqlRecord::clickSigle()
+{
+    QString w = tr("数据删除后无法恢复,确定删除吗?");
+    int ret = QMessageBox::warning(this, tr("警告"), w, QMessageBox::Cancel | QMessageBox::Ok);
+    if (ret == QMessageBox::Ok) {
+        if (mItem->rowCount() > 0) {
+            QSqlQuery query(QSqlDatabase::database("record"));
+            quint64 uuid = mItem->index(0, 0).data().toLongLong();
+
+            QString filter = "delete from aip_sqlite where ";
+            filter += QObject::tr("R_UUID == '%1'").arg(uuid);
+            if (query.exec(filter))
+                clickSelect();
+            filter.replace("aip_sqlite", "aip_record");
+            query.exec(filter);
         }
     }
 }

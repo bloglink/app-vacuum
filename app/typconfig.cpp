@@ -172,15 +172,18 @@ void TypConfig::initConfigBar()
     if (typeNames.isEmpty())
         typeNames.append("None");
 
-    layout->addWidget(new QLabel(textConf.arg(tr("电机类型")), this));
-
-    testTypeBox = new QComboBox(this);
-    testTypeBox->addItems(typeNames);
-    testTypeBox->setMinimumSize(97, 35);
-    testTypeBox->setView(new QListView);
-    connect(testTypeBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(autoPixmap(QString)));
-    layout->addWidget(testTypeBox);
-
+    if (1) {
+        QHBoxLayout *hlayout = new QHBoxLayout;
+        hlayout->addWidget(new QLabel(textConf.arg(tr("电机类型")), this));
+        testTypeBox = new QComboBox(this);
+        testTypeBox->addItems(typeNames);
+        testTypeBox->setMinimumSize(97, 35);
+        testTypeBox->setView(new QListView);
+        testTypeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        connect(testTypeBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(autoPixmap(QString)));
+        hlayout->addWidget(testTypeBox);
+        layout->addLayout(hlayout);
+    }
     typePixmap = new QLabel(this);
     autoPixmap(typeNames.at(0));
     layout->addWidget(typePixmap);
@@ -208,18 +211,32 @@ void TypConfig::initConfigBar()
 
     testAutoBox = new QCheckBox(tr("感应启动"), this);
     testAutoBox->setToolTip(tr("离开光栅感应范围后自动启动测试"));
-    testAutoBox->setFixedHeight(44);
+    testAutoBox->setMinimumHeight(25);
     layout->addWidget(testAutoBox);
 
     testDrivBox = new QCheckBox(tr("外置驱动"), this);
-    testDrivBox->setFixedHeight(44);
+    testDrivBox->setMinimumHeight(25);
     layout->addWidget(testDrivBox);
     testDrivBox->setToolTip(tr("切换后需重启设备"));
 
-    testKeepBox = new QCheckBox(tr("不合格中断测试"), this);
-    testKeepBox->setFixedHeight(44);
-    layout->addWidget(testKeepBox);
-    testKeepBox->hide();
+    if (1) {
+        QHBoxLayout *hlayout = new QHBoxLayout;
+        hlayout->addWidget(new QLabel(tr("条码长度:"), this));
+        codeLenthBox = new QSpinBox(this);
+        codeLenthBox->setMinimumHeight(25);
+        codeLenthBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        hlayout->addWidget(codeLenthBox);
+        layout->addLayout(hlayout);
+    }
+    if (1) {
+        QHBoxLayout *hlayout = new QHBoxLayout;
+        hlayout->addWidget(new QLabel(tr("噪音时间:"), this));
+        noiseTimeBox = new QSpinBox(this);
+        noiseTimeBox->setMinimumHeight(25);
+        noiseTimeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        hlayout->addWidget(noiseTimeBox);
+        layout->addLayout(hlayout);
+    }
 
     layout->addStretch();
 }
@@ -349,6 +366,8 @@ void TypConfig::initOtherBar()
 
     testAutoBox->setChecked((tmpSet.value(conf + ADDRAUTO).toInt() == 0) ? false : true);
     testDrivBox->setChecked((tmpSet.value(conf + ADDRDRIV).toInt() == 0) ? false : true);
+    codeLenthBox->setValue(tmpSet.value(conf + 0x07).toInt());
+    noiseTimeBox->setValue(tmpSet.value(conf + 0x08).toInt());
     testAutoBox->setVisible((mode == 1 && (test & 0x01)) ? true : false);
     testDrivBox->setVisible((mode >= 2) ? true : false);
     testWarnBox->setVisible((mode == 1) ? true : false);
@@ -394,6 +413,8 @@ void TypConfig::saveSettings()
     tmpMsg.insert(r + 0x06, wireName.join(","));
     tmpMsg.insert(r + ADDRAUTO, testAutoBox->isChecked() ? 1 : 0);
     tmpMsg.insert(r + ADDRDRIV, testDrivBox->isChecked() ? 1 : 0);
+    tmpMsg.insert(r + 0x07, codeLenthBox->value());
+    tmpMsg.insert(r + 0x08, noiseTimeBox->value());
 
     tmpMsg.insert(Qt::Key_0, Qt::Key_Save);
     tmpMsg.insert(Qt::Key_1, "aip_config");

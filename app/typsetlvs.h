@@ -33,15 +33,10 @@
 
 #define LVS_SIZE 1
 
-#define CHECKLVS 0x00  // 电参测试
-#define CMAXLVS1 0x01  // 电流上限
-#define CMINLVS1 0x02  // 电流下限
-#define PMAXLVS1 0x03  // 功率上限
-#define PMINLVS1 0x04  // 功率下限
-#define VMAXLVS1 0x05  // 容压上限
-#define VMINLVS1 0x06  // 容压下限
-#define TURNLVS1 0x07  // 转向
-#define TIMELVS1 0x08  // 测试时间
+#define CMAXLVS1 0x00  // 电流上限
+#define CMINLVS1 0x01  // 电流下限
+#define PMAXLVS1 0x02  // 功率上限
+#define PMINLVS1 0x03  // 功率下限
 
 #define CACHELVS 0x10  // 离散数据长度
 
@@ -62,7 +57,6 @@ private slots:
     void initSettings();
     void saveSettings();
     void confSettings();
-    void autoChange(QModelIndex index);
     void autoInput();
     void change();
     void recvShowEvent();
@@ -76,6 +70,7 @@ private:
     QSpinBox *passBox;
     QDoubleSpinBox *compBox;
     QSpinBox *voltBox;
+    QList<QSpinBox*> spinboxs;
 
     QStringList turns;
     QVariantMap config;

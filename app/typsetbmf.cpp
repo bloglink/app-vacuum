@@ -31,8 +31,8 @@ void TypSetBmf::initViewBar()
     QStringList names;
     names << tr("上限") << tr("下限");
     QStringList headers;
-    headers << tr("反电动势电压") << tr("反电动势常数") << tr("与霍尔相位差")
-            << tr("三相不平衡度") << tr("三相相序");
+    headers << tr("电压有效值") << tr("反电动势常数") << tr("三相相位差")
+            << tr("三相不平衡度") << tr("三相相序") << tr("电压峰峰值");
     iMode = new BoxQModel();
     iMode->setRowCount(headers.size());
     iMode->setColumnCount(names.size());
@@ -46,7 +46,7 @@ void TypSetBmf::initViewBar()
     iView->horizontalHeader()->setFixedHeight(30);
     iView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     iView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    connect(iView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
+//    connect(iView, SIGNAL(clicked(QModelIndex)), this, SLOT(autoChange()));
 
     QVBoxLayout *ilay = new QVBoxLayout;
     ilay->addWidget(iView);
@@ -115,15 +115,16 @@ void TypSetBmf::initItemDelegate()
     bemf->setMaxinum(3000);
     iView->setItemDelegateForRow(0, bemf);
     iView->setItemDelegateForRow(1, bemf);
-    //    BoxDouble *diff = new BoxDouble;
-    //    diff->setDecimals(0);
-    //    diff->setMaxinum(360);
-    //    iView->setItemDelegateForRow(2, diff);
+    BoxDouble *diff = new BoxDouble;
+    diff->setDecimals(0);
+    diff->setMaxinum(360);
+    iView->setItemDelegateForRow(2, diff);
     //    BoxDouble *noun = new BoxDouble;
     //    iView->setItemDelegateForRow(3, noun);
-    iView->setItemDelegateForRow(2, new BoxQItems);
+//    iView->setItemDelegateForRow(2, new BoxQItems);
     iView->setItemDelegateForRow(3, new BoxQItems);
     iView->setItemDelegateForRow(4, new BoxQItems);
+    iView->setItemDelegateForRow(5, bemf);
 
     BoxDouble *speed = new BoxDouble;
     speed->setDecimals(0);
@@ -145,7 +146,7 @@ void TypSetBmf::initSettings()
 {
     int row = 0;
     int addr = tmpSet.value(4000 + Qt::Key_E).toInt();  // 负载配置地址
-    for (int i=0; i < 10; i++) {
+    for (int i=0; i < 12; i++) {
         iMode->setData(iMode->index(i/2, i%2), tmpSet.value(addr + i), Qt::DisplayRole);
         if (i == 8) {
             int t = tmpSet.value(addr + i).toInt() % sques.size();
@@ -218,7 +219,9 @@ void TypSetBmf::confSettings()
             continue;
         tmpMap.insert(tmpStr.at(i), str);
     }
-    tmpMap.insert("driver", "0");
+    tmpMap.insert("gear", "0");  // 档位 0:大档;1:小档
+    tmpMap.insert("type", "0");  // 连接方式 0:三角型 1:Y型
+    tmpMap.insert("driver", "0");  // 内置Vcc
     config.insert("BEMF", tmpMap);
     config.insert("enum", Qt::Key_Save);
     emit sendAppMap(config);

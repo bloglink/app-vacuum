@@ -87,6 +87,9 @@ private:
     QTableView *item;
     BoxQModel *mView;
 
+    QSpinBox *codeLenthBox;
+    QSpinBox *noiseTimeBox;
+
     QLineEdit *page;
     QLabel *type;
     QLineEdit *name;
@@ -95,7 +98,6 @@ private:
     QPushButton *btnSave;
 
     QComboBox *testTypeBox;
-    QCheckBox *testKeepBox;
     QCheckBox *testAutoBox;
     QCheckBox *testDrivBox;
     QLabel *typePixmap;

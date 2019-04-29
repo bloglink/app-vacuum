@@ -52,6 +52,7 @@ private slots:
     void initTextBar();
     void initSettings();
     void clickView(QModelIndex index);
+    void clickSigle();
     void clickDelete();
     void clickSelect();
     void clickExport();

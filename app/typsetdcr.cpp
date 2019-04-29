@@ -142,7 +142,7 @@ void TypSetDcr::initItemDelegate()
 
     BoxDouble *real = new BoxDouble;
     real->setDecimals(3);
-    real->setMininum(0);
+    real->setMininum(-2000);
     real->setMaxinum(2000);
     view->setItemDelegateForColumn(UPPERDCR, real);
     view->setItemDelegateForColumn(LOWERDCR, real);

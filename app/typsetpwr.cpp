@@ -79,7 +79,7 @@ void TypSetPwr::initButtonBar()
     vmaxBox->setFixedSize(125, 40);
     vmaxBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     vmaxBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    btnLayout->addWidget(new QLabel(tr("电压上限")), row, 0);
+    btnLayout->addWidget(new QLabel(tr("输入电压")), row, 0);
     btnLayout->addWidget(vmaxBox, row, 1);
 
     vminBox = new QSpinBox(this);
@@ -88,8 +88,8 @@ void TypSetPwr::initButtonBar()
     vminBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     vminBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(vminBox, SIGNAL(valueChanged(int)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("电压下限")), row, 2);
     btnLayout->addWidget(vminBox, row, 3);
+    vminBox->hide();
 
     row++;
     voltBox = new QSpinBox(this);
@@ -113,12 +113,13 @@ void TypSetPwr::initButtonBar()
 
     row++;
     smaxBox = new QDoubleSpinBox(this);
-    smaxBox->setDecimals(1);
+    smaxBox->setDecimals(0);
+    smaxBox->setMaximum(1000);
     smaxBox->setFixedSize(125, 40);
     smaxBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     smaxBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(smaxBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("温度上限")), row, 0);
+    btnLayout->addWidget(new QLabel(tr("设置转速")), row, 0);
     btnLayout->addWidget(smaxBox, row, 1);
 
     sminBox = new QDoubleSpinBox(this);
@@ -127,7 +128,7 @@ void TypSetPwr::initButtonBar()
     sminBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     sminBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(sminBox, SIGNAL(valueChanged(double)), this, SLOT(change()));
-    btnLayout->addWidget(new QLabel(tr("温度下限")), row, 2);
+    btnLayout->addWidget(new QLabel(tr("加速时间")), row, 2);
     btnLayout->addWidget(sminBox, row, 3);
 
     QPushButton *btnSave = new QPushButton(tr("保存"), this);
@@ -151,6 +152,7 @@ void TypSetPwr::initItemDelegate()
     view->setItemDelegateForColumn(CHECKPWR, new BoxQItems);
 
     BoxDouble *curr = new BoxDouble;
+    curr->setDecimals(3);
     view->setItemDelegateForColumn(CMAXPWR1, curr);
     view->setItemDelegateForColumn(CMINPWR1, curr);
 
@@ -238,7 +240,7 @@ void TypSetPwr::saveSettings()
 void TypSetPwr::confSettings()
 {
     tmpMap.insert("pass", QString::number(passBox->value()));
-    tmpMap.insert("vmax", QString::number(vmaxBox->value()));
+    tmpMap.insert("volt_input", QString::number(vmaxBox->value()));
     tmpMap.insert("vmin", QString::number(vminBox->value()));
     tmpMap.insert("volt", QString::number(voltBox->value()));
     tmpMap.insert("comp", QString::number(compBox->value()));

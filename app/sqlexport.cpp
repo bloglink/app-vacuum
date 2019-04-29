@@ -171,6 +171,8 @@ int SqlExport::exportHead(QTmpMap msg)
             tmpMsg.insert(addr + 0x20, tr("负载Icc"));
             tmpMsg.insert(addr + 0x30, tr("负载转速"));
             tmpMsg.insert(addr + 0x40, tr("负载转向"));
+            tmpMsg.insert(addr + 0x50, tr("负载缺相"));
+            tmpMsg.insert(addr + 0x50, tr("端盖电阻"));
             continue;
         }
         if (names.at(i) == tr("空载")) {
@@ -179,14 +181,18 @@ int SqlExport::exportHead(QTmpMap msg)
             tmpMsg.insert(addr + 0x20, tr("空载Icc"));
             tmpMsg.insert(addr + 0x30, tr("空载转速"));
             tmpMsg.insert(addr + 0x40, tr("空载转向"));
+            tmpMsg.insert(addr + 0x50, tr("空载缺相"));
+            tmpMsg.insert(addr + 0x50, tr("端盖电阻"));
             continue;
         }
         if (names.at(i) == tr("缺相")) {
-            tmpMsg.insert(addr + 0x00, tr("缺相电流"));
-            tmpMsg.insert(addr + 0x10, tr("缺相功率"));
-            tmpMsg.insert(addr + 0x20, tr("缺相Icc"));
-            tmpMsg.insert(addr + 0x30, tr("缺相转速"));
-            tmpMsg.insert(addr + 0x40, tr("缺相转向"));
+            tmpMsg.insert(addr + 0x00, tr("低启电流"));
+            tmpMsg.insert(addr + 0x10, tr("低启功率"));
+            tmpMsg.insert(addr + 0x20, tr("低启Icc"));
+            tmpMsg.insert(addr + 0x30, tr("低启转速"));
+            tmpMsg.insert(addr + 0x40, tr("低启转向"));
+            tmpMsg.insert(addr + 0x50, tr("低启缺相"));
+            tmpMsg.insert(addr + 0x50, tr("端盖电阻"));
             continue;
         }
         if (names.at(i) == tr("BEMF")) {

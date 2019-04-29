@@ -56,11 +56,13 @@ void AppBackup::initBoxText()
     spec.append("\n08:刹车功能");
     spec.append("\n10:真空换档");
     spec.append("\n20:转向反转");
+    spec.append("\n40:无锡寰宇");
+    spec.append("\n80:浙江卧龙");
     tools << "" << "" << ""
           << tr("0:1.0V 0.6V 0.3V\n2:1.5V 1.0V 0.5V")
           << "" << "" << "" << ""
           << "" << ""
-          << tr("0:常规模式\n1:单点破损\n2:设置档位")
+          << tr("0:常规模式\n1:单点破损\n2:匝间接地")
           << tr("0:常规模式\n1:真空模式\n2:无刷模式\n3:控石产线")
           << tr("0:常规反嵌\n1:屏蔽反嵌\n3:感应模式")
           << ""
@@ -231,7 +233,7 @@ void AppBackup::initMacText()
     QStringList headers;
     headers << "K" << "b";
     QStringList items;
-    items << tr("电流") << tr("电压") << tr("功率") << tr("Icc") << tr("转速")
+    items << tr("电流") << tr("电压") << tr("功率") << tr("Icc") << tr("缺相")
           << tr("Isp") << tr("转向") << tr("电压") << tr("常数") << tr("相位")
           << tr("高电平") << tr("低电平") << tr("占空比") << tr("频率");
     offView->setRowCount(items.size());

@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QWidget>
 #include <QLayout>
+#include <QCheckBox>
 #include <QGroupBox>
 #include <QComboBox>
 #include <QShowEvent>
@@ -76,6 +77,8 @@ private:
     QVariantMap config;
     QVariantMap tmpMap;
     BoxQImage *wave;
+    QCheckBox *modeBox;
+    QSpinBox *speedBox;
 
     QTmpMap tmpSet;
     QTmpMap tmpMsg;
