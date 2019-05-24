@@ -2359,8 +2359,10 @@ void AppWindow::recvSocket(QByteArray msg)
         testShift = Qt::Key_Away;
         if (tempShift == Qt::Key_Away)
             taskCheckStop();
-        if (currItem == nSetPWR)
+        if (currItem == nSetPWR) {
             recvPwrMsg(strPwr, 1);
+            testCheckWarn();
+        }
         if (currItem == nSetLOD || currItem == nSetNLD || currItem == 0x0F)
             calcLOAD(strLoad, 1);
         if (currItem == nSetEMF) {
@@ -2563,12 +2565,14 @@ void AppWindow::sendUdpStr(QByteArray msg)
 
 void AppWindow::recvNewMsg(QString dat)
 {
-    if (currItem == nSetPWR)  // 功率改上位机计算显示
-        return;
     if (currItem >= 0x0B && currItem != 0x10)  // BLDC不显示
         return;
     if (currItem == 0)
         return;
+    if (currItem == nSetPWR) {
+        recvPwrMsg(strPwr, 1);
+        return;
+    }
     if (taskShift == Qt::Key_Stop)
         return;
     int testisok = DATAOK;
@@ -2734,13 +2738,14 @@ void AppWindow::recvPwrMsg(QString msg, int ext)
     if (strs.size() >= 9) {
         int real = tmpSet.value(3000 + Qt::Key_7).toInt();  // 电参结果地址
         int conf = tmpSet.value(Qt::Key_7 + 4000).toInt() + CACHEPWR;
-        double cmax = tmpSet.value(conf + CACHEPWR*CMAXPWR1 + 0x00).toDouble();
-        double cmin = tmpSet.value(conf + CACHEPWR*CMINPWR1 + 0x00).toDouble();
-        double pmax = tmpSet.value(conf + CACHEPWR*PMAXPWR1 + 0x00).toDouble();
-        double pmin = tmpSet.value(conf + CACHEPWR*PMINPWR1 + 0x00).toDouble();
-        double vmax = tmpSet.value(conf + CACHEPWR*VMAXPWR1 + 0x00).toDouble();
-        double vmin = tmpSet.value(conf + CACHEPWR*VMINPWR1 + 0x00).toDouble();
-        double turn = tmpSet.value(conf + CACHEPWR*TURNPWR1 + 0x00).toDouble();
+        double itemproj = strs.last().toInt() % 99 - 1;  // 第几个功率
+        double cmax = tmpSet.value(conf + CACHEPWR*CMAXPWR1 + itemproj).toDouble();
+        double cmin = tmpSet.value(conf + CACHEPWR*CMINPWR1 + itemproj).toDouble();
+        double pmax = tmpSet.value(conf + CACHEPWR*PMAXPWR1 + itemproj).toDouble();
+        double pmin = tmpSet.value(conf + CACHEPWR*PMINPWR1 + itemproj).toDouble();
+        double vmax = tmpSet.value(conf + CACHEPWR*VMAXPWR1 + itemproj).toDouble();
+        double vmin = tmpSet.value(conf + CACHEPWR*VMINPWR1 + itemproj).toDouble();
+        double turn = tmpSet.value(conf + CACHEPWR*TURNPWR1 + itemproj).toDouble();
         QStringList turns;
         turns << tr("不转") << tr("反转") << tr("正转");
         QStringList ccws;
@@ -2754,19 +2759,20 @@ void AppWindow::recvPwrMsg(QString msg, int ext)
         double pwrs = strs.at(2).toDouble();
         double vcap = strs.at(6).toDouble();
         double itemturn = turns.indexOf(strs.at(8));
-        display(currItem, 0x00, 0, QString("%1V %2A").arg(volt).arg(curr), WORKL);
-        display(currItem, 0x01, 0, QString("%1W").arg(pwrs), WORKL);
-        display(currItem, 0x02, 0, QString("%1V").arg(vcap), WORKL);
-        display(currItem, 0x03, 0, ccws.at(itemturn), WORKL);
+
+        display(currItem + 100 * itemproj, 0x00, 0, QString("%1V %2A").arg(volt).arg(curr), WORKL);
+        display(currItem + 100 * itemproj, 0x01, 0, QString("%1W").arg(pwrs), WORKL);
+        display(currItem + 100 * itemproj, 0x02, 0, QString("%1V").arg(vcap), WORKL);
+        display(currItem + 100 * itemproj, 0x03, 0, ccws.at(itemturn), WORKL);
         if (ext != 0) {
             isok = (cmax > 0 && (curr >= cmax || curr < cmin)) ? DATANG : isok;
-            display(currItem, 0x00, 1, (curr >= cmax || curr < cmin) ? "NG" : "OK", WORKL);
+            display(currItem + 100 * itemproj, 0x00, 1, (curr >= cmax || curr < cmin) ? "NG" : "OK", WORKL);
             isok = (pmax > 0 && (pwrs >= pmax || pwrs < pmin)) ? DATANG : isok;
-            display(currItem, 0x01, 1, (pwrs >= pmax || pwrs < pmin) ? "NG" : "OK", WORKL);
+            display(currItem + 100 * itemproj, 0x01, 1, (pwrs >= pmax || pwrs < pmin) ? "NG" : "OK", WORKL);
             isok = (vmax >0 && (vcap >= vmax || vcap < vmin)) ? DATANG : isok;
-            display(currItem, 0x02, 1, (vcap >= vmax || vcap < vmin) ? "NG" : "OK", WORKL);
+            display(currItem + 100 * itemproj, 0x02, 1, (vcap >= vmax || vcap < vmin) ? "NG" : "OK", WORKL);
             isok = (turn != 0 && itemturn != turn) ? DATANG : isok;
-            display(currItem, 0x03, 1, (itemturn != turn) ? "NG" : "OK", WORKL);
+            display(currItem + 100 * itemproj, 0x03, 1, (itemturn != turn) ? "NG" : "OK", WORKL);
             tmpSave.insert(real + 0x00*3 + 2, curr);
             tmpSave.insert(real + 0x00*3 + 3, (curr >= cmax || curr < cmin) ? "NG" : "OK");
             tmpSave.insert(real + 0x01*3 + 2, pwrs);
@@ -2775,7 +2781,6 @@ void AppWindow::recvPwrMsg(QString msg, int ext)
             tmpSave.insert(real + 0x02*3 + 3, (vcap >= vmax || vcap < vmin) ? "NG" : "OK");
             tmpSave.insert(real + 0x03*3 + 2, itemturn);
             tmpSave.insert(real + 0x03*3 + 3, (itemturn != turn) ? "NG" : "OK");
-            testCheckWarn();
         }
     }
 }

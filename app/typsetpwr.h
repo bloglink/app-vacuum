@@ -30,6 +30,7 @@
 #include "boxqmodel.h"
 #include "boxdouble.h"
 #include "boxqitems.h"
+#include "libdelege.h"
 
 #define PWR_SIZE 6
 
@@ -57,13 +58,14 @@ private slots:
     void initUI();
     void initLayout();
     void initViewBar();
+    void initHallBar();
     void initButtonBar();
     void initItemDelegate();
     void initSettings();
     void saveSettings();
     void confSettings();
-    void autoChange(QModelIndex index);
     void autoInput();
+    void autoHall();
     void change();
     void recvShowEvent();
     void recvAppMsg(QTmpMap msg);
@@ -73,15 +75,16 @@ private:
     QVBoxLayout *layout;
     QTableView *view;
     BoxQModel *mView;
-    QSpinBox *passBox;
+    QTableView *hall;
+    BoxQModel *mHall;
+    QCheckBox *passBox;
     QSpinBox *vmaxBox;
-    QSpinBox *vminBox;
-    QComboBox *cnvtBox;
-    QDoubleSpinBox *compBox;
     QSpinBox *voltBox;
-    QDoubleSpinBox *sminBox;
-    QDoubleSpinBox *smaxBox;
+    QSpinBox *countBox;
+    QComboBox *pullBox;
+    QComboBox *readBox;
 
+    QStringList grades;
     QStringList turns;
     QVariantMap config;
     QVariantMap tmpMap;

@@ -230,7 +230,8 @@ void TypSetImp::initSettings()
     int vmax = tmpSet.value(back + backVolt).toInt();  // 最高电压
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
     int work = tmpSet.value(back + backWork).toInt();  // 工位数量
-    int grnd = tmpSet.value(back + backGrnd).toInt();  // 接地测试
+    int grnd = tmpSet.value(back + backGrnd).toInt();  // 匝间模式
+    vmax = (grnd & 0x04) ? 3000 : vmax;  // 匝间单独3000V
     BoxDouble *volt = new BoxDouble;
     volt->setMaxinum(vmax);
     volt->setMininum(300);

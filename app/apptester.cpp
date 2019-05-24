@@ -582,6 +582,10 @@ void AppTester::initSettings()
 
 void AppTester:: initSetDCR()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int spec = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    QStringList items;
+    items << tr("电阻主相") << tr("电阻副相") << tr("电阻主副");
     int row = 0;
     int save = tmpSet.value(3000 + Qt::Key_1).toInt();  // 电阻结果地址
     int addr = tmpSet.value(4000 + Qt::Key_1).toInt();  // 电阻配置地址
@@ -601,6 +605,9 @@ void AppTester:: initSetDCR()
             ustr.append(tr(" %1折算").arg((temp == 0 && wire != 3) ? tr("已") : tr("未")));
             QString item = tr("电阻%1-%2").arg(from).arg(stop);
             QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
+            if ((spec & 0x01) && (numb <= 2)) {
+                item = items.at(numb);
+            }
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
             insertItem(nSetDCR, row);
@@ -631,8 +638,11 @@ void AppTester:: initSetDCR()
 
 void AppTester::initSetMAG()
 {
-    int save = tmpSet.value(3000 + Qt::Key_2).toInt();  // 反嵌结果地址
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int spec = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    QStringList items;
+    items << tr("反嵌主相") << tr("反嵌副相") << tr("反嵌主副");
+    int save = tmpSet.value(3000 + Qt::Key_2).toInt();  // 反嵌结果地址
     int nmag = tmpSet.value(back + backNMag).toInt();
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合配置地址
     QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
@@ -648,6 +658,9 @@ void AppTester::initSetMAG()
         QString str = (check != 0) ? strSW : strSG;
         QString item = tr("反嵌%1-%2").arg(portf).arg(portt);
         QString parm = tr("%1%").arg(upper);
+        if ((spec & 0x01) && (numb <= 2)) {
+            item = items.at(numb);
+        }
         magText.at(numb*3 + 0)->setText(str.arg(tr("项目: ") + item));
         magText.at(numb*3 + 1)->setText(str.arg(tr("上限: ") + parm));
         magText.at(numb*3 + 2)->setText(str.arg(tr("差积: ----")));
@@ -715,7 +728,7 @@ void AppTester::initSetINR()
         double time = tmpSet.value(addr + CACHEINR*TIMEINR1 + numb).toDouble();
         volt = (volt == 0) ? 500 : 1000;
         QString item = tr("绝缘");
-        QString parm = tr("%1V %2M %3s").arg(volt).arg(smin).arg(time);
+        QString parm = tr("%1V %2MΩ %3s").arg(volt).arg(smin).arg(time);
         tmpItem.insert(tmpRow, item);
         tmpParm.insert(tmpRow, parm);
         insertItem(nSetINR, 0x00);
@@ -732,7 +745,7 @@ void AppTester::initSetINR()
             volt = (volt == 0) ? 500 : 1000;
             if (test == 1) {
                 QString item = tr("绝缘%1").arg(row+1);
-                QString parm = tr("%1V %2M %3s").arg(volt).arg(smin).arg(time);
+                QString parm = tr("%1V %2MΩ %3s").arg(volt).arg(smin).arg(time);
                 tmpItem.insert(tmpRow, item);
                 tmpParm.insert(tmpRow, parm);
                 insertItem(nSetINR, row);
@@ -858,53 +871,59 @@ void AppTester::initSetDCW()
 void AppTester::initSetIMP()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int spec = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    QStringList items;
+    items << tr("匝间主相") << tr("匝间副相") << tr("匝间主副");
     int grnd = tmpSet.value(back + backGrnd).toInt();
     int save = tmpSet.value(3000 + Qt::Key_6).toInt();  // 匝间结果地址
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合配置地址
     QStringList testItems = tmpSet.value(conf + ADDRITEM).toString().split(",");
     bool isTest = testItems.contains(QString::number(nSetIMP));
     int addr = tmpSet.value(4000 + Qt::Key_6).toInt();  // 匝间配置地址
-    for (int i=0; i < 6; i++) {
-        int check = tmpSet.value(addr + CACHEIMP + CACHEIMP*CHECKIMP + i).toInt();
-        double portf = tmpSet.value(addr + CACHEIMP + CACHEIMP*PORTIMP1 + i).toDouble();
-        double portt = tmpSet.value(addr + CACHEIMP + CACHEIMP*PORTIMP2 + i).toDouble();
-        double volts = tmpSet.value(addr + CACHEIMP + CACHEIMP*VOLTIMP1 + i).toDouble();
-        double area1 = tmpSet.value(addr + CACHEIMP + CACHEIMP*AREAIMP1 + i).toDouble();
-        double diff1 = tmpSet.value(addr + CACHEIMP + CACHEIMP*DIFFIMP1 + i).toDouble();
-        double sflut = tmpSet.value(addr + CACHEIMP + CACHEIMP*FLUTIMP1 + i).toDouble();
-        double phase = tmpSet.value(addr + CACHEIMP + CACHEIMP*PHSEIMP1 + i).toDouble();
+    for (int numb=0; numb < 6; numb++) {
+        int check = tmpSet.value(addr + CACHEIMP + CACHEIMP*CHECKIMP + numb).toInt();
+        double portf = tmpSet.value(addr + CACHEIMP + CACHEIMP*PORTIMP1 + numb).toDouble();
+        double portt = tmpSet.value(addr + CACHEIMP + CACHEIMP*PORTIMP2 + numb).toDouble();
+        double volts = tmpSet.value(addr + CACHEIMP + CACHEIMP*VOLTIMP1 + numb).toDouble();
+        double area1 = tmpSet.value(addr + CACHEIMP + CACHEIMP*AREAIMP1 + numb).toDouble();
+        double diff1 = tmpSet.value(addr + CACHEIMP + CACHEIMP*DIFFIMP1 + numb).toDouble();
+        double sflut = tmpSet.value(addr + CACHEIMP + CACHEIMP*FLUTIMP1 + numb).toDouble();
+        double phase = tmpSet.value(addr + CACHEIMP + CACHEIMP*PHSEIMP1 + numb).toDouble();
         check = (isTest && (grnd != 1)) ? check : 0;
         QString str = (check != 0) ? strSW : strSG;
         QString item = tr("匝间%1-%2").arg(portf).arg(portt);
-        impText.at(i*5 + 0)->setText(str.arg(tr("项目: 匝间%1-%2").arg(portf).arg(portt)));
-        impText.at(i*5 + 1)->setText(str.arg(tr("面积: ----")));
+        if ((spec & 0x01)) {
+            item = items.at(numb%3);
+        }
+        impText.at(numb*5 + 0)->setText(str.arg(tr("项目: %1").arg(item)));
+        impText.at(numb*5 + 1)->setText(str.arg(tr("面积: ----")));
         str = (diff1 != 0) ? str : strSG;
-        impText.at(i*5 + 2)->setText(str.arg(tr("差积: ----")));
+        impText.at(numb*5 + 2)->setText(str.arg(tr("差积: ----")));
         str = (sflut != 0) ? str : strSG;
-        impText.at(i*5 + 3)->setText(str.arg(tr("电晕: ----")));
+        impText.at(numb*5 + 3)->setText(str.arg(tr("电晕: ----")));
         str = (phase != 0) ? str : strSG;
-        impText.at(i*5 + 4)->setText(str.arg(tr("相位: ----")));
-        impWave.at(i)->setEnabled((check != 0) ? true : false);
+        impText.at(numb*5 + 4)->setText(str.arg(tr("相位: ----")));
+        impWave.at(numb)->setEnabled((check != 0) ? true : false);
         QVariantMap tmp;
         tmp.insert("index", 0);
         tmp.insert("color", int(Qt::white));
         tmp.insert("width", 80);
         tmp.insert("lenth", 85);
         tmp.insert("title", tr("%1V").arg(volts));
-        impWave.at(i)->setTexts(tmp);
-        impWave.at(i)->update();
+        impWave.at(numb)->setTexts(tmp);
+        impWave.at(numb)->update();
         allWave->setTexts(tmp);
         allWave->update();
         if (check != 0) {
-            tmpSave.insert(save + i*0x10 + 0x00, item);  // 项目
+            tmpSave.insert(save + numb*0x10 + 0x00, item);  // 项目
             if (area1 > 0)
-                tmpSave.insert(save + i*0x10 + 0x01, tr("%1").arg(area1));  // 项目
+                tmpSave.insert(save + numb*0x10 + 0x01, tr("%1").arg(area1));  // 项目
             if (diff1 > 0)
-                tmpSave.insert(save + i*0x10 + 0x04, tr("%1").arg(diff1));  // 项目
+                tmpSave.insert(save + numb*0x10 + 0x04, tr("%1").arg(diff1));  // 项目
             if (sflut > 0)
-                tmpSave.insert(save + i*0x10 + 0x07, tr("%1").arg(sflut));  // 项目
+                tmpSave.insert(save + numb*0x10 + 0x07, tr("%1").arg(sflut));  // 项目
             if (phase > 0)
-                tmpSave.insert(save + i*0x10 + 0x0A, tr("%1").arg(phase));  // 项目
+                tmpSave.insert(save + numb*0x10 + 0x0A, tr("%1").arg(phase));  // 项目
         }
         if (check != 0 || grnd == 1) {
             bool isShow = true;
@@ -990,6 +1009,10 @@ void AppTester::initSetPWR()
 
 void AppTester::initSetIND()
 {
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();
+    int spec = tmpSet.value(back + backTest).toInt();  // 美芝感应启动
+    QStringList items;
+    items << tr("电感主相") << tr("电感副相") << tr("电感主副");
     int row = 0;
     int save = tmpSet.value(3000 + Qt::Key_8).toInt();  // 电感结果地址
     int addr = tmpSet.value(4000 + Qt::Key_8).toInt();  // 电感配置地址
@@ -1005,6 +1028,9 @@ void AppTester::initSetIND()
             QString ustr = (unit > 0) ? "mH" : "uH";
             QString item = tr("电感%1-%2").arg(from).arg(stop);
             QString parm = tr("%1-%2%3").arg(rmin).arg(rmax).arg(ustr);
+            if ((spec & 0x01) && (numb <= 2)) {
+                item = items.at(numb);
+            }
             tmpItem.insert(tmpRow, item);
             tmpParm.insert(tmpRow, parm);
             insertItem(nSetIND, row);
@@ -1221,6 +1247,7 @@ void AppTester::insertItem(int item, int numb)
 void AppTester::initQuality()
 {
     codeText->setText("");
+    codeText->setFocus();
     QStringList itemNams;
     itemNams << "电阻" << "反嵌" << "绝缘" << "交耐" << "直耐"
              << "匝间" << "电参" << "电感" << "堵转" << "低启"
@@ -1521,6 +1548,7 @@ void AppTester::recvLedMsg(QTmpMap msg)
         return;
     int c = msg.value(Qt::Key_2).toInt();
     if (c == DATAON) {
+        mView->verticalScrollBar()->setValue(0);
         updateShow();
         tmpNG.clear();
         tmpTime = ms.elapsed();
@@ -1553,6 +1581,7 @@ void AppTester::recvLedMsg(QTmpMap msg)
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);
         tmpTime = 0;
+        codeText->setFocus();
     }
 }
 
@@ -1753,7 +1782,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
             tmpStr = msg.value(Qt::Key_5).toString();
         }
     }
-    if (item <= 0x10) {
+    if (item <= 0x10 || item >= 100) {
         for (int i=0; i < tmpView.size(); i++) {
             QTmpMap tmp = tmpView.at(i);
             int pn = tmp.value(Qt::Key_1).toInt();
@@ -1767,7 +1796,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
                     QString str = msg.value(Qt::Key_3).toString();
                     mView->item(row, 2)->setText(str);
                     if (row > 13) {
-                        mView->verticalScrollBar()->setValue(row - 13);
+                        mView->verticalScrollBar()->setValue(row - 10);
                     }
                 }
                 if (!msg.value(Qt::Key_4).isNull()) {  // 测试判定
@@ -1784,7 +1813,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
                     mView->item(row, 3)->setText(str);
                     mView->item(row, 3)->setForeground(QBrush(brush));
                     if (str != "OK")
-                        tmpNG.insert(item, "1");
+                        tmpNG.insert(item%100, "1");
                 }
             }
         }
