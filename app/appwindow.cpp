@@ -1153,6 +1153,7 @@ int AppWindow::taskCheckStop()
         tmpMsg.insert(Qt::Key_0, Qt::Key_Stop);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
+        taskSendIobrd(0x05);
     }
     if (teststop) {
         testparm.insert("teststop", 1);
@@ -1686,6 +1687,18 @@ int AppWindow::recvIoCtrl(int key, int work)
             }
         }
     }
+    if (taskShift != Qt::Key_Play) {
+        int btnL = tmpSet.value(back + 0x40 + 0x10).toString().toInt(NULL, 16);  // 左转向
+        int btnR = tmpSet.value(back + 0x40 + 0x11).toString().toInt(NULL, 16);  // 右转向
+        if (ioHexL & btnL) {
+            station = WORKL;
+            taskSendIobrd(0x01);
+        }
+        if (ioHexL & btnR) {
+            station = WORKR;
+            taskSendIobrd(0x01);
+        }
+    }
     return Qt::Key_Away;
 }
 
@@ -1748,6 +1761,57 @@ void AppWindow::noiseThread()
         wait(500);
         warnningString(" ");
     }
+}
+
+void AppWindow::taskSendIobrd(int step)
+{
+    int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
+    int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
+    int driv = tmpSet.value(conf + ADDRDRIV).toInt();  // 驱动器设置
+
+    int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 下压动作左/右地址
+    int grabaddr = ((station == WORKL) ? 0x02 : 0x03) + back + 0x40;  // 夹紧动作左/右地址
+    int highaddr = ((station == WORKL) ? 0x04 : 0x05) + back + 0x40;  // 高压动作左/右地址
+    int voltaddr = ((station == WORKL) ? 0x06 : 0x07) + back + 0x40;  // 低压动作左/右地址
+    int beepaddr = ((station == WORKL) ? 0x08 : 0x09) + back + 0x40;  // 气动弹线左/右地址
+    int saveaddr = ((driv == 0) ? 0x0A : 0x0B) + back + 0x40;  // 内驱/外驱保持
+    int freeaddr = 0x0C + back + 0x40;
+    int failaddr = ((isok == DATAOK) ? 0x0D : 0x0E) + back + 0x40;
+
+    int down = tmpSet.value(downaddr).toString().toInt(NULL, 16);  // 下压动作
+    int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
+    int high = tmpSet.value(highaddr).toString().toInt(NULL, 16);  // 高压动作
+    int volt = tmpSet.value(voltaddr).toString().toInt(NULL, 16);  // 低压动作
+    int beep = tmpSet.value(beepaddr).toString().toInt(NULL, 16);  // 弹线动作
+    int free = tmpSet.value(freeaddr).toString().toInt(NULL, 16);  // 待机时保持
+    int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
+    int fail = tmpSet.value(failaddr).toString().toInt(NULL, 16);  // 灯光动作
+
+    int test = 0;
+    switch (step) {
+    case 0x00:  // 测试初始动作
+        test = save + free;
+        break;
+    case 0x01:  // 测试常规动作
+        test = save + down + grab;
+        break;
+    case 0x02:  // 高压动作
+        test = save + down + grab + high;
+        break;
+    case 0x03:  // 低压动作
+        test = save + down + grab + volt;
+        break;
+    case 0x04:  // 弹线动作
+        test = save + down + beep + fail;
+        break;
+    case 0x05:  // 待机动作
+        test = save + free + fail;
+        break;
+    default:
+        break;
+    }
+    if (test != 0)
+        sendUdpStr(tr("6036 %1").arg(test).toUtf8());
 }
 
 void AppWindow::showTester()

@@ -162,6 +162,7 @@ private slots:
     int recvIoCtrl(int key, int work);
     int recvNoise();
     void noiseThread();
+    void taskSendIobrd(int step);
     void showTester();
     void showBarCode();
     void saveConfig(QTmpMap msg);
