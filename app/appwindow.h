@@ -84,7 +84,6 @@ private slots:
     int initCreate();
     int initLayout();
     int initAuthor();
-    int initDevice();
     int initScreen();
     int initSqlDir();
     int initTester();
@@ -174,7 +173,6 @@ private slots:
     void recvAppPrep();
     virtual void cloudAntimation();
     virtual void closeEvent(QCloseEvent *e);
-    virtual void keyReleaseEvent(QKeyEvent *e);
     void display(int item, int numb, int mode, QString str, int work);
     void loopBoxbar();
     void warnningString(QString dat);

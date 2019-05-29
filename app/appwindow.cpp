@@ -18,7 +18,6 @@ AppWindow::AppWindow(QWidget *parent) : QMainWindow(parent)
 {
     t.start();
     initUI();
-    initDevice();
 }
 
 AppWindow::~AppWindow()
@@ -87,13 +86,6 @@ int AppWindow::initAuthor()
 {
     AppAuthor *app = new AppAuthor(this);
     return initWidget(nAuthor, 0, "author", tr("返回主页"), app);
-}
-
-int AppWindow::initDevice()
-{
-    scanner = new QTimer(this);
-    connect(scanner, SIGNAL(timeout()), this, SLOT(showBarCode()));
-    return Qt::Key_Away;
 }
 
 int AppWindow::initScreen()
@@ -762,6 +754,7 @@ int AppWindow::taskCheckCode()
             sendUdpStr(tr("6022 %1").arg(station).toUtf8());
             taskShift = Qt::Key_Stop;
         }
+        qDebug() << code << f;
     }
     return ret;
 }
@@ -1833,7 +1826,6 @@ void AppWindow::showBarCode()
         barcode = tmpcode;
         tmpSet.insert(tAddr + TEMPCODE, tmpcode);
         sendSqlite();
-        scanner->stop();
         codeShift = Qt::Key_Away;
         tmpcode.clear();
     }
@@ -2155,13 +2147,6 @@ void AppWindow::closeEvent(QCloseEvent *e)
     // 开关 工位 Vm 电源 电压
     sendUdpStr(tr("6074 %1 %2 3 %3 %4").arg(2).arg(work).arg(powr).arg(0).toUtf8());
     sendUdpStr(tr("6074 %1 %2 1 %3 %4").arg(2).arg(work).arg(powr).arg(0).toUtf8());
-    e->accept();
-}
-
-void AppWindow::keyReleaseEvent(QKeyEvent *e)
-{
-    tmpcode.append(e->text());
-    scanner->start(200);
     e->accept();
 }
 
