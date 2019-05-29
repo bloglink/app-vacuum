@@ -276,7 +276,7 @@ void TypSetDcr::saveSettings()
 void TypSetDcr::confSettings()
 {
     tmpMap.insert("time", QString::number(inputs.value("time")->value()));
-    tmpMap.insert("mode", QString::number(inputs.value("mode")->value()));
+    tmpMap.insert("mode", QString::number(inputs.value("mode")->value() + 1));
     tmpMap.insert("noun", QString::number(inputs.value("noun")->value()));
     tmpMap.insert("temp_comp", QString::number(cnvtBox->currentIndex()));
     tmpMap.insert("std_temp", QString::number(inputs.value("tstd")->value()));
