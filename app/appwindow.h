@@ -57,6 +57,7 @@
 #include "devnlogic.h"
 #include "devinvert.h"
 #include "devwasher.h"
+#include "devbarconde.h"
 
 #include "main.h"
 #ifdef __arm__

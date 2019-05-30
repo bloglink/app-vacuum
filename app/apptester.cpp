@@ -1408,7 +1408,8 @@ void AppTester::updateCode()
     tmpMsg.insert(Qt::Key_1, codeText->text());
     emit sendAppMsg(tmpMsg);
     tmpMsg.clear();
-    codeText->setFocus();
+    if (!this->isHidden())
+        codeText->setFocus();
 }
 
 void AppTester::updateType()

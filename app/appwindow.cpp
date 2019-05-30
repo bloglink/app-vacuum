@@ -517,6 +517,24 @@ int AppWindow::initSerial()
     connect(this, SIGNAL(sendAppMap(QVariantMap)), washer, SLOT(recvAppMap(QVariantMap)));
     washer->moveToThread(sql);
 
+    DevBarconde *devbar = new DevBarconde;
+    devbar->setObjectName("code");
+    connect(devbar, SIGNAL(sendAppMap(QVariantMap)), this, SLOT(recvAppMap(QVariantMap)));
+    connect(this, SIGNAL(sendAppMap(QVariantMap)), devbar, SLOT(recvAppMap(QVariantMap)));
+    washer->moveToThread(sql);
+
+    int taskback = tmpSet.value(1000 + Qt::Key_0).toInt();
+    QString taskname = tmpSet.value(taskback + 0x20 + 0x0D).toString();
+    qDebug() << taskname;
+    if (!taskname.isEmpty()) {
+        QVariantMap map;
+        map.insert("taskname", taskname);
+        map.insert("taskwork", "code");
+        emit sendAppMap(map);
+
+        map.clear();
+    }
+
     noisetime = 0;
     noiseTimer = new QTimer(this);
     connect(noiseTimer, SIGNAL(timeout()), this, SLOT(noiseThread()));
@@ -2382,6 +2400,11 @@ void AppWindow::recvAppMap(QVariantMap msg)
         testparm.insert("speedmax", speedmax);
         break;
     }
+    case Qt::Key_Call:
+        codeShift = Qt::Key_Away;
+        tmpcode = msg.value("taskdata").toByteArray();
+        showBarCode();
+        break;
     default:
         break;
     }

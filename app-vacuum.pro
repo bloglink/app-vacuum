@@ -55,7 +55,8 @@ HEADERS += \
     app/devserial.h \
     app/devwasher.h \
     app/devinvert.h \
-    app/libdelege.h
+    app/libdelege.h \
+    app/devbarconde.h
 
 SOURCES += \
     app/appauthor.cpp \
@@ -97,7 +98,8 @@ SOURCES += \
     app/devserial.cpp \
     app/devwasher.cpp \
     app/devinvert.cpp \
-    app/libdelege.cpp
+    app/libdelege.cpp \
+    app/devbarconde.cpp
 
 RESOURCES += \
     lib/lib.qrc
