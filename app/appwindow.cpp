@@ -728,6 +728,7 @@ int AppWindow::taskCheckPlay()
             if (taskparm.value("pumpstop").toInt() == 1)
                 recvAppPrep();
             this->setFocus();
+            recvNoise(1);
         }
     }
     return ret;
@@ -1165,7 +1166,6 @@ int AppWindow::taskCheckStop()
         tmpMsg.insert(Qt::Key_0, Qt::Key_Stop);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
-//        taskSendIobrd(0x05);
     }
     if (teststop) {
         testparm.insert("teststop", 1);
@@ -1173,6 +1173,7 @@ int AppWindow::taskCheckStop()
         isok = DATANG;
         currTask = (currTask <= taskwait) ? tasksave : taskover;
         tmpSet.insert(addr + TEMPISOK, DATANG);
+        recvNoise(2);
     }
     qDebug() << "app stop:" << teststop << currTask << taskplay << taskover;
     return Qt::Key_Away;
@@ -1720,7 +1721,7 @@ int AppWindow::recvIoCtrl(int key, int work)
     return Qt::Key_Away;
 }
 
-int AppWindow::recvNoise()
+int AppWindow::recvNoise(int mode)
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int playL = tmpSet.value(back + 0x40 + 0x14).toString().toInt(NULL, 16);  // 左启动
@@ -1735,7 +1736,7 @@ int AppWindow::recvNoise()
     int nTime = tmpSet.value(conf + 0x08).toInt();  // 噪音时间
     if (nTime == 0)  // 噪音时间设置为0,不测试噪音
         return 0;
-    if (play && !stop) {
+    if ((play && !stop) || mode == 1) {
         if (noiseTimer->isActive()) {
             warnningString(tr("噪音测试中\n不要重复启动"));
             return 0;  // 测试没退出,不启动
@@ -1743,6 +1744,8 @@ int AppWindow::recvNoise()
         if (stack->currentWidget()->objectName() != "tester")
             return 0;  // 非测试界面,不启动
         int tmpwork = (ioHexL & playL) ? WORKL : WORKR;  // 左噪音启动||右噪音启动
+        if (playL == 0)
+            tmpwork = station;
         if (currTask > taskBuf.indexOf(&AppWindow::taskCheckPlay)) {
             warnningString(tr("当前测试中\n无法启动"));
             return 0;  // 当前工位正在测试,不启动
@@ -1753,8 +1756,10 @@ int AppWindow::recvNoise()
         noiseTimer->start(100);
         noisetime = 0;
     }
-    if (stop && noiseTimer->isActive()) {
+    if ((stop || mode == 2) && noiseTimer->isActive()) {
         int tmpwork = (ioHexL & stopL) ? WORKL : WORKR;  // 左噪音停止||右噪音停止
+        if (stopL == 0)
+            tmpwork = station;
         if (tmpwork != buffwork) {  // 左启动右停止/右启动左停止
             warnningString(tr("噪音停止"));
             noiseTimer->stop();
@@ -2495,7 +2500,7 @@ void AppWindow::recvSocket(QByteArray msg)
     case 6037:  // IO板输入状态
         ioHexL = hex;
         recvIoCtrl(Qt::Key_Meta, station);
-        recvNoise();
+        recvNoise(0);
     case 6086:  // 上传采样转向
     case 6059:  // IO板输出状态
     case 6035:  // 反嵌采样结果

@@ -160,7 +160,7 @@ private slots:
     int getNextItem();
     int taskConfig();
     int recvIoCtrl(int key, int work);
-    int recvNoise();
+    int recvNoise(int mode);
     void noiseThread();
     void taskSendIobrd(int step);
     void showTester();
