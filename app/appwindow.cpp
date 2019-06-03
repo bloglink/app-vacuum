@@ -1531,22 +1531,30 @@ int AppWindow::testStartTest()
     itemparm.insert("testvolt", testvolt + 1);
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();
     int spec = tmpSet.value(back + backTest).toString().toInt(NULL, 16);  // 特殊配置
-    if ((spec & 0x40) && (currItem == nSetPWR)) {  // 无锡寰宇驱动器,每2s启动一次
+    if (currItem == nSetPWR) {
         int addr = (station == WORKL) ? 0x06 : 0x07;
         int conf = tmpSet.value(4000 + Qt::Key_7).toInt();
         int real = tmpSet.value(conf + 0x06).toInt();
         int time = tmpSet.value(conf + CACHEPWR*TIMEPWR1 + CACHEPWR).toDouble() * 100;
-        if (!tmpSet.value(back + 0x20 + addr).toString().isEmpty() && testvolt % 200 == 0) {
-            QString com = tmpSet.value(back + 0x20 + addr).toString();
-            QVariantMap map;
-            map.insert("taskname", com);
-            map.insert("taskwork", "wash");
-            map.insert("taskdata", real);
-            map.insert("tasktime", 0);
-            if (time - testvolt > 400)
-                emit sendAppMap(map);
-            map.clear();
-            qDebug() << "pwr" << com << real << testvolt << time;
+        if (spec & 0x40) {  // 无锡寰宇驱动器,每2s启动一次
+            if (!tmpSet.value(back + 0x20 + addr).toString().isEmpty() && testvolt % 200 == 0) {
+                QString com = tmpSet.value(back + 0x20 + addr).toString();
+                QVariantMap map;
+                map.insert("taskname", com);
+                map.insert("taskwork", "wash");
+                map.insert("taskdata", real);
+                map.insert("tasktime", 0);
+                if (time - testvolt > 400)
+                    emit sendAppMap(map);
+                map.clear();
+                qDebug() << "pwr" << com << real << testvolt << time;
+            }
+        } else {
+            int syst = tmpSet.value(2000 + Qt::Key_1).toInt();
+            int pwwr = tmpSet.value(syst + 0x0E).toInt();
+            if (testvolt == 0) {
+                sendUdpStr(QString("6101 %1").arg(pwwr).toUtf8());
+            }
         }
     }
     if (currItem == nSetLOD) {
