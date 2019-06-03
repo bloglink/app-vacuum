@@ -1583,6 +1583,7 @@ void AppTester::recvLedMsg(QTmpMap msg)
         btnHome->setEnabled(true);
         btnConf->setEnabled(true);
         tmpTime = 0;
+        codeText->setText("");
         codeText->setFocus();
     }
 }
