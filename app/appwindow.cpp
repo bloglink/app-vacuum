@@ -812,6 +812,7 @@ int AppWindow::taskToolIobrd()
         int grab = tmpSet.value(grabaddr).toString().toInt(NULL, 16);  // 夹紧动作
         int save = tmpSet.value(saveaddr).toString().toInt(NULL, 16);  // 内驱保持
         int test = down + grab + save;
+        ioHexS = test;
         if (test != 0)
             sendUdpStr(tr("6036 %1").arg(test).toUtf8());
     }  // 外置驱动无动作
@@ -1164,7 +1165,7 @@ int AppWindow::taskCheckStop()
         tmpMsg.insert(Qt::Key_0, Qt::Key_Stop);
         emit sendAppMsg(tmpMsg);
         tmpMsg.clear();
-        taskSendIobrd(0x05);
+//        taskSendIobrd(0x05);
     }
     if (teststop) {
         testparm.insert("teststop", 1);
@@ -1217,8 +1218,11 @@ int AppWindow::testToolIocan()
         return Qt::Key_Meta;
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int spec = tmpSet.value(back + backTest).toString().toInt(NULL, 16);  // 特殊配置
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    if (driv != 0 && (spec&0x80))  // 卧龙外驱不动作
+        return Qt::Key_Away;
     bool isDriv = (currItem == nSetINR || currItem == nSetACW);  // 高压项目
     if (mode != 1) {  // 无刷模式,内置驱动
         int downaddr = ((station == WORKL) ? 0x00 : 0x01) + back + 0x40;  // 气动弹线左/右地址
@@ -1261,8 +1265,11 @@ int AppWindow::testStopIocan()
 {
     int back = tmpSet.value(1000 + Qt::Key_0).toInt();  // 后台设置地址
     int mode = tmpSet.value(back + backMode).toInt();  // 测试模式
+    int spec = tmpSet.value(back + backTest).toString().toInt(NULL, 16);  // 特殊配置
     int conf = tmpSet.value(4000 + Qt::Key_0).toInt();  // 综合设置地址
     int driv = tmpSet.value(conf + ADDRDRIV).toInt();
+    if (driv != 0 && (spec&0x80))  // 卧龙外驱不动作
+        return Qt::Key_Away;
     bool isDriv = (currItem == nSetINR || currItem == nSetACW);  // 当前项目为高压项目
     int nextitem = getNextItem();
     bool isNext = (nextitem == nSetINR || nextitem == nSetACW);  // 下一项目为高压项目
