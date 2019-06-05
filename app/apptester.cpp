@@ -1774,6 +1774,13 @@ void AppTester::recvNewMsg(QTmpMap msg)
                 tmpMap.insert("point", mp1);
                 tmpMap.insert("color", str == "OK" ? int(Qt::green) : int(Qt::red));
                 impWave.at(numb)->setLines(tmpMap);
+                QVariantMap tmp;
+                tmp.insert("index", 0);
+                tmp.insert("width", 80);
+                tmp.insert("lenth", 85);
+                tmp.insert("color", int(Qt::white));
+                tmp.insert("title", tr("%1V").arg(strv));
+                impWave.at(numb)->setTexts(tmp);
                 allWave->setLines(tmpMap);
                 impWave.at(numb)->update();
                 allWave->update();
