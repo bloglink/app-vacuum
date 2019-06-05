@@ -1792,7 +1792,7 @@ void AppTester::recvNewMsg(QTmpMap msg)
             int pc = tmp.value(Qt::Key_2).toInt();
             int pt = (((item == nSetMAG) || (item == nSetIMP)) && (numb < 0x08)) ? 1 : 0;
             numb = (item == nSetMAG && numb < 0x03) ? 0 : numb;
-            numb = (item == nSetIMP && numb < 0x06) ? 0 : numb;
+            numb = (item == nSetIMP && numb < 0x08) ? 0 : numb;
             if (pn == item && pc == numb) {
                 if (!msg.value(Qt::Key_3).isNull() && pt == 0) {
                     int row = tmp.value(Qt::Key_0).toInt();
